@@ -1,13 +1,12 @@
 
 #include "../include/Utilities.hpp"
 #include <iostream>
+#include "../include/Grid.hpp"
 
 int main(){
-    FlowVec5 f{1,2,3,4,5};
-    std::cout << "hello fucker\n";
-    std::cout << f.u1<<std::endl;
+    Config c;
+    Grid g{c};
+    g.read_mesh("test_mesh.c3d");
 
-    Eigen::Vector3d v;
-    v << 1,2,3;
-    std::cout << v <<std::endl;
+    cout << endl << endl;
 }

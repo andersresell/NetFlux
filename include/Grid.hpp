@@ -11,7 +11,11 @@ class Grid{
                   ghost_cells;
     FaceContainer faces;
 
-    Grid(Config config);
 
+
+public:    
+    
+    Grid(Config config);
     void read_mesh(string mesh_file);
+
 };

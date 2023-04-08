@@ -61,3 +61,12 @@ struct Cell{
 
 using FaceContainer = vector<Face>;
 using CellContainer = vector<Cell>;
+
+
+enum class BoundaryType{NoSlipWall, SlipWall, FarField};
+
+const map<string, BoundaryType> boundary_type_from_string{
+    {"NoSlipWall", BoundaryType::NoSlipWall},
+    {"SlipWall", BoundaryType::SlipWall},
+    {"FarField", BoundaryType::FarField},
+};
