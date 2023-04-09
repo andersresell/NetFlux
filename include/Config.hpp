@@ -5,18 +5,24 @@
 
 class Config {
 
-    Index N_CELLS,
+    Index N_INTERIOR_CELLS,
+          N_TOTAL_CELLS,
           N_FACES;
-    bool faces_set = false, cells_set = false;
+    bool faces_set = false, interior_cells_set = false, total_cells_set;
     string mesh_filename; 
 public:
-    Index get_N_CELLS() const {return N_CELLS;}
+    Index get_N_INTERIOR_CELLS() const {assert(interior_cells_set); return N_INTERIOR_CELLS;}
+    Index get_N_TOTAL_CELLS() const {assert(total_cells_set); return N_TOTAL_CELLS;}
+    Index get_N_GHOST_CELLS() const {return get_N_TOTAL_CELLS() - get_N_INTERIOR_CELLS();}
+
     Index get_N_FACES() const {return N_FACES;}
     string get_mesh_filename() const {return mesh_filename;}
     
 
 
-    void set_N_CELLS(Index N_CELLS) {assert(!cells_set); N_CELLS = N_CELLS; cells_set = true;}
-    void set_N_FACES(Index N_FACES) {assert(!faces_set); N_FACES = N_FACES; faces_set = true;}
+    void set_N_INTERIOR_CELLS(Index val) {assert(!interior_cells_set); N_INTERIOR_CELLS = val; interior_cells_set = true;}
+    void set_N_TOTAL_CELLS(Index val) {assert(!total_cells_set); N_TOTAL_CELLS = val; total_cells_set = true;}
+    void set_N_FACES(Index val) {assert(!faces_set); N_FACES = val; faces_set = true;}
+
 };
 

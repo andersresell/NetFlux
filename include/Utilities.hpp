@@ -8,8 +8,13 @@ using ShortIndex = uint8_t; //Used for looping over dimensions, etc
 
 constexpr ShortIndex N_DIM{3};
 constexpr ShortIndex N_VARS{N_DIM + 2};
+constexpr ShortIndex N_TET_NODES{4};
+constexpr ShortIndex N_TRI_NODES{3};
+constexpr ShortIndex N_TET_FACES{4};
 
 using Vec3 = Eigen::Vector3d;
+
+template<typename T, size_t N> bool arrays_equal(const array<T, N>& a,const array<T, N>& b);
 
 struct FlowVec5{
     double u1, u2, u3, u4, u5;
@@ -49,9 +54,11 @@ using SolutionContainer = vector<ConservativeVars>;
 using FluxContainer = vector<FlowVec5>;
 
 struct Face{
-    Face(Vec3 S_ij, Index i, Index j) : S_ij{S_ij}, i{i}, j{j} {}
+    Face(Index i, Index j, Vec3 S_ij, Vec3 r_im, Vec3 r_jm) : S_ij{S_ij}, i{i}, j{j}, r_im{r_im}, r_jm{r_jm} {}
+    Face(Index i, Index j) : i{i}, j{j} {} 
     Vec3 S_ij; //Area normal vector from cell i to j
     Index i,j; //Indices of cell i and j
+    Vec3 r_im, r_jm; //vectors from each cell center to the face centroid
 };
 
 struct Cell{
@@ -89,15 +96,17 @@ namespace Geometry{
         vector<TriConnectivity> triangles;
     };
 
+    //returns the node connectivity of face_i from the node connectivity of tetraheder  
+    TriConnectivity tet_face_connectivity(TetConnectivity tc, ShortIndex face_k); 
 
-    struct Face{
+    struct FaceGeom{
         vector<Vec3> nodes;
-        Face();
+        FaceGeom();
         virtual Vec3 calc_area_normal() const = 0;
         virtual Vec3 calc_centroid() const = 0;
     };
 
-    struct Triangle final : Face{
+    struct Triangle final : FaceGeom{
         Triangle(Vec3 a, Vec3 b, Vec3 c) { nodes = {a,b,c};}
         Vec3 calc_area_normal() const final;
         Vec3 calc_centroid() const final;
@@ -115,6 +124,8 @@ namespace Geometry{
         Vec3 calc_centroid() const final;
 
     };
+
+    void assign_face_properties(Face& face, const FaceGeom& face_geom, const Vec3& cell_center_i, const Vec3& cell_center_j);
 
     
 }
