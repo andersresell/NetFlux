@@ -7,15 +7,22 @@
 
 
 class Grid{
-    CellContainer internal_cells,
-                  ghost_cells;
+    CellContainer cells;
+    vector<Patch> patches;
     FaceContainer faces;
+
 
 
 
 public:    
     
-    Grid(Config config);
-    void read_mesh(string mesh_file);
+    Grid(const Config& config);
+    void create_grid(const Config& config);
+
+    void read_mesh(string mesh_filename, 
+                   vector<Vec3>& nodes, 
+                   vector<Geometry::TetConnectivity>& tet_connect, 
+                   vector<Geometry::TriPatchConnectivity>& tri_patch_connect) const;
+
 
 };

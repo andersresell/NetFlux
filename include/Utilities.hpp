@@ -55,6 +55,7 @@ struct Face{
 };
 
 struct Cell{
+    Cell(double cell_volume, Vec3 centroid) : cell_volume{cell_volume}, centroid{centroid} {}
     double cell_volume;
     Vec3 centroid;
 };
@@ -70,3 +71,50 @@ const map<string, BoundaryType> boundary_type_from_string{
     {"SlipWall", BoundaryType::SlipWall},
     {"FarField", BoundaryType::FarField},
 };
+
+struct Patch{
+    BoundaryType boundary_type;
+    vector<Index> boundary_face_indices;
+};
+
+namespace Geometry{
+    struct TetConnectivity{
+        Index a,b,c,d;
+    };
+    struct TriConnectivity{
+        Index a,b,c;
+    };
+    struct TriPatchConnectivity{
+        BoundaryType boundary_type;
+        vector<TriConnectivity> triangles;
+    };
+
+
+    struct Face{
+        vector<Vec3> nodes;
+        Face();
+        virtual Vec3 calc_area_normal() const = 0;
+        virtual Vec3 calc_centroid() const = 0;
+    };
+
+    struct Triangle final : Face{
+        Triangle(Vec3 a, Vec3 b, Vec3 c) { nodes = {a,b,c};}
+        Vec3 calc_area_normal() const final;
+        Vec3 calc_centroid() const final;
+    };
+
+    struct Polyhedra{
+        vector<Vec3> nodes;
+        virtual double calc_volume() const = 0;
+        virtual Vec3 calc_centroid() const = 0;
+    };
+
+    struct Tetrahedron final : Polyhedra{
+        Tetrahedron(Vec3 a, Vec3 b, Vec3 c, Vec3 d) {nodes = {a,b,c,d};}
+        double calc_volume() const final;
+        Vec3 calc_centroid() const final;
+
+    };
+
+    
+}
