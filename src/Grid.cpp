@@ -1,9 +1,16 @@
 #include "../include/Grid.hpp"
 
-Grid::Grid(const Config& config){
+
+
+void Grid::print_grid() const{
+
+    cout << "CELLS:\n";
+    for (Index i{0}; i< cells.size();i++) cout << i << ": " << cells.at(i) << endl;
+
+    cout << "\n\nFACES:\n";
+    for (Index i{0}; i< faces.size();i++) cout << i << ": " << faces.at(i) << endl;
 
 }
-
 
 void Grid::create_grid(Config& config){
     using namespace Geometry;
@@ -29,12 +36,9 @@ void Grid::create_grid(Config& config){
     Index next_ghost_index = N_NODES;
     
     for (Index i=0; i<N_INTERIOR_CELLS; i++){
+
         TetConnectivity tc_i = tet_connect.at(i);
-        Vec3 a = nodes.at(tc_i.a);
-        Vec3 b = nodes.at(tc_i.b);
-        Vec3 c = nodes.at(tc_i.c);
-        Vec3 d = nodes.at(tc_i.d);
-        Tetrahedron tet{a,b,c,d};
+        Tetrahedron tet{nodes.at(tc_i.a),nodes.at(tc_i.b), nodes.at(tc_i.c), nodes.at(tc_i.d)};
 
         //Adding a new Cell
         cells.emplace_back(tet.calc_volume(), tet.calc_centroid()); 
@@ -233,7 +237,8 @@ Geometry::TriConnectivity Grid::add_face_to_patches(Geometry::TriConnectivity t_
             patch_compare = {t_patch.a, t_patch.b, t_patch.c};
             std::sort(patch_compare.begin(), patch_compare.end());
             
-            if (arrays_equal(ij_compare, patch_compare)){
+            if (arrays_equal(ij_compare, patch_compare))
+            {
                 //Correct triangle found
                 patches.at(patch_number).boundary_face_indices.push_back(ij);
                 patches.at(patch_number).boundary_type = tri_patch_connect.at(patch_number).boundary_type;

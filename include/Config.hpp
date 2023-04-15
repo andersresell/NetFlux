@@ -2,7 +2,6 @@
 #include "includes.hpp"
 #include "Utilities.hpp"
 
-
 class Config {
 
     Index N_INTERIOR_CELLS,
@@ -17,8 +16,6 @@ public:
 
     Index get_N_FACES() const {return N_FACES;}
     string get_mesh_filename() const {return mesh_filename;}
-    
-
 
     void set_N_INTERIOR_CELLS(Index val) {assert(!interior_cells_set); N_INTERIOR_CELLS = val; interior_cells_set = true;}
     void set_N_TOTAL_CELLS(Index val) {assert(!total_cells_set); N_TOTAL_CELLS = val; total_cells_set = true;}

@@ -1,12 +1,7 @@
 #include "../include/Utilities.hpp"
 
 
-template<typename T, size_t N> bool arrays_equal(const array<T, N>& a,const array<T, N>& b){
-    assert (a.size() == b.size());
-    for (size_t i{0}; i<a.size(); i++) 
-        if (a[i] != b[i]) return false;
-    return true;
-}
+
 
 namespace Geometry{
         
@@ -55,7 +50,7 @@ namespace Geometry{
     void assign_face_properties(Face& face, const FaceGeom& face_geom, const Vec3& cell_center_i, const Vec3& cell_center_j){
         face.S_ij = face_geom.calc_area_normal();
         Vec3 face_centroid = face_geom.calc_centroid();
-        face.r_im = cell_center_i - face_centroid;
+        face.r_im = cell_center_i - face_centroid;  
         face.r_jm = cell_center_j - face_centroid;
     }
 

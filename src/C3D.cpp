@@ -4,9 +4,14 @@
 #include "../include/Grid.hpp"
 
 int main(){
-    Config c;
-    Grid g{c};
-    g.read_mesh("test_mesh.c3d");
 
-    cout << endl << endl;
+    
+    cout << "hello jævel\n\n";
+    Config c;
+
+    Grid g{c};  
+
+    g.create_grid(c);
+
+    g.print_grid();
 }

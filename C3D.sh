@@ -1,7 +1,6 @@
 #! /bin/bash
 
-#simple manual build and run
-cd build
-meson compile
-cd src
-./C3D
+clear 
+cd ./src
+make C3D
+../build/C3D

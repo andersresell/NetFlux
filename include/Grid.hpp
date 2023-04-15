@@ -7,22 +7,30 @@
 
 
 class Grid{
+
+
     CellContainer cells;
     vector<Patch> patches;
     FaceContainer faces;
 
 
 
-
 public:    
     
-    Grid(const Config& config);
+    Grid(const Config& config) {}
+    
     void create_grid(Config& config);
+
+    void print_grid() const;
+
+private:
 
     void read_mesh(string mesh_filename, 
                    vector<Vec3>& nodes, 
                    vector<Geometry::TetConnectivity>& tet_connect, 
                    vector<Geometry::TriPatchConnectivity>& tri_patch_connect) const;
+
+    
 
     /*------Helper functions for creating grid-------*/
 
@@ -38,5 +46,4 @@ public:
     Geometry::TriConnectivity add_face_to_patches(Geometry::TriConnectivity t_ij, 
                                                 Index ij, 
                                                 const vector<Geometry::TriPatchConnectivity>& tri_patch_connect);
-
 };

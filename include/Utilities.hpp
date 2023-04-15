@@ -14,7 +14,15 @@ constexpr ShortIndex N_TET_FACES{4};
 
 using Vec3 = Eigen::Vector3d;
 
-template<typename T, size_t N> bool arrays_equal(const array<T, N>& a,const array<T, N>& b);
+inline string horizontal_string_Vec3(const Vec3& v) {return "["+std::to_string(v[0])+", "+std::to_string(v[1])+", "+std::to_string(v[2])+" ]";}
+
+template<typename T, size_t N>
+inline bool arrays_equal(const array<T, N>& a,const array<T, N>& b){
+    assert (a.size() == b.size());
+    for (size_t i{0}; i<a.size(); i++) 
+        if (a[i] != b[i]) return false;
+    return true;
+}
 
 struct FlowVec5{
     double u1, u2, u3, u4, u5;
@@ -59,12 +67,22 @@ struct Face{
     Vec3 S_ij; //Area normal vector from cell i to j
     Index i,j; //Indices of cell i and j
     Vec3 r_im, r_jm; //vectors from each cell center to the face centroid
+    friend std::ostream& operator<<(std::ostream& os, const Face& f) {
+        os << "i: "<< f.i << ", j: " << f.j << ", S_ij: " + horizontal_string_Vec3(f.S_ij) +
+        ", r_im: " + horizontal_string_Vec3(f.r_im) + ", r_jm: " + horizontal_string_Vec3(f.r_jm) << endl;
+        return os;
+    }
 };
 
 struct Cell{
+    Cell() {}
     Cell(double cell_volume, Vec3 centroid) : cell_volume{cell_volume}, centroid{centroid} {}
     double cell_volume;
     Vec3 centroid;
+    friend std::ostream& operator<<(std::ostream& os, const Cell& c) {
+        os << "cell vol = " << c.cell_volume << ", centroid = " + horizontal_string_Vec3(c.centroid) << endl; 
+        return os;
+    }
 };
 
 using FaceContainer = vector<Face>;
@@ -101,13 +119,13 @@ namespace Geometry{
 
     struct FaceGeom{
         vector<Vec3> nodes;
-        FaceGeom();
+        FaceGeom() {};
         virtual Vec3 calc_area_normal() const = 0;
         virtual Vec3 calc_centroid() const = 0;
     };
 
     struct Triangle final : FaceGeom{
-        Triangle(Vec3 a, Vec3 b, Vec3 c) { nodes = {a,b,c};}
+        Triangle(Vec3 a, Vec3 b, Vec3 c) : FaceGeom() { nodes = {a,b,c};}
         Vec3 calc_area_normal() const final;
         Vec3 calc_centroid() const final;
     };
@@ -119,7 +137,7 @@ namespace Geometry{
     };
 
     struct Tetrahedron final : Polyhedra{
-        Tetrahedron(Vec3 a, Vec3 b, Vec3 c, Vec3 d) {nodes = {a,b,c,d};}
+        Tetrahedron(Vec3 a, Vec3 b, Vec3 c, Vec3 d) : Polyhedra() {nodes = {a,b,c,d};}
         double calc_volume() const final;
         Vec3 calc_centroid() const final;
 
