@@ -23,6 +23,23 @@ void Grid::create_grid(Config& config){
     vector<TriPatchConnectivity> tri_patch_connect;
     read_mesh(config.get_mesh_filename(), nodes, tet_connect, tri_patch_connect);
 
+    cout << "nodes:\n";
+    for (auto&n : nodes){
+        cout << n <<","<<endl;
+    }
+    cout << "tet connect:\n";
+    for (auto& tc : tet_connect){
+        cout << tc.a <<" "<<tc.b <<" "<<tc.c<<" "<<tc.d  <<endl;
+    }
+    cout << "tri_patch_connect:\n";
+    for (auto& tpc : tri_patch_connect){
+        cout << "boudnary type: "<< (int)tpc.boundary_type <<endl;
+        for (auto& e : tpc.triangles){
+            cout << e.a << " "<<e.b<<" "<<e.c <<endl;
+        }
+    }
+
+
     patches.resize(tri_patch_connect.size());
 
     //The following procedure creates internal cells and faces
@@ -33,9 +50,12 @@ void Grid::create_grid(Config& config){
 
     TriConnectivity face_bound;
     vector<Triangle> face_triangles; //Used to assign properties to faces later
-    Index next_ghost_index = N_NODES;
+    Index next_ghost_index = N_INTERIOR_CELLS;
     
+    cout << "N_TET_FACES "<<N_TET_FACES<<endl;
+
     for (Index i=0; i<N_INTERIOR_CELLS; i++){
+        cout << i << endl;
 
         TetConnectivity tc_i = tet_connect.at(i);
         Tetrahedron tet{nodes.at(tc_i.a),nodes.at(tc_i.b), nodes.at(tc_i.c), nodes.at(tc_i.d)};
@@ -44,6 +64,7 @@ void Grid::create_grid(Config& config){
         cells.emplace_back(tet.calc_volume(), tet.calc_centroid()); 
 
         for (ShortIndex k{0}; k<N_TET_FACES; k++){
+            cout << i << ","<<k<<","<<N_TET_FACES<<endl;
 
             TriConnectivity face_ij = tet_face_connectivity(tet_connect.at(i), k); 
             Triangle tri{nodes.at(face_ij.a), nodes.at(face_ij.b), nodes.at(face_ij.c)};
@@ -68,32 +89,37 @@ void Grid::create_grid(Config& config){
                 next_ghost_index++;
             }
         }
-
-        Index N_FACES = faces.size();
-        Index N_TOTAL_CELLS = N_INTERIOR_CELLS + next_ghost_index;
-
-        config.set_N_INTERIOR_CELLS(N_INTERIOR_CELLS);
-        config.set_N_TOTAL_CELLS(N_TOTAL_CELLS);
-        config.set_N_FACES(N_FACES);
-
-        Index max_i{0}, max_j{0}; //For consistency checking
-
-        //loop over all faces to assign area vector and centroid vectors
-        assert(face_triangles.size() == N_FACES);
-        for (Index ij{0}; ij<N_FACES; ij++){
-            Face& face = faces.at(ij);
-            Index i = face.i;
-            Index j = face.j; 
-            max_i = std::max(max_i, i);
-            max_j = std::max(max_j, j);
-
-            assign_face_properties(face, face_triangles.at(ij), cells.at(i).centroid, cells.at(j).centroid);
-
-        }
-    
-        assert(max_i == N_INTERIOR_CELLS); //i should always belong to the interior cells
-        assert(max_j == N_TOTAL_CELLS);
     }
+
+    Index N_FACES = faces.size();
+    Index N_TOTAL_CELLS = next_ghost_index;
+
+    config.set_N_INTERIOR_CELLS(N_INTERIOR_CELLS);
+    config.set_N_TOTAL_CELLS(N_TOTAL_CELLS);
+    config.set_N_FACES(N_FACES);
+
+    Index max_i{0}, max_j{0}; //For consistency checking
+
+    //loop over all faces to assign area vector and centroid vectors
+    assert(face_triangles.size() == N_FACES);
+    for (Index ij{0}; ij<N_FACES; ij++){
+        Face& face = faces.at(ij);
+        Index i = face.i;
+        Index j = face.j; 
+        max_i = std::max(max_i, i);
+        max_j = std::max(max_j, j);
+
+        assert(i < N_INTERIOR_CELLS); //i should never belong to a ghost cell (normal pointing outwards)
+        if (j >= N_INTERIOR_CELLS){
+            
+        }
+        assign_face_properties(face, face_triangles.at(ij), cells.at(i).centroid, cells.at(j).centroid);
+
+    }
+
+    assert(max_i == N_INTERIOR_CELLS); //i should always belong to the interior cells
+    assert(max_j == N_TOTAL_CELLS);
+
 
     
 }
@@ -213,8 +239,7 @@ std::pair<Index,bool> Grid::find_neigbouring_cell(Index i,
 
 bool Grid::face_ij_created(Index i, Index j) const{
     for (const Face& face : faces)
-        if (face.i==i || face.i==j){
-            assert(face.j==i || face.j==j);
+        if ((face.i==i || face.i==j) && (face.j==i || face.j==j)){
             return true;        
         }
     return false;
@@ -247,6 +272,7 @@ Geometry::TriConnectivity Grid::add_face_to_patches(Geometry::TriConnectivity t_
             
         }
     }
-    std::cerr << "Error: the face triangle was not found among the boundary pathces\n";
+    std::cerr << "Error: the face triangle was not found among the boundary pathces.\n" 
+        << "Some boundary triangles might not have been assigned patches\n";
     exit(1);             
 }

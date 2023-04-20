@@ -4,7 +4,7 @@ CXX = g++
 INC_DIR = ../include
 BUILD_DIR = ../build
 
-CXX_FLAGS = -Wall -I$(INC_DIR)
+CXX_FLAGS = -g -Wall -I$(INC_DIR)
 
 _EXE = C3D
 EXE = $(BUILD_DIR)/$(_EXE)
@@ -28,7 +28,7 @@ OBJ = $(patsubst %.cpp, $(BUILD_DIR)/%.o, $(SRC)) #names of src files put in bui
 
 #target for executable
 $(_EXE): $(OBJ)
-	$(CXX) -o $(EXE) $^
+	$(CXX) -o $(EXE) $^ $(CXX_FLAGS)
 
 
 #target for object files

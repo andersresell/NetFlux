@@ -60,4 +60,13 @@ namespace Geometry{
     }
 
 
+    Vec3 get_ghost_centroid(Vec3 centroid_i, const FaceGeom& boundary_face){
+        //distance from cell i to face V_i/ij = centroid_face - centroid_i
+        //ghost centroid is located on opposite side of face with respect to i
+        //centroid_ghost = centroid_i + 2*V_i/ij = 2*centroid_face - centroid_i
+        Vec3 centroid_face = boundary_face.calc_centroid();
+        return 2 * centroid_face - centroid_i; 
+
+        
+    }
 }
