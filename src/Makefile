@@ -31,12 +31,17 @@ $(_EXE): $(OBJ)
 	$(CXX) -o $(EXE) $^ $(CXX_FLAGS)
 
 
+
+#$(BUILD_DIR)/%.o: %.cpp $(INCLUDE)
+#	$(CXX) -c -o $@ $< $(CXX_FLAGS)
+
 #target for object files
-$(BUILD_DIR)/%.o: %.cpp $(INCLUDE)
-	$(CXX) -c -o $@ $< $(CXX_FLAGS)
+#The -MMD option creates a list of depenendencies, and it's included later
+$(BUILD_DIR)/%.o: %.cpp 
+	$(CXX) -MMD -c -o $@ $< $(CXX_FLAGS)
 
 
-
+-include $(OBJ:.o=.d)
 
 .PHONY: clean
 clean:

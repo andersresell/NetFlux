@@ -18,5 +18,5 @@ int main(){
 
     g.create_grid(c);
 
-    //g.print_grid();
+    g.print_grid(c);
 }

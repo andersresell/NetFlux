@@ -2,13 +2,24 @@
 
 
 
-void Grid::print_grid() const{
+void Grid::print_grid(const Config& config) const{
 
     cout << "CELLS:\n";
-    for (Index i{0}; i< cells.size();i++) cout << i << ": " << cells.at(i) << endl;
-
+    for (Index i{0}; i< cells.size();i++) {
+        if (i >= config.get_N_INTERIOR_CELLS())
+            cout << "GHOST, ";
+        cout << i << ": " << cells.at(i) << endl;
+    }
+    
     cout << "\n\nFACES:\n";
     for (Index i{0}; i< faces.size();i++) cout << i << ": " << faces.at(i) << endl;
+    
+    cout << "\n\nPATCHES:\n";
+    for (const auto& patch : patches){
+        cout << "patch type: " << (int)patch.boundary_type << "\nFace indices:\n";
+        for (Index ij : patch.boundary_face_indices) cout << ij << " ";
+        cout << "\n\n";
+    }
 
 }
 
@@ -61,7 +72,8 @@ void Grid::create_grid(Config& config){
         Tetrahedron tet{nodes.at(tc_i.a),nodes.at(tc_i.b), nodes.at(tc_i.c), nodes.at(tc_i.d)};
 
         //Adding a new Cell
-        cells.emplace_back(tet.calc_volume(), tet.calc_centroid()); 
+        //cells.emplace_back(tet.calc_volume(), tet.calc_centroid()); 
+        cells.at(i) = Cell{tet.calc_volume(), tet.calc_centroid()};
 
         for (ShortIndex k{0}; k<N_TET_FACES; k++){
             cout << i << ","<<k<<","<<N_TET_FACES<<endl;
@@ -79,13 +91,14 @@ void Grid::create_grid(Config& config){
                     face_triangles.push_back(tri);
                 }
             } else{ //No neigbour found. Marking a boundary face
-
-                face_bound = add_face_to_patches(face_ij, next_ghost_index, tri_patch_connect);
+                Index next_ij = faces.size();
+                face_bound = add_face_to_patches(face_ij, next_ij, tri_patch_connect);
                 Triangle tri_bound{nodes.at(face_bound.a), nodes.at(face_bound.b), nodes.at(face_bound.c)};                
                 face_triangles.push_back(tri_bound);
 
                 faces.emplace_back(i, next_ghost_index);
-
+                cells.resize(next_ghost_index+1);
+                cells.at(next_ghost_index) =  Cell{};
                 next_ghost_index++;
             }
         }
@@ -110,17 +123,25 @@ void Grid::create_grid(Config& config){
         max_j = std::max(max_j, j);
 
         assert(i < N_INTERIOR_CELLS); //i should never belong to a ghost cell (normal pointing outwards)
+        //if j is a ghost cell its centoid is calculated fromt he interior 
+        //Vec3 centroid_j = (j >= N_INTERIOR_CELLS) ? calc_ghost_centroid(cells.at(i).centroid, face_triangles.at(ij)) : cells.at(j).centroid;
+        
+        //assign_face_properties(face, face_triangles.at(ij), cells.at(i).centroid, centroid_j);
+        
         if (j >= N_INTERIOR_CELLS){
-            
+            //Vec3 centroid_j = calc_ghost_centroid(cells.at(i).centroid, face_triangles.at(ij));
+            cells.at(j).centroid = calc_ghost_centroid(cells.at(i).centroid, face_triangles.at(ij));
+            cells.at(j).cell_volume = 0;       
         }
+        
         assign_face_properties(face, face_triangles.at(ij), cells.at(i).centroid, cells.at(j).centroid);
 
     }
 
-    assert(max_i == N_INTERIOR_CELLS); //i should always belong to the interior cells
-    assert(max_j == N_TOTAL_CELLS);
+    assert(max_i == N_INTERIOR_CELLS - 1); //i should always belong to the interior cells
+    assert(max_j == N_TOTAL_CELLS - 1);
 
-
+    assert(N_TOTAL_CELLS == cells.size());
     
 }
 

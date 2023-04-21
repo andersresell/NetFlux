@@ -46,21 +46,23 @@ namespace Geometry{
         return 0.25 * (nodes[0] + nodes[1] + nodes[2] + nodes[3]); // 1/4(a + b + c + d)
     }
 
-
-    void assign_face_properties(Face& face, const FaceGeom& face_geom, const Vec3& cell_center_i, const Vec3& cell_center_j){
-        face.S_ij = face_geom.calc_area_normal();
-        Vec3 face_centroid = face_geom.calc_centroid();
-        face.r_im = cell_center_i - face_centroid;  
-        face.r_jm = cell_center_j - face_centroid;
-    }
-
     Face create_face_from_geom(Index i, Index j, const FaceGeom& face_geom, Vec3 cell_center_i, Vec3 cell_center_j){
         Vec3 face_centroid = face_geom.calc_centroid();
         return {i, j, face_geom.calc_area_normal(), face_centroid - cell_center_i, face_centroid - cell_center_j};
     }
 
-
-    Vec3 get_ghost_centroid(Vec3 centroid_i, const FaceGeom& boundary_face){
+    void assign_face_properties(Face& face, const FaceGeom& face_geom, const Vec3& cell_center_i, const Vec3& cell_center_j){
+        Vec3 S_ij = face_geom.calc_area_normal();
+        
+        double normal_dot_product = S_ij.dot(cell_center_j - cell_center_i); 
+        assert(normal_dot_product != 0); //Just banning this for now, altough it is possibly possible with a high skewness, but valid mesh
+        if (normal_dot_product < 0) S_ij *= -1; //Flipping normal if it's not pointing from i to j
+        face.S_ij = S_ij;
+        Vec3 face_centroid = face_geom.calc_centroid();
+        face.r_im = cell_center_i - face_centroid;  
+        face.r_jm = cell_center_j - face_centroid;
+    }
+    Vec3 calc_ghost_centroid(Vec3 centroid_i, const FaceGeom& boundary_face){
         //distance from cell i to face V_i/ij = centroid_face - centroid_i
         //ghost centroid is located on opposite side of face with respect to i
         //centroid_ghost = centroid_i + 2*V_i/ij = 2*centroid_face - centroid_i
