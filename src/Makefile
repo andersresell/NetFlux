@@ -14,14 +14,15 @@ SRC = C3D.cpp \
 	  Config.cpp \
 	  Grid.cpp \
 	  Solver.cpp \
-	  Utilities.cpp
+	  Utilities.cpp \
+	  Output.cpp
 
 #add header files here
-_INCLUDE = includes.hpp \
-		   Config.hpp \
-           Grid.hpp \
-		   Solver.hpp \
-		   Utilities.hpp
+#_INCLUDE = includes.hpp \
+#		   Config.hpp \
+#           Grid.hpp \
+#    Solver.hpp \
+#    Utilities.hpp
 
 INCLUDE = $(patsubst %, $(INC_DIR)/%, $(_INCLUDE))
 OBJ = $(patsubst %.cpp, $(BUILD_DIR)/%.o, $(SRC)) #names of src files put in build dir with .o extension

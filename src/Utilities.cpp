@@ -11,7 +11,7 @@ namespace Geometry{
             case 0:
                 return {tc.a, tc.b, tc.c};
             case 1:
-                return {tc.a, tc.b, tc.c};
+                return {tc.a, tc.b, tc.d};
             case 2:
                 return {tc.a, tc.c, tc.d};
             case 3:
@@ -38,7 +38,9 @@ namespace Geometry{
         Vec3 ab = nodes.at(1) - nodes.at(0);
         Vec3 ac = nodes.at(2) - nodes.at(0);
         Vec3 ad = nodes.at(3) - nodes.at(0);
-        return ab.cross(ac).dot(ad) / 6;
+        double vol = -ab.cross(ac).dot(ad) / 6; 
+        assert(vol > 0);
+        return vol;
     }
 
     Vec3 Tetrahedron::calc_centroid() const {
