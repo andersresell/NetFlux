@@ -1,5 +1,6 @@
 #include "../include/Grid.hpp"
 
+using namespace Geom;
 
 
 void Grid::print_grid(const Config& config) const{
@@ -23,22 +24,21 @@ void Grid::print_grid(const Config& config) const{
 }
 
 void Grid::print_native_mesh() const{
-    using namespace Geometry;
     cout << "NODES:\n";
     for (Index i{0}; i<nodes.size();i++) {
         cout << i << ": " << horizontal_string_Vec3(nodes.at(i)) << endl;
     }
     cout << "\n\nTET CONNECTIVITY:\n";
     for (Index i{0}; i<tet_connect.size();i++) {
-        TetConnectivity t = tet_connect.at(i);
-        cout << i << ": " << t.a << ", " << t.b << ", " << t.c << ", " << t.d << endl;
+        TetConnect t = tet_connect.at(i);
+        cout << i << ": " << t << endl;
     }
     cout << "\n\nTRIANGLE PATCH CONNECTIVITY:\n";
     for (const auto& tpc : tri_patch_connect){
         cout << "BC type: " << tpc.patch_name << endl;
         for (Index i{0}; i<tpc.triangles.size();i++) {
-            TriConnectivity t = tpc.triangles.at(i);
-            cout << i << ": " << t.a << ", " << t.b << ", " << t.c << endl;
+            TriConnect t = tpc.triangles.at(i);
+            cout << i << ": " << t << endl;
         }
         cout << "\n\n";
     }
@@ -46,7 +46,6 @@ void Grid::print_native_mesh() const{
 }
 
 void Grid::create_grid(Config& config){
-    using namespace Geometry;
 
     /*Read mesh file. This populates the:
     - nodes -> native mesh nodes
@@ -66,24 +65,24 @@ void Grid::create_grid(Config& config){
     cells.resize(N_INTERIOR_CELLS);
     Index N_NODES = nodes.size();
 
-    TriConnectivity face_bound;
-    vector<Triangle> face_triangles; //Used to assign properties to faces later
+    TriConnect face_bound;
+    Vector<Triangle> face_triangles; //Used to assign properties to faces later
     Index next_ghost_index = N_INTERIOR_CELLS;
     
 
-
     for (Index i=0; i<N_INTERIOR_CELLS; i++){
 
-        TetConnectivity tc_i = tet_connect.at(i);
-        Tetrahedron tet{nodes.at(tc_i.a),nodes.at(tc_i.b), nodes.at(tc_i.c), nodes.at(tc_i.d)};
-
+        TetConnect tc_i = tet_connect.at(i);
+        Tetrahedron tet = tet_from_connect(tc_i);
+        
         //Adding a new Cell
         cells.at(i) = Cell{tet.calc_volume(), tet.calc_centroid()};
 
         for (ShortIndex k{0}; k<N_TET_FACES; k++){
 
-            TriConnectivity face_ij = tet_face_connectivity(tet_connect.at(i), k); 
-            Triangle tri{nodes.at(face_ij.a), nodes.at(face_ij.b), nodes.at(face_ij.c)};
+            TriConnect face_ij = tet_face_connectivity(tet_connect.at(i), k); 
+            Triangle tri= tri_from_connect(face_ij);
+
             std::pair<Index,bool> pair = find_neigbouring_cell(i, face_ij, tet_connect);
             bool neigbouring_cell_found = pair.second;
 
@@ -97,7 +96,7 @@ void Grid::create_grid(Config& config){
             } else{ //No neigbour found. Marking a boundary face
                 Index next_ij = faces.size();
                 face_bound = add_face_to_patches(face_ij, next_ij, tri_patch_connect);
-                Triangle tri_bound{nodes.at(face_bound.a), nodes.at(face_bound.b), nodes.at(face_bound.c)};                
+                Triangle tri_bound = tri_from_connect(face_bound);           
                 face_triangles.push_back(tri_bound);
 
                 faces.emplace_back(i, next_ghost_index);
@@ -128,7 +127,6 @@ void Grid::create_grid(Config& config){
         //if j is a ghost cell its centoid is calculated fromt he interior 
         //Vec3 centroid_j = (j >= N_INTERIOR_CELLS) ? calc_ghost_centroid(cells.at(i).centroid, face_triangles.at(ij)) : cells.at(j).centroid;
         
-        //assign_face_properties(face, face_triangles.at(ij), cells.at(i).centroid, centroid_j);
         
         if (j >= N_INTERIOR_CELLS){
             //Vec3 centroid_j = calc_ghost_centroid(cells.at(i).centroid, face_triangles.at(ij));
@@ -152,38 +150,32 @@ void Grid::read_mesh(string mesh_filename){
     
     if (extension == "c3d") read_c3d_mesh(mesh_filename);
     else if (extension == "su2") read_su2_mesh(mesh_filename);
-    else {
-        std::cerr << "Error: Illegal mesh format\n";
-        exit(1);
-    }
+    else FAIL_MSG("Error: Illegal mesh format");
+    
 }
 
 void Grid::read_c3d_mesh(string mesh_filename){
-    using namespace Geometry;
 
     std::ifstream ist{mesh_filename};
     std::stringstream ss;
 
-    if (!ist) {
-        std::cerr << "Error: couldn't open the mesh file: "+mesh_filename;
-        exit(1);
-    }
+    FAIL_IF_MSG(!ist, "Error: couldn't open the mesh file: "+mesh_filename);
     
     string line, tmp;
     Index i, N_NODES, N_ELEMENTS;
 
     //READ N_NODES
     ist >> tmp >> N_NODES;
-    assert(tmp == "N_NODES");
+    FAIL_IF(tmp != "N_NODES");
     
     //READ N_ELEMENTS
     ist >> tmp; ist >> N_ELEMENTS;
-    assert(tmp == "N_ELEMENTS");
+    FAIL_IF(tmp != "N_ELEMENTS");
 
     nodes.resize(N_NODES);
     while (getline(ist, line)) {
         if (line.size() != 0){
-            assert(line == "#nodes");
+            FAIL_IF(line != "#nodes");
             break;
         }
     }
@@ -197,20 +189,20 @@ void Grid::read_c3d_mesh(string mesh_filename){
     tet_connect.resize(N_ELEMENTS);
     while (getline(ist, line)) {
         if (line.size() != 0){
-            assert(line == "#tetrahedra");
+            FAIL_IF(line != "#tetrahedra");
             break;
         } 
     }
     //reading elements (assuming only tetrahedra for now)
     for (Index i{0}; i<N_ELEMENTS; i++){
-        TetConnectivity t;
-        ist >> t.a >> t.b >> t.c >> t.d;
+        TetConnect t;
+        ist >> t.a() >> t.b() >> t.c() >> t.d();
         tet_connect.at(i) = t;
     }
 
     while (getline(ist, line)) {
         if (line.size() != 0){
-            assert(line == "#patches");
+            FAIL_IF(line != "#patches");
             break;
         } 
     }
@@ -219,12 +211,12 @@ void Grid::read_c3d_mesh(string mesh_filename){
     string patch_name;
     Index N_surface_elements;    
     while (ist >> patch_name >> N_surface_elements){
-        TriConnectivity tri;
-        TriPatchConnectivity p;
+        TriConnect tri;
+        TriPatchConnect p;
         p.patch_name = patch_name;
         p.triangles.resize(N_surface_elements);
         for (Index i{0}; i<N_surface_elements; i++){
-            ist >> tri.a >> tri.b >> tri.c;
+            ist >> tri.a() >> tri.b() >> tri.c();
             p.triangles.at(i) = tri;
         }
         tri_patch_connect.emplace_back(p);
@@ -232,41 +224,38 @@ void Grid::read_c3d_mesh(string mesh_filename){
 }
 
 void Grid::read_su2_mesh(string mesh_filename){
-    using namespace Geometry;
-
+  
     std::ifstream ist{mesh_filename};
     std::stringstream ss;
 
-    if (!ist) {
-        std::cerr << "Error: couldn't open the mesh file: "+mesh_filename;
-        exit(1);
-    }
+    FAIL_IF_MSG(!ist, "Error: couldn't open the mesh file: "+mesh_filename);
+
     const ShortIndex SU2_TET_TYPE = 10, SU2_TRI_TYPE = 5;
     string tmp_string;
     ShortIndex tmp_int, element_type; 
     Index N_NODES, N_ELEMENTS, N_PATCHES, element_num, first_element_num;
 
     ist >> tmp_string >> tmp_int;
-    assert(tmp_string == "NDIME=");
-    assert(tmp_int == 3);
+    FAIL_IF(tmp_string != "NDIME=");
+    FAIL_IF(tmp_int != 3);
 
     //Reading element connectivity. Only permitting tetrahedral type
     ist >> tmp_string >> N_ELEMENTS;
-    assert(tmp_string == "NELEM=");
+    FAIL_IF(tmp_string != "NELEM=");
     tet_connect.resize(N_ELEMENTS);
     
     for (Index i{0}; i<N_ELEMENTS; i++){ 
-        TetConnectivity t;
-        ist >> element_type >> t.a >> t.b >> t.c >> t.d >> element_num;
+        TetConnect t;
+        ist >> element_type >> t.a() >> t.b() >> t.c() >> t.d() >> element_num;
         if (i == 0) first_element_num = element_num;    
-        assert(element_type == SU2_TET_TYPE);
+        FAIL_IF(element_type != SU2_TET_TYPE);
         if (i == N_ELEMENTS-1) assert(element_num - first_element_num == N_ELEMENTS-1);
         tet_connect.at(i) = t;
     }
 
     //Reading nodes
     ist >> tmp_string >> N_NODES;
-    assert(tmp_string == "NPOIN=");
+    FAIL_IF(tmp_string != "NPOIN=");
     nodes.resize(N_NODES);
 
     for (Index i{0}; i<N_NODES; i++){
@@ -277,23 +266,23 @@ void Grid::read_su2_mesh(string mesh_filename){
 
     //Reading boundary patches
     ist >> tmp_string >> N_PATCHES;
-    assert(tmp_string == "NMARK=");
+    FAIL_IF(tmp_string != "NMARK=");
     tri_patch_connect.reserve(N_PATCHES);
 
     for (Index i{0}; i<N_PATCHES; i++){
-        TriPatchConnectivity p;
+        TriPatchConnect p;
         Index N_MARKER_ELEMENTS;
         ist >> tmp_string >> p.patch_name;
-        assert(tmp_string == "MARKER_TAG=");
+        FAIL_IF(tmp_string != "MARKER_TAG=");
         ist >> tmp_string >> N_MARKER_ELEMENTS;
-        assert(tmp_string == "MARKER_ELEMS=");
+        FAIL_IF(tmp_string != "MARKER_ELEMS=");
         p.triangles.resize(N_MARKER_ELEMENTS);
         for (Index j{0}; j<N_MARKER_ELEMENTS; j++){
-            TriConnectivity t;   
-            ist >> element_type >> t.a  >> t.b >> t.c >> element_num;
-            assert(element_type == SU2_TRI_TYPE);
+            TriConnect t;   
+            ist >> element_type >> t.a()  >> t.b() >> t.c() >> element_num;
+            FAIL_IF(element_type != SU2_TRI_TYPE);
             if (j == 0) first_element_num = element_num; 
-            if (j == N_MARKER_ELEMENTS-1) assert(element_num - first_element_num == N_MARKER_ELEMENTS-1);
+            if (j == N_MARKER_ELEMENTS-1) FAIL_IF(element_num - first_element_num != N_MARKER_ELEMENTS-1);
             p.triangles.at(j) = t;
         }
         tri_patch_connect.push_back(p);
@@ -303,19 +292,19 @@ void Grid::read_su2_mesh(string mesh_filename){
 
  
 std::pair<Index,bool> Grid::find_neigbouring_cell(Index i, 
-                                                Geometry::TriConnectivity face_ij, 
-                                                const vector<Geometry::TetConnectivity>& tet_connect) const{
+                                                TriConnect face_ij, 
+                                                const Vector<TetConnect>& tet_connect) const{
     /*Finds the neighbouring cell j of face ij of cell i. If no neigbour exist (boundary), it returns false.
     The function works by looping over all other cells. For each cell it loops over all faces. 
     It then compares the face nodes to the face nodes of face ij (both sorted). If they are equal the cell is found*/
-    using namespace Geometry;
+
     Index N_CELLS = tet_connect.size();
     array<Index, N_TRI_NODES> i_compare, j_compare;
-    TriConnectivity face_ji;
-    TetConnectivity tet_j;
+    TriConnect face_ji;
+    TetConnect tet_j;
     bool all_nodes_equal;
 
-    i_compare = {face_ij.a, face_ij.b, face_ij.c};
+    i_compare = {face_ij.a(), face_ij.b(), face_ij.c()};
     std::sort(i_compare.begin(), i_compare.end());
 
     for (Index j{0}; j<N_CELLS; j++){
@@ -325,7 +314,7 @@ std::pair<Index,bool> Grid::find_neigbouring_cell(Index i,
 
         for (ShortIndex k{0}; k<N_TET_FACES; k++){
             face_ji = tet_face_connectivity(tet_j, k);
-            j_compare = {face_ji.a, face_ji.b, face_ji.c};
+            j_compare = {face_ji.a(), face_ji.b(), face_ji.c()};
             std::sort(j_compare.begin(), j_compare.end());
             
             all_nodes_equal = true;
@@ -349,21 +338,20 @@ bool Grid::face_ij_created(Index i, Index j) const{
 }
 
 
-Geometry::TriConnectivity Grid::add_face_to_patches(Geometry::TriConnectivity t_ij, 
+TriConnect Grid::add_face_to_patches(TriConnect t_ij, 
                             Index ij, 
-                            const vector<Geometry::TriPatchConnectivity>& tri_patch_connect){
+                            const Vector<TriPatchConnect>& tri_patch_connect){
     /*Function adds the index of face ij to the patch where the triangle t_ij belongs*/
-    using namespace Geometry;
     
-    array<Index,N_TRI_NODES> ij_compare{t_ij.a, t_ij.b, t_ij.c}, patch_compare;
+    array<Index,N_TRI_NODES> ij_compare{t_ij.a(), t_ij.b(), t_ij.c()}, patch_compare;
     std::sort(ij_compare.begin(), ij_compare.end());
     
     assert(tri_patch_connect.size() == patches.size());
 
     for (Index patch_number{0}; patch_number<patches.size(); patch_number++){
-        for (const TriConnectivity& t_patch : tri_patch_connect.at(patch_number).triangles){
+        for (const TriConnect& t_patch : tri_patch_connect.at(patch_number).triangles){
             
-            patch_compare = {t_patch.a, t_patch.b, t_patch.c};
+            patch_compare = {t_patch.a(), t_patch.b(), t_patch.c()};
             std::sort(patch_compare.begin(), patch_compare.end());
             
             if (arrays_equal(ij_compare, patch_compare))
@@ -388,3 +376,10 @@ Geometry::TriConnectivity Grid::add_face_to_patches(Geometry::TriConnectivity t_
     }
  } 
     
+
+Tetrahedron Grid::tet_from_connect(const TetConnect& tc) const{
+    return Tetrahedron(nodes.at(tc.a()),nodes.at(tc.b()), nodes.at(tc.c()), nodes.at(tc.d()));
+}
+Triangle Grid::tri_from_connect(const TriConnect& tc) const{
+    return Triangle(nodes.at(tc.a()),nodes.at(tc.b()), nodes.at(tc.c()));
+}

@@ -2,6 +2,7 @@
 #include "../include/Utilities.hpp"
 #include <iostream>
 #include "../include/Grid.hpp"
+#include "../include/Output.hpp"
 
 int main(){
 
@@ -14,9 +15,16 @@ int main(){
 
     Config c{"/home/anders/dev/Compress3D/test_mesh.c3d"};
 
-    Grid g{c};  
+    Geom::Grid g{c};  
 
     g.create_grid(c);
 
     g.print_grid(c);
+
+    Output o{g};
+    o.write_vtk_ascii(c);
+
+    FlowVar flow;
+    FluxVar flux;
+    FlowVar fv = flow+flux;
 }

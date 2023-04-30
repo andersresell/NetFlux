@@ -1,21 +1,44 @@
 #include "../include/Utilities.hpp"
 
+namespace flow{
+    
+    FlowVar FlowVar::prim_to_cons(const FlowVar& V){
+        return {V[0], 
+                V[0]*V[1],
+                V[0]*V[2],
+                V[0]*V[3],
+                GAMMA_MINUS_ONE_INV * V[4] + 0.5*V[0]*(V[1]*V[1] + V[2]*V[2] + V[3]*V[3])};
+    }
+    FlowVar FlowVar::cons_to_prim(const FlowVar& U){
+        return {U[0], 
+                U[1]/U[0],
+                U[2]/U[0],
+                U[3]/U[0],
+                pressure(U)};
+        }    
+
+    
+    double FlowVar::pressure(const FlowVar& U){
+        return GAMMA_MINUS_ONE * (U[4] - 0.5/U[0]*(U[1]*U[1] + U[2]*U[2] + U[3]*U[3]));
+    }
+}
 
 
 
-namespace Geometry{
+
+namespace Geom{
         
-    TriConnectivity tet_face_connectivity(TetConnectivity tc, ShortIndex face_k) {
+    TriConnect tet_face_connectivity(TetConnect tc, ShortIndex face_k) {
         assert(face_k >= 0 && face_k < N_TET_FACES);
         switch (face_k){
             case 0:
-                return {tc.a, tc.b, tc.c};
+                return {tc.a(), tc.b(), tc.c()};
             case 1:
-                return {tc.a, tc.b, tc.d};
+                return {tc.a(), tc.b(), tc.d()};
             case 2:
-                return {tc.a, tc.c, tc.d};
+                return {tc.a(), tc.c(), tc.d()};
             case 3:
-                return {tc.b, tc.c, tc.d};
+                return {tc.b(), tc.c(), tc.d()};
         }
     }
     

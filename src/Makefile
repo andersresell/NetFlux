@@ -15,14 +15,10 @@ SRC = C3D.cpp \
 	  Grid.cpp \
 	  Solver.cpp \
 	  Utilities.cpp \
-	  Output.cpp
+	  Output.cpp \
+	  Driver.cpp
 
-#add header files here
-#_INCLUDE = includes.hpp \
-#		   Config.hpp \
-#           Grid.hpp \
-#    Solver.hpp \
-#    Utilities.hpp
+
 
 INCLUDE = $(patsubst %, $(INC_DIR)/%, $(_INCLUDE))
 OBJ = $(patsubst %.cpp, $(BUILD_DIR)/%.o, $(SRC)) #names of src files put in build dir with .o extension
@@ -31,10 +27,6 @@ OBJ = $(patsubst %.cpp, $(BUILD_DIR)/%.o, $(SRC)) #names of src files put in bui
 $(_EXE): $(OBJ)
 	$(CXX) -o $(EXE) $^ $(CXX_FLAGS)
 
-
-
-#$(BUILD_DIR)/%.o: %.cpp $(INCLUDE)
-#	$(CXX) -c -o $@ $< $(CXX_FLAGS)
 
 #target for object files
 #The -MMD option creates a list of depenendencies, and it's included later

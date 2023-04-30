@@ -13,7 +13,11 @@ N_ELEMENTS 2
 1 3 2 4
 
 #patches
-NoSlipWall 1
+inlet 2
+0 1 2 
+1 3 2
+outlet 4
 0 1 4
-SlipWall 1
 1 3 4
+0 4 2
+4 3 2
