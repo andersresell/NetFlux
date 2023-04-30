@@ -88,23 +88,44 @@ public:
 // };
 
 namespace flow{
+    
+    /*template<Index N_EQS>
+    struct FlowVar : public Container<double, N_EQS> {
+        FlowVar() = default;
+        FlowVar(std::initializer_list<double> init) : Container(init) {} 
+    };*/
 
     constexpr double GAMMA{1.4};
     constexpr double GAMMA_MINUS_ONE{1-GAMMA};
     constexpr double GAMMA_MINUS_ONE_INV{1/GAMMA_MINUS_ONE};
 
     /*Variables of the Euler / NS equations, can be both conservative, primitive, fluxes, etc.*/
-    struct FlowVar final : public Container<double, N_EQS_EULER>{
-        
-        FlowVar() =  default;
-        FlowVar(std::initializer_list<double> init) : Container(init) {}
+    struct EulerVar : public Container<double, N_EQS_EULER>{
+        EulerVar() =  default;
+        EulerVar(std::initializer_list<double> init) : Container(init) {}
 
-        static FlowVar prim_to_cons(const FlowVar& V);
-        static FlowVar cons_to_prim(const FlowVar& U);
-        static double pressure(const FlowVar& U);
+        static EulerVar prim_to_cons(const EulerVar& V);
+        static EulerVar cons_to_prim(const EulerVar& U);
+        static double pressure(const EulerVar& U);
+
+    };
+
+    /*perhaps for later*/
+    struct NS_VAR : public EulerVar{
 
     };
 }
+// --------------------------------------------------------------------
+// Some enums that specify solver behaviour
+// --------------------------------------------------------------------
+
+enum class TimeScheme{ExplicitEuler, TVD_RK3};
+
+enum class GradientScheme{Gauss};
+
+enum class ConvScheme{Rusanov};
+
+enum class Limiter{Minmod};
 
 enum class BoundaryType{NoSlipWall, SlipWall, FarField};
 
@@ -115,7 +136,7 @@ const map<string, BoundaryType> boundary_type_from_string{
 };
 
 
-namespace Geom{
+namespace geom{
 
     struct Face{
         Face(Index i, Index j, Vec3 S_ij, Vec3 r_im, Vec3 r_jm) : S_ij{S_ij}, i{i}, j{j}, r_im{r_im}, r_jm{r_jm} {}
@@ -181,15 +202,15 @@ namespace Geom{
     TriConnect tet_face_connectivity(TetConnect tc, ShortIndex face_k); 
 
     /*Astract face geometry class*/
-    struct FaceGeom{
+    struct Facegeom{
         Vector<Vec3> nodes;
-        FaceGeom() {};
+        Facegeom() {};
         virtual Vec3 calc_area_normal() const = 0;
         virtual Vec3 calc_centroid() const = 0;
     };
 
-    struct Triangle final : FaceGeom{
-        Triangle(Vec3 a, Vec3 b, Vec3 c) : FaceGeom() { nodes = {a,b,c};}
+    struct Triangle final : Facegeom{
+        Triangle(Vec3 a, Vec3 b, Vec3 c) : Facegeom() { nodes = {a,b,c};}
         Vec3 calc_area_normal() const final;
         Vec3 calc_centroid() const final;
     };
@@ -208,7 +229,7 @@ namespace Geom{
 
     };
 
-    void assign_face_properties(Face& face, const FaceGeom& face_geom, const Vec3& cell_center_i, const Vec3& cell_center_j);
+    void assign_face_properties(Face& face, const Facegeom& face_geom, const Vec3& cell_center_i, const Vec3& cell_center_j);
 
-    Vec3 calc_ghost_centroid(Vec3 centroid_i, const FaceGeom& boundary_face);
+    Vec3 calc_ghost_centroid(Vec3 centroid_i, const Facegeom& boundary_face);
 }

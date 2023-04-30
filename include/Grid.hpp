@@ -4,7 +4,7 @@
 #include "Utilities.hpp"
 #include "Config.hpp"
 
-namespace Geom {
+namespace geom {
 
     class Grid{
         //Native mesh
@@ -56,6 +56,9 @@ namespace Geom {
 
         Tetrahedron tet_from_connect(const TetConnect& tc) const;
         Triangle tri_from_connect(const TriConnect& tc) const;
+ 
+        /*Calling shrink_to_fit on the different members after grid construction to reduce allocated memory*/
+        void shrink_vectors();
         
     };
 

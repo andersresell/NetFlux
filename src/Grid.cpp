@@ -1,6 +1,6 @@
 #include "../include/Grid.hpp"
 
-using namespace Geom;
+using namespace geom;
 
 
 void Grid::print_grid(const Config& config) const{
@@ -142,6 +142,8 @@ void Grid::create_grid(Config& config){
     assert(max_j == N_TOTAL_CELLS - 1);
 
     assert(N_TOTAL_CELLS == cells.size());
+
+    shrink_vectors();
     
 }
 
@@ -382,4 +384,16 @@ Tetrahedron Grid::tet_from_connect(const TetConnect& tc) const{
 }
 Triangle Grid::tri_from_connect(const TriConnect& tc) const{
     return Triangle(nodes.at(tc.a()),nodes.at(tc.b()), nodes.at(tc.c()));
+}
+
+void Grid::shrink_vectors(){
+    
+    nodes.shrink_to_fit();
+    tet_connect.shrink_to_fit();
+    for (auto& tpc : tri_patch_connect)
+        tpc.triangles.shrink_to_fit();
+    tri_patch_connect.shrink_to_fit();
+    cells.shrink_to_fit();
+    faces.shrink_to_fit();
+    patches.shrink_to_fit();
 }

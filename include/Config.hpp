@@ -13,8 +13,23 @@ class Config {
     bool grid_data_set{false};
 
     string mesh_filename; 
+    string output_basename;
 
     map<string, BoundaryType> map_patch_BC; //map from each patch to the bc type applied
+
+    TimeScheme time_scheme;
+
+    GradientScheme grad_scheme;
+
+    ConvScheme conv_scheme;
+
+    Limiter limiter;
+
+    size_t n_timesteps;
+
+    size_t timestep;
+
+    double delta_time;
 
 
 public:
@@ -33,8 +48,30 @@ public:
                        Index N_FACES);
     
     string get_mesh_filename() const {return mesh_filename;}
-
+    string get_unsteady_vtk_filename() const {return output_basename + std::to_string(timestep) + ".vtk";}
 
     BoundaryType get_boundary_type(string patch_name) const {return map_patch_BC.at(patch_name);}
+
+
+    TimeScheme get_time_scheme() const {return time_scheme;}
+    void set_time_scheme(TimeScheme val) {time_scheme = val;}
+
+    GradientScheme get_grad_scheme() const {return grad_scheme;}
+    void set_grad_scheme(GradientScheme val) {grad_scheme = val;}
+
+    ConvScheme get_conv_scheme() const {return conv_scheme;}
+    void set_conv_scheme(ConvScheme val) {conv_scheme = val;}
+
+    Limiter get_limiter() const {return limiter;}
+    void set_limiter(Limiter val) {limiter = val;}
+
+    size_t get_n_timesteps() const {return n_timesteps;}
+
+    size_t& get_timestep() {return timestep;}
+    void set_timestep(size_t val) {timestep = val;}
+    
+    double get_delta_time() const {return delta_time;}
+    void set_delta_time(double val) {delta_time = val;}
+
 };
 

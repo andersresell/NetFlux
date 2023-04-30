@@ -15,7 +15,7 @@ int main(){
 
     Config c{"/home/anders/dev/Compress3D/test_mesh.c3d"};
 
-    Geom::Grid g{c};  
+    geom::Grid g{c};  
 
     g.create_grid(c);
 
