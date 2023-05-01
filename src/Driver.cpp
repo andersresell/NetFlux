@@ -21,7 +21,7 @@ void Driver::solve(Config& config){
 
     while (1){
         
-        config.set_delta_time(solver->calc_timestep());
+        config.set_delta_time(solver->calc_timestep(config));
 
 
         output->write_vtk_ascii(config);

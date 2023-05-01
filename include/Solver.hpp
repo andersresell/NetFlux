@@ -26,11 +26,16 @@ public:
 
     void step(Config& config);
 
-    static EulerVar calc_inviscid_flux(const EulerVar& U);
 
-    double calc_timestep();
+
+
+    double calc_timestep(Config& config);
 
 };
+
+
+
+
 
 
 

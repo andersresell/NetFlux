@@ -106,9 +106,17 @@ namespace flow{
 
         static EulerVar prim_to_cons(const EulerVar& V);
         static EulerVar cons_to_prim(const EulerVar& U);
+ 
         static double pressure(const EulerVar& U);
+        static double sound_speed(const EulerVar& U);
+
+        static EulerVar inviscid_flux_x(const EulerVar& U);
+        static EulerVar inviscid_flux_y(const EulerVar& U);
+        static EulerVar inviscid_flux_z(const EulerVar& U);
 
     };
+
+
 
     /*perhaps for later*/
     struct NS_VAR : public EulerVar{

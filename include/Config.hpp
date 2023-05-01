@@ -31,6 +31,8 @@ class Config {
 
     double delta_time;
 
+    double CFL;
+
 
 public:
     Config(string config_filename); 
@@ -73,5 +75,7 @@ public:
     double get_delta_time() const {return delta_time;}
     void set_delta_time(double val) {delta_time = val;}
 
+    double get_CFL() const {return CFL;}
+    void set_CFL(double val) {CFL = val;}
 };
 

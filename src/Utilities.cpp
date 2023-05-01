@@ -2,24 +2,55 @@
 
 namespace flow{
     
-    FlowVar FlowVar::prim_to_cons(const FlowVar& V){
+    EulerVar EulerVar::prim_to_cons(const EulerVar& V){
         return {V[0], 
                 V[0]*V[1],
                 V[0]*V[2],
                 V[0]*V[3],
                 GAMMA_MINUS_ONE_INV * V[4] + 0.5*V[0]*(V[1]*V[1] + V[2]*V[2] + V[3]*V[3])};
     }
-    FlowVar FlowVar::cons_to_prim(const FlowVar& U){
+    EulerVar EulerVar::cons_to_prim(const EulerVar& U){
         return {U[0], 
                 U[1]/U[0],
                 U[2]/U[0],
                 U[3]/U[0],
                 pressure(U)};
-        }    
+    }    
 
-    
-    double FlowVar::pressure(const FlowVar& U){
+
+    double EulerVar::pressure(const EulerVar& U){
         return GAMMA_MINUS_ONE * (U[4] - 0.5/U[0]*(U[1]*U[1] + U[2]*U[2] + U[3]*U[3]));
+    }
+
+    double EulerVar::sound_speed(const EulerVar& U){
+        return sqrt(GAMMA * pressure(U) / U[0]);
+    }
+
+    EulerVar EulerVar::inviscid_flux_x(const EulerVar& U){
+        double p = EulerVar::pressure(U);
+        return {U[1],
+                U[1]*U[1]/U[0] + p,
+                U[1]*U[2]/U[0],
+                U[1]*U[3]/U[0],
+                U[1]/U[0]*(U[4] + p)};
+    }
+
+    EulerVar EulerVar::inviscid_flux_y(const EulerVar& U){
+        double p = EulerVar::pressure(U);
+        return {U[2],
+                U[2]*U[1]/U[0],
+                U[2]*U[2]/U[0] + p,
+                U[2]*U[3]/U[0],
+                U[2]/U[0]*(U[4] + p)};
+    }
+
+    EulerVar EulerVar::inviscid_flux_z(const EulerVar& U){
+        double p = EulerVar::pressure(U);
+        return {U[3],
+                U[3]*U[1]/U[0],
+                U[3]*U[2]/U[0],
+                U[3]*U[3]/U[0] + p,
+                U[3]/U[0]*(U[4] + p)};
     }
 }
 

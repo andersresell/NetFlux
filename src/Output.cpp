@@ -32,6 +32,7 @@ void Output<FlowVar>::write_vtk_ascii_grid(const Config& config, string filename
     ost << "\nCELLS " << N_TETS << " " << (1 + N_TET_FACES) * N_TETS << "\n";
     for (const auto& tc : tet_connectivity) 
         ost << N_TET_FACES << " " << tc.a() << " " << tc.b() << " " << tc.c() << " " << tc.d() << "\n";
+    
     ost << "CELL_TYPES " << N_TETS << "\n";
     for (Index i{0}; i<N_TETS; i++)
         ost << VTK_TET_TYPE << "\n";
