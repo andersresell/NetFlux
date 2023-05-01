@@ -1,42 +1,29 @@
 
 #include "test.hpp"
 
-template <size_t N,typename T>
-class MyClass {
-public:
-    T data[N];
+#include <unordered_map>
 
-public:
-    template <typename... Args>
-    MyClass(Args... args) : data{static_cast<T>(args)...} {
-        static_assert(sizeof...(args) == N);
+struct FaceIndexHash {
+    size_t operator()(const pair<int, int>& index) const {
+        return std::hash<int>()(index.first) ^ std::hash<int>()(index.second);
     }
-
-    // other member functions here
 };
-
-template <typename T>
-class FixedSizeMyClass : public MyClass<2, T> {
-public:
-    template <typename... Args>
-    FixedSizeMyClass(Args&&... args) : MyClass<2, T>(std::forward<Args>(args)...) {}
-};
-
 
 
 int main(){
-    MyClass<2, double> obj0{1,2.1};
+    int n_cells = 6;
 
-    for (int i{0}; i<2;i++) cout << obj0.data[i] << endl;
+    Vector<Cell> cells;
+    for (int i=0;i<n_cells;i++){
+        cells.push_back(Cell());
+    }
+
+    Vector<Face> faces;
+    faces.push_back({0,2});
+    faces.push_back({1,3});
+    faces.push_back({0,1});
+    faces.push_back({1,4});
+    faces.push_back({0,5});
 
 
-    Container<double,2> obj1{1,2.1};
-
-    for (int i{0}; i<2;i++) cout << obj1[i] << endl;
-
-    FixedSizeMyClass<double> fsm{1.0,3};
-    for (int i{0}; i<2;i++) cout << fsm.data[i] << endl;
-
-    EulerVar ev{2,3,4,3};
-    cout << ev << endl;
 }
