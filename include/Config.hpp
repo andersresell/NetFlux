@@ -17,11 +17,17 @@ class Config {
 
     map<string, BoundaryType> map_patch_BC; //map from each patch to the bc type applied
 
+    GoverningEq governing_eq;
+
+    TimeIntegrationType time_integration_type;
+    
     TimeScheme time_scheme;
+
+    SpatialOrder spatial_order;
 
     GradientScheme grad_scheme;
 
-    ConvScheme conv_scheme;
+    InviscidFluxScheme inv_flux_scheme;
 
     Limiter limiter;
 
@@ -30,6 +36,8 @@ class Config {
     size_t timestep;
 
     double delta_time;
+
+    double time;
 
     double CFL;
 
@@ -54,6 +62,10 @@ public:
 
     BoundaryType get_boundary_type(string patch_name) const {return map_patch_BC.at(patch_name);}
 
+    GoverningEq get_governing_eq() const {return governing_eq;}
+    void set_governing_eq(GoverningEq val) {governing_eq = val;}
+
+    TimeIntegrationType get_time_integration_type() const {return time_integration_type;}
 
     TimeScheme get_time_scheme() const {return time_scheme;}
     void set_time_scheme(TimeScheme val) {time_scheme = val;}
@@ -61,8 +73,11 @@ public:
     GradientScheme get_grad_scheme() const {return grad_scheme;}
     void set_grad_scheme(GradientScheme val) {grad_scheme = val;}
 
-    ConvScheme get_conv_scheme() const {return conv_scheme;}
-    void set_conv_scheme(ConvScheme val) {conv_scheme = val;}
+    SpatialOrder get_spatial_order() const {return spatial_order;}
+    void set_spatial_order(SpatialOrder val) {spatial_order = val;}
+
+    InviscidFluxScheme get_inv_flux_scheme() const {return inv_flux_scheme;}
+    void set_inv_flux_scheme(InviscidFluxScheme val) {inv_flux_scheme = val;}
 
     Limiter get_limiter() const {return limiter;}
     void set_limiter(Limiter val) {limiter = val;}
@@ -71,7 +86,10 @@ public:
 
     size_t& get_timestep() {return timestep;}
     void set_timestep(size_t val) {timestep = val;}
-    
+
+    double& get_time() {return time;}
+    void set_time(double val) {time = val;}
+
     double get_delta_time() const {return delta_time;}
     void set_delta_time(double val) {delta_time = val;}
 

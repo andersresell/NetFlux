@@ -10,18 +10,21 @@ Driver::Driver(Config& config){
     
     output = std::make_unique<EulerOutput>(*grid, solver->get_solution());
 
-
+    
 }
 
 void Driver::solve(Config& config){
     config.set_timestep(0);
+    config.set_time(0.0);
     
 
     output->write_vtk_ascii(config);
 
     while (1){
         
-        config.set_delta_time(solver->calc_timestep(config));
+
+        double delta_time = solver->calc_timestep(config);
+        config.set_delta_time(delta_time);
 
 
         output->write_vtk_ascii(config);
@@ -29,6 +32,11 @@ void Driver::solve(Config& config){
         
         size_t& timestep = config.get_timestep();        
         timestep++;    
+
+        double& time = config.get_time();
+        time += delta_time;
+
+
         
         if (timestep > config.get_n_timesteps()){
             break;

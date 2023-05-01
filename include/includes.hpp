@@ -18,7 +18,7 @@ using unique_pointer = std::unique_ptr<T>;
 using Index = uint32_t; //Used for accessing cell indices, etc 
 using ShortIndex = uint16_t; //Used for looping over shorter numbers as spatial dimensions, etc
 
-using string = std::string;
+using std::string;
 using Vec3 = Eigen::Vector3d;
 inline string horizontal_string_Vec3(const Vec3& v) {return "["+std::to_string(v[0])+", "+std::to_string(v[1])+", "+std::to_string(v[2])+" ]";}
 template <typename T, size_t N> using array = std::array<T,N>;

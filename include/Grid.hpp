@@ -16,6 +16,7 @@ namespace geom {
         Vector<Cell> cells;
         Vector<Face> faces;
         Vector<Patch> patches;
+        Vector<Vector<Index>> face_indices_from_cell;
 
     public:    
         
@@ -28,6 +29,11 @@ namespace geom {
 
         const Vector<Vec3>& get_nodes() const {return nodes;}
         const Vector<TetConnect>& get_tet_connect() const {return tet_connect;} 
+        const Vector<Cell>& get_cells() const {return cells;}
+        const Vector<Face>& get_faces() const {return faces;}
+
+        /*Gets the indices of the faces surrounding cell i*/
+        const Vector<Index>& get_surrounding_faces(Index cell_i) const {return face_indices_from_cell[cell_i];}
 
 
     private:
@@ -56,7 +62,10 @@ namespace geom {
 
         Tetrahedron tet_from_connect(const TetConnect& tc) const;
         Triangle tri_from_connect(const TriConnect& tc) const;
- 
+
+        /*Adds the indices of neiggbour cell ij to cell i in the face_indices_from_cell structure*/
+        void add_face_to_cell_i(Index i, Index ij);
+
         /*Calling shrink_to_fit on the different members after grid construction to reduce allocated memory*/
         void shrink_vectors();
         

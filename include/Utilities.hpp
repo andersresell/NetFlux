@@ -17,11 +17,19 @@ class Container{
 protected:
     T data[N];
 public:
+
     Container() : data{} {}
 
-    Container(std::initializer_list<T> init){
-        assert(init.size() == N);
-        std::copy(init.begin(), init.end(), data);
+    template<typename... Args>
+    Container(Args... args) : data{args...} {}
+
+    // Container(std::initializer_list<T> init){
+    //     assert(init.size() == N);
+    //     std::copy(init.begin(), init.end(), data);
+    // }
+    template<typename... Args>
+    Container(Args... args) : data{static_cast<T>(args)...} {
+        static_assert(sizeof...(args) == N);
     }
     
     T& operator[](Index i) {
@@ -102,8 +110,11 @@ namespace flow{
     /*Variables of the Euler / NS equations, can be both conservative, primitive, fluxes, etc.*/
     struct EulerVar : public Container<double, N_EQS_EULER>{
         EulerVar() =  default;
-        EulerVar(std::initializer_list<double> init) : Container(init) {}
-
+        
+        //EulerVar(std::initializer_list<double> init) : Container(init) {}
+        template<typename... Args>
+        EulerVar(Args&&... args) : Container(std::forward<Args>(args)...) {}
+        
         static EulerVar prim_to_cons(const EulerVar& V);
         static EulerVar cons_to_prim(const EulerVar& U);
  
@@ -119,19 +130,23 @@ namespace flow{
 
 
     /*perhaps for later*/
-    struct NS_VAR : public EulerVar{
-
+    struct NS_Var : public EulerVar{
     };
 }
 // --------------------------------------------------------------------
 // Some enums that specify solver behaviour
 // --------------------------------------------------------------------
+enum class GoverningEq{Euler}; //Will maybe add NavierStokes later
+
+enum class TimeIntegrationType{Explicit, Implicit};
 
 enum class TimeScheme{ExplicitEuler, TVD_RK3};
 
+enum class SpatialOrder{First, Second};
+
 enum class GradientScheme{Gauss};
 
-enum class ConvScheme{Rusanov};
+enum class InviscidFluxScheme{Rusanov, HLLC};
 
 enum class Limiter{Minmod};
 

@@ -11,6 +11,13 @@ Config::Config(string config_filename)
     map_patch_BC = {{"inlet", BoundaryType::NoSlipWall},
                         {"outlet", BoundaryType::SlipWall},
                          {"sides", BoundaryType::NoSlipWall}};
+    
+    if (time_scheme == TimeScheme::ExplicitEuler || time_scheme == TimeScheme::TVD_RK3)
+        time_integration_type = TimeIntegrationType::Explicit;
+    else{
+        FAIL_MSG("Implicit schemes not yet implemented\n");
+    }
+
 }
 
 void Config::set_grid_data(Index N_NODES, 

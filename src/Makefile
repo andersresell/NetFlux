@@ -16,7 +16,8 @@ SRC = C3D.cpp \
 	  Solver.cpp \
 	  Utilities.cpp \
 	  Output.cpp \
-	  Driver.cpp
+	  Driver.cpp \
+	  Numerics
 
 
 

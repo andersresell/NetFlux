@@ -21,6 +21,14 @@ void Grid::print_grid(const Config& config) const{
         for (Index ij : patch.boundary_face_indices) cout << ij << " ";
         cout << "\n\n";
     }
+
+    cout << "\n\nFACE INDICES FROM CELLS:\n";
+    for (Index i{0}; i<face_indices_from_cell.size(); i++){
+        cout << i << ": ";
+        for (const auto& ind : face_indices_from_cell.at(i))
+            cout << ind << " ";
+        cout << endl;
+    }
 }
 
 void Grid::print_native_mesh() const{
@@ -63,6 +71,7 @@ void Grid::create_grid(Config& config){
     Index N_TETS = tet_connect.size();
     Index N_INTERIOR_CELLS = N_TETS;
     cells.resize(N_INTERIOR_CELLS);
+    face_indices_from_cell.resize(N_INTERIOR_CELLS);
     Index N_NODES = nodes.size();
 
     TriConnect face_bound;
@@ -104,6 +113,8 @@ void Grid::create_grid(Config& config){
                 cells.at(next_ghost_index) =  Cell{};
                 next_ghost_index++;
             }
+            Index neigbour_face = faces.size()-1;
+            add_face_to_cell_i(i, neigbour_face);
         }
     }
 
@@ -386,6 +397,11 @@ Triangle Grid::tri_from_connect(const TriConnect& tc) const{
     return Triangle(nodes.at(tc.a()),nodes.at(tc.b()), nodes.at(tc.c()));
 }
 
+
+void Grid::add_face_to_cell_i(Index i, Index ij){
+    face_indices_from_cell.at(i).push_back(ij);
+}
+
 void Grid::shrink_vectors(){
     
     nodes.shrink_to_fit();
@@ -396,4 +412,9 @@ void Grid::shrink_vectors(){
     cells.shrink_to_fit();
     faces.shrink_to_fit();
     patches.shrink_to_fit();
+
+    for (auto& indices : face_indices_from_cell)
+        indices.shrink_to_fit();
+    face_indices_from_cell.shrink_to_fit();
+
 }
