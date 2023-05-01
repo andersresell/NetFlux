@@ -10,19 +10,24 @@ constexpr Index N_TET_NODES=4;
 template<typename T>
 using Vector = std::vector<T>;
 
+using namespace std;
+
 template<typename T, Index N>
 class Container{
+
+
 
 protected:
     T data[N];
 public:
-    Container() : data{} {}
+    Container() : data{} {cout << "constructing Container of zeros\n";}
 
-    Container(std::initializer_list<T> init){
-        assert(init.size() == N);
-        std::copy(init.begin(), init.end(), data);
+
+    template<typename... Args>
+    Container(Args... args) : data{static_cast<T>(args)...} {
+        static_assert(sizeof...(args) == N);
     }
-    
+
     T& operator[](Index i) {
         assert(i<N);
         return data[i];
@@ -70,41 +75,24 @@ public:
 };
 
 
-
-
-template<Index N_EQS>
-class Equation{
-public:
-    struct Variable : public Container<double, N_EQS>{
-
-    };    
-};
-
-
-
 constexpr Index N_EQS_EULER{5};
-class EulerEquation : public Equation<N_EQS_EULER>{
-public:
-    struct EulerVariable : public Variable{
-        double get_density() const {return data[0];}
-    };
-};
 
-class NS_EQUATION : public EulerEquation{
-    struct NS_VARIABLE : public EulerVariable{
-        double get_visc_or_something(){return 0.3123113;}
-    };
-};
+struct EulerVar : public Container<double, N_EQS_EULER>{
+    EulerVar() =  default;
+    //EulerVar(std::initializer_list<double> init) : Container(init) {cout << "constructing EulerVar init list\n";}
+    
+    template<typename... Args>
+    
+    EulerVar(Args&&... args) : Container(std::forward<Args>(args)...) {}
 
+    static EulerVar prim_to_cons(const EulerVar& V);
+    static EulerVar cons_to_prim(const EulerVar& U);
 
-template<typename Equation>
-class Solver{
-public:
-    Vector<typename Equation::Variable> solution;
+    static double pressure(const EulerVar& U);
+    static double sound_speed(const EulerVar& U);
 
+    static EulerVar inviscid_flux_x(const EulerVar& U);
+    static EulerVar inviscid_flux_y(const EulerVar& U);
+    static EulerVar inviscid_flux_z(const EulerVar& U);
 
-};
-
-class EulerSolver : public Solver<typename EulerEquation>{
-    double get_density(Index i) {return this->solution[i].g}
 };
