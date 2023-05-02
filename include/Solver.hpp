@@ -5,22 +5,28 @@
 #include "../include/Utilities.hpp"
 #include "../include/Numerics.hpp"
 
-/*template<typename FlowVariable>
-class Solver{
+
+class BaseSolver{
+
+};
+
+template<ShortIndex N_EQS>
+class Solver : public BaseSolver{
+
 protected:
-    virtual FlowVariable calc_flux(const FlowVariable& U) const = 0;
-};*/
 
-
-
-class EulerSolver {
-    using EulerVar = flow::EulerVar;
-    
-    Vector<EulerVar> U, //solution 
+    FlowField<N_EQS> U, //solution 
                      U_old, //old solution
                      R; //residual
 
     const geom::Grid& grid;
+};
+
+
+
+class EulerSolver : public Solver<N_EQS_EULER>{
+    using EulerVar = flow::EulerVar;
+    
 
 public:
     const Vector<EulerVar>& get_solution() const {return U;}

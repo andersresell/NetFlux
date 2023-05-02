@@ -29,7 +29,7 @@ void EulerSolver::evaluate_residual(Config& config){
     const auto& cells = grid.get_cells();
     const auto& faces = grid.get_faces();
     InvFluxFunction inv_flux_func = NumericalFlux::get_inviscid_flux_function(config);
-    EulerVar F_inv_ij; //inviscid numerical flux
+    EulerVar Flux_inv_ij; //inviscid numerical flux
 
     for (Index ij{0}; ij<config.get_N_FACES(); ij++){
         i = faces[ij].i;
@@ -42,7 +42,7 @@ void EulerSolver::evaluate_residual(Config& config){
         const auto& U_R; //reconstructed state at cell j side;
         
         
-        inv_flux_func(U_L, U_R, F_inv_ij);
+        inv_flux_func(U_L, U_R, Flux_inv_ij);
     }
 
 }

@@ -1,6 +1,6 @@
 #pragma once
 #include "includes.hpp"
-
+#include "Container.hpp"
 
 constexpr ShortIndex N_DIM{3};
 constexpr ShortIndex N_VARS{N_DIM + 2};
@@ -10,76 +10,9 @@ constexpr ShortIndex N_TET_FACES{4};
 
 constexpr ShortIndex N_EQS_EULER{N_DIM + 2};
 
-/*Generic container used for building other data types*/
-template<typename T, Index N>
-class Container{
-
-protected:
-    T data[N];
-public:
-
-    Container() : data{} {}
-
-    template<typename... Args>
-    Container(Args... args) : data{args...} {}
-
-    // Container(std::initializer_list<T> init){
-    //     assert(init.size() == N);
-    //     std::copy(init.begin(), init.end(), data);
-    // }
-    template<typename... Args>
-    Container(Args... args) : data{static_cast<T>(args)...} {
-        static_assert(sizeof...(args) == N);
-    }
-    
-    T& operator[](Index i) {
-        assert(i<N);
-        return data[i];
-    }
-    const T& operator[](Index i) const{
-        assert(i<N);
-        return data[i];
-    }
-    
-    Container<T,N> operator+(Container<T,N> rhs) const {
-        for (Index i{0}; i<N; i++) rhs.data[i] += data[i];
-        return rhs;
-    };
-
-    Container<T,N> operator-(const Container<T,N>& rhs) const {
-        Container lhs{*this};
-        for (Index i{0}; i<N; i++) lhs.data[i] -= rhs.data[i];
-        return lhs;
-    };
-
-    void operator-=(const Container<T,N>& rhs) {
-        for (Index i{0}; i<N; i++) data[i] -= rhs.data[i];
-    };
-
-    void operator+=(const Container<T,N>& rhs) {
-        for (Index i{0}; i<N; i++) data[i] += rhs.data[i];
-    };
-
-    Container<T,N> operator*(T rhs) const {
-        Container lhs{*this};
-        for (Index i{0}; i<N; i++) lhs.data[i] *= rhs;
-        return lhs;
-    };
-
-    void operator*=(T rhs){
-        for (Index i{0}; i<N; i++) data[i] *= rhs;
-    }
-
-    Index size() const {return N;}
-    
-    friend std::ostream& operator<<(std::ostream& os, const Container& rhs){
-        for (Index i{0}; i<N; i++) os << rhs[i] << " ";
-        return os << std::endl;
-    }
-};
 
 
-// struct ConsVars final : public Container<double, N_EQS_EULER>{
+// struct ConsVars final : public Container1D<double, N_EQS_EULER>{
 //     double rho() const {return data[0];}
 //     double rho_u() const {return data[1];}
 //     double rho_v() const {return data[2];}
@@ -87,7 +20,7 @@ public:
 //     double E() const {return data[4];}
 // };
 
-// struct PrimVars final : public Container<double, N_EQS_EULER>{
+// struct PrimVars final : public Container1D<double, N_EQS_EULER>{
 //     double rho() const {return data[0];}
 //     double u() const {return data[1];}
 //     double v() const {return data[2];}
@@ -98,9 +31,9 @@ public:
 namespace flow{
     
     /*template<Index N_EQS>
-    struct FlowVar : public Container<double, N_EQS> {
+    struct FlowVar : public Container1D<double, N_EQS> {
         FlowVar() = default;
-        FlowVar(std::initializer_list<double> init) : Container(init) {} 
+        FlowVar(std::initializer_list<double> init) : Container1D(init) {} 
     };*/
 
     constexpr double GAMMA{1.4};
@@ -108,12 +41,44 @@ namespace flow{
     constexpr double GAMMA_MINUS_ONE_INV{1/GAMMA_MINUS_ONE};
 
     /*Variables of the Euler / NS equations, can be both conservative, primitive, fluxes, etc.*/
-    struct EulerVar : public Container<double, N_EQS_EULER>{
-        EulerVar() =  default;
+    // struct EulerVar : public Container1D<double, N_EQS_EULER>{
+    //     EulerVar() =  default;
         
-        //EulerVar(std::initializer_list<double> init) : Container(init) {}
-        template<typename... Args>
-        EulerVar(Args&&... args) : Container(std::forward<Args>(args)...) {}
+    //     //EulerVar(std::initializer_list<double> init) : Container1D(init) {}
+    //     template<typename... Args>
+    //     EulerVar(Args&&... args) : Container1D(std::forward<Args>(args)...) {}
+        
+    //     static EulerVar prim_to_cons(const EulerVar& V);
+    //     static EulerVar cons_to_prim(const EulerVar& U);
+ 
+    //     static double pressure(const EulerVar& U);
+    //     static double sound_speed(const EulerVar& U);
+
+    //     static EulerVar inviscid_flux_x(const EulerVar& U);
+    //     static EulerVar inviscid_flux_y(const EulerVar& U);
+    //     static EulerVar inviscid_flux_z(const EulerVar& U);
+
+    // };
+    template<ShortIndex N_EQS>
+    using FlowVar = Container1D<double, N_EQS>;
+
+    template<ShortIndex N_EQS>
+    using FlowGrad = Container2D<double, N_DIM, N_EQS>;
+
+    template<ShortIndex N_EQS>
+    struct FlowField{
+        Vector<FlowVar<N_EQS>> cell_values;
+    };
+
+    template<ShortIndex N_EQS>
+    struct FlowGradField{
+        Vector<FlowGrad<N_EQS>> cell_val_gradiens;
+    };
+    
+
+    using EulerVar = FlowVar<N_EQS_EULER>;
+
+    struct EulerField : public FlowField<N_EQS_EULER>{
         
         static EulerVar prim_to_cons(const EulerVar& V);
         static EulerVar cons_to_prim(const EulerVar& U);
@@ -124,13 +89,12 @@ namespace flow{
         static EulerVar inviscid_flux_x(const EulerVar& U);
         static EulerVar inviscid_flux_y(const EulerVar& U);
         static EulerVar inviscid_flux_z(const EulerVar& U);
-
     };
 
 
 
     /*perhaps for later*/
-    struct NS_Var : public EulerVar{
+    struct NS_Field : public EulerField{
     };
 }
 // --------------------------------------------------------------------
@@ -192,9 +156,9 @@ namespace geom{
     };
 
     /*Connectivity of a tetrahedron*/
-    struct TetConnect final : public Container<Index, N_TET_NODES> {
+    struct TetConnect final : public Container1D<Index, N_TET_NODES> {
         TetConnect() =  default;
-        TetConnect(std::initializer_list<Index> init) : Container{init} {}
+        TetConnect(std::initializer_list<Index> init) : Container1D{init} {}
         Index& a() {return data[0];}
         Index& b() {return data[1];}
         Index& c() {return data[2];}
@@ -205,9 +169,9 @@ namespace geom{
         Index d() const {return data[3];}
     };
     /*Connectivity of a triangle*/
-    struct TriConnect final : public Container<Index, N_TRI_NODES> {
+    struct TriConnect final : public Container1D<Index, N_TRI_NODES> {
         TriConnect() = default;
-        TriConnect(std::initializer_list<Index> init) : Container{init} {}
+        TriConnect(std::initializer_list<Index> init) : Container1D{init} {}
         Index& a() {return data[0];}
         Index& b() {return data[1];}
         Index& c() {return data[2];}
