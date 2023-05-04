@@ -2,14 +2,12 @@
 #include "test.hpp"
 #include <string>
 
-
+#include <vector>
+#include <iostream>
+using namespace std;
 int main(){
-    string solver = "Euler";
 
-    if (solver == "Euler"){
-        EulerDriver ed();
-        ed.solve();
-    }
-
-
+    vector<int> v{1, 2,3};
+    cout << sizeof(v.size()) << endl;
+    cout << sizeof(size_t)<<endl;
 }

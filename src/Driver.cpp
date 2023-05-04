@@ -6,9 +6,15 @@ Driver::Driver(Config& config){
     
     grid->create_grid(config);
     
-    solver = std::make_unique<EulerSolver>(config, *grid);
-    
-    output = std::make_unique<EulerOutput>(*grid, solver->get_solution());
+    switch (config.get_governing_eq()){
+        case GoverningEq::Euler:
+            solver = std::make_unique<EulerSolver>(config, *grid);
+            EulerSolver* euler_solver = dynamic_cast<EulerSolver*>(solver.get());
+            output = std::make_unique<EulerOutput>(*grid, euler_solver->get_solution());
+            break;
+        dafault:
+            FAIL_MSG("Error: Illegal solver specified");
+    }
 
     
 }

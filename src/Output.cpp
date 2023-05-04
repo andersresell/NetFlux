@@ -1,14 +1,24 @@
 #include "../include/Output.hpp"
 
-template<typename FlowVar>
-Output<FlowVar>::Output(const geom::Grid& grid, const Vector<FlowVar>& solution)
+void BaseOutput::write_vtk_ascii(const Config& config, bool write_grid_only){
+    string filename = config.get_unsteady_vtk_filename();
+
+    write_vtk_ascii_grid(config, filename);
+    if (!write_grid_only) write_vtk_ascii_cell_data(config, filename);    
+}
+
+
+
+
+template<ShortIndex N_EQS>
+Output<N_EQS>::Output(const geom::Grid& grid, const EulerField& solution)
     : grid{grid}, solution{solution}
 {
 
 }
 
-template<typename FlowVar>
-void Output<FlowVar>::write_vtk_ascii_grid(const Config& config, string filename){
+template<ShortIndex N_EQS>
+void Output<N_EQS>::write_vtk_ascii_grid(const Config& config, string filename){
     std::ofstream ost{filename};
     FAIL_IF_MSG(!ost, "Couldn't open file " + filename);
 
@@ -39,39 +49,28 @@ void Output<FlowVar>::write_vtk_ascii_grid(const Config& config, string filename
 }
 
 
-template<typename FlowVar>
-void Output<FlowVar>::write_vtk_ascii(const Config& config, bool write_grid_only){
-    string filename = config.get_unsteady_vtk_filename();
-
-    write_vtk_ascii_grid(config, filename);
-    if (!write_grid_only) write_vtk_ascii_cell_data(config, filename);    
-}
-
-
-
-
-
 void EulerOutput::write_vtk_ascii_cell_data(const Config& config, string filename){
-
+    
     std::ofstream ost{filename, std::ios::app};
     FAIL_IF_MSG(!ost, "Couldn't open file " + filename);
 
     const Index N_INTERIOR_CELLS = config.get_N_INTERIOR_CELLS();
+    const auto& U = solution.cell_values;
 
     ost << "\n CELL DATA " << N_INTERIOR_CELLS << "\n"; 
     
     ost << "\nSCALARS density double 1\n";
     for (Index i{0}; i< N_INTERIOR_CELLS; i++)
-        ost << solution[i][0] << "\n";
+        ost << U[i][0] << "\n";
 
     ost << "\nVECTORS velocity double\n"; 
     for (Index i{0}; i< N_INTERIOR_CELLS; i++){
-        double density = solution[i][0];
-        ost << solution[i][1]/density << " " << solution[i][2]/density << " " << solution[i][3]/density << "\n";
+        double density = U[i][0];
+        ost << U[i][1]/density << " " << U[i][2]/density << " " << U[i][3]/density << "\n";
     }
 
     ost << "\nSCALARS pressure double 1\n";
     for (Index i{0}; i< N_INTERIOR_CELLS; i++)
-        ost << flow::EulerVar::pressure(solution[i]) << "\n";
+        ost << EulerField::pressure(U[i]) << "\n";
 
 }

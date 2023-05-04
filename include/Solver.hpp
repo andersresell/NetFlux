@@ -4,41 +4,50 @@
 #include "../include/Grid.hpp"
 #include "../include/Utilities.hpp"
 #include "../include/Numerics.hpp"
+#include "../include/FlowVariable.hpp"
 
 
 class BaseSolver{
-
+public:
+    virtual void step(Config& config) = 0;
+    virtual double calc_timestep(Config& config);
 };
 
 template<ShortIndex N_EQS>
 class Solver : public BaseSolver{
-
 protected:
 
-    FlowField<N_EQS> U, //solution 
-                     U_old, //old solution
-                     R; //residual
+    unique_pointer<FlowField<N_EQS>> solution, 
+                     solution_old,
+                     residual;
 
+    
     const geom::Grid& grid;
+public:
+    const FlowField& get_solution() const {return *solution;} 
+
+    Solver(const geom::Grid& grid);
+
+    
+
 };
 
 
 
 class EulerSolver : public Solver<N_EQS_EULER>{
-    using EulerVar = flow::EulerVar;
+    
     
 
 public:
-    const Vector<EulerVar>& get_solution() const {return U;}
-
     EulerSolver(const Config& config, const geom::Grid& grid);
 
-    void step(Config& config);
+    void step(Config& config) override;
 
     void evaluate_residual(Config& config);
 
 
-    double calc_timestep(Config& config);
+    double calc_timestep(Config& config) override;
+
 
 private:
     void zero_residual();

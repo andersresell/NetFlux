@@ -8,8 +8,8 @@
 class Driver{
     
     unique_pointer<geom::Grid> grid;
-    unique_pointer<EulerSolver> solver;
-    unique_pointer<EulerOutput> output;
+    unique_pointer<BaseSolver> solver;
+    unique_pointer<BaseOutput> output;
 
 public:
     Driver(Config& config);

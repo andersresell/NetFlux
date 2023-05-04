@@ -17,7 +17,8 @@ SRC = C3D.cpp \
 	  Utilities.cpp \
 	  Output.cpp \
 	  Driver.cpp \
-	  Numerics
+	  FlowVariable.cpp \
+	  Numerics .cpp
 
 
 

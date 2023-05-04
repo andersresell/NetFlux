@@ -1,16 +1,25 @@
 #include "../include/Solver.hpp"
 
-using namespace flow;
 using namespace geom;
 
-EulerSolver::EulerSolver(const Config& config, const geom::Grid& grid)
+template<ShortIndex N_EQS>
+Solver<N_EQS>::Solver(const geom::Grid& grid)
     : grid{grid}
 {
+
+}
+
+EulerSolver::EulerSolver(const Config& config, const geom::Grid& grid) : Solver(grid)
+{
+    solution = std::make_unique<EulerField>();
+    solution_old = std::make_unique<EulerField>();
+    residual = std::make_unique<EulerField>();
+        
     //Specify intial val rather
-    U.resize(config.get_N_INTERIOR_CELLS());
-    U_old.resize(config.get_N_INTERIOR_CELLS());
-    R.resize(config.get_N_INTERIOR_CELLS());
-    
+    solution->cell_values.resize(config.get_N_INTERIOR_CELLS());
+    solution->cell_values.resize(config.get_N_INTERIOR_CELLS());
+    residual->cell_values.resize(config.get_N_INTERIOR_CELLS());
+
 }
 
 
@@ -58,6 +67,8 @@ double EulerSolver::calc_timestep(Config& config){
     const double CFL = config.get_CFL();
     auto cells = grid.get_cells();
     auto faces = grid.get_faces();
+
+    const auto& U = solution->cell_values;
     
     double rho, u, v, w, c, volume, spec_rad_x, spec_rad_y, spec_rad_z;
 
@@ -69,7 +80,7 @@ double EulerSolver::calc_timestep(Config& config){
         u = U[i][1]/rho;
         v = U[i][2]/rho;
         w = U[i][3]/rho;
-        c = EulerVar::sound_speed(U[i]);
+        c = EulerField::sound_speed(U[i]);
         volume = cells[i].cell_volume;
 
         double Delta_S_x{0}, Delta_S_y{0}, Delta_S_z{0}; //These are projections of the control volume in each spatial direction
@@ -96,6 +107,7 @@ double EulerSolver::calc_timestep(Config& config){
 }
 
 void EulerSolver::zero_residual(){
+    auto& R = residual->cell_values;
     for (Index i{0}; i<R.size(); i++)
         for (Index j{0}; j<N_EQS_EULER; j++)
             R[i][j] = 0.0;
