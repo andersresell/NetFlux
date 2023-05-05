@@ -35,51 +35,62 @@ constexpr double GAMMA_MINUS_ONE_INV{1/GAMMA_MINUS_ONE};
 //     static EulerVar inviscid_flux_z(const EulerVar& U);
 
 // };
-template<ShortIndex N_EQS>
-using FlowVar = Container1D<double, N_EQS>;
-
-template<ShortIndex N_EQS>
-using FlowGrad = Container2D<double, N_DIM, N_EQS>;
 
 
 
-
-
-template<ShortIndex N_EQS> 
-struct FlowField{
-    Vector<FlowVar<N_EQS>> cell_values;    
-
-
-    template <typename T>
-    virtual T& getMemberX() = 0;
-};
-
-template<ShortIndex N_EQS>
-struct FlowGradField{
-    Vector<FlowGrad<N_EQS>> cell_val_gradiens;
-};
-
-
-using EulerVar = FlowVar<N_EQS_EULER>;
-
-struct EulerField : public FlowField<N_EQS_EULER>{
-
-    EulerField(Config & config);
-
-    static EulerVar prim_to_cons(const EulerVar& V);
-    static EulerVar cons_to_prim(const EulerVar& U);
-
-    static double pressure(const EulerVar& U);
-    static double sound_speed(const EulerVar& U);
-
-    static EulerVar inviscid_flux_x(const EulerVar& U);
-    static EulerVar inviscid_flux_y(const EulerVar& U);
-    static EulerVar inviscid_flux_z(const EulerVar& U);
-};
-
-
-
-/*perhaps for later*/
-struct NS_Field : public EulerField{
+struct VecField {
     
 };
+
+
+using EulerVec = Container1D<double, N_EQS_EULER>; 
+
+struct EulerVecField : public VecField{
+    Vector<EulerVec> cell_values;
+};
+
+
+class SolverData{
+protected:
+    
+    unique_ptr<VecField>  solution, solution_old, residual;
+
+public:
+    virtual VecField& get_solution() = 0;
+    virtual const VecField& get_solution() const = 0;
+};
+
+
+
+class EulerSolverData : public SolverData{
+
+public:
+    EulerSolverData(const Config& config);
+
+
+    
+    
+    EulerVecField& get_solution() override {return static_cast<EulerVecField&>(*solution);}
+
+    const EulerVecField& get_solution() const override {return static_cast<EulerVecField&>(*solution);}
+};
+
+
+
+
+
+class EulerEqs{
+
+    static EulerVec prim_to_cons(const EulerVec& V);
+    static EulerVec cons_to_prim(const EulerVec& U);
+
+    static double pressure(const EulerVec& U);
+    static double sound_speed(const EulerVec& U);
+
+    static EulerVec inviscid_flux_x(const EulerVec& U);
+    static EulerVec inviscid_flux_y(const EulerVec& U);
+    static EulerVec inviscid_flux_z(const EulerVec& U);
+};
+
+
+

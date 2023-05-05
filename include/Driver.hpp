@@ -7,9 +7,10 @@
 
 class Driver{
     
-    unique_pointer<geom::Grid> grid;
-    unique_pointer<BaseSolver> solver;
-    unique_pointer<BaseOutput> output;
+    unique_ptr<geom::Grid> grid;
+    Vector<unique_ptr<Solver>> solver;
+
+    unique_ptr<Output> output;
 
 public:
     Driver(Config& config);

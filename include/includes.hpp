@@ -12,19 +12,21 @@
 #include <stdint.h>
 #include <memory>
 
-template<typename T>
-using unique_pointer = std::unique_ptr<T>;
+using std::unique_ptr;
+using std::string;
+using std::array;
+using std::map;
+using std::move;
+using std::cout;
+using std::endl;
 
 using Index = uint32_t; //Used for accessing cell indices, etc 
 using ShortIndex = uint16_t; //Used for looping over shorter numbers as spatial dimensions, etc
 
-using std::string;
 using Vec3 = Eigen::Vector3d;
+
 inline string horizontal_string_Vec3(const Vec3& v) {return "["+std::to_string(v[0])+", "+std::to_string(v[1])+", "+std::to_string(v[2])+" ]";}
-template <typename T, size_t N> using array = std::array<T,N>;
-template <typename TA, typename TB> using map = std::map<TA,TB>;
-using std::cout;
-using std::endl;
+
 
 #define FAIL_IF(EXP) ({if (EXP) exit(EXIT_FAILURE);})
 #define FAIL_IF_MSG(EXP, MSG) ({if (EXP) {std::cerr << MSG << "\n"; exit(EXIT_FAILURE);}})

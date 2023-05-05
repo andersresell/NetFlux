@@ -15,7 +15,7 @@ constexpr ShortIndex N_EQS_EULER{N_DIM + 2};
 // --------------------------------------------------------------------
 // Some enums that specify solver behaviour
 // --------------------------------------------------------------------
-enum class GoverningEq{Euler}; //Will maybe add NavierStokes later
+enum class SolverType{Euler}; //Will maybe add NavierStokes later
 
 enum class TimeIntegrationType{Explicit, Implicit};
 

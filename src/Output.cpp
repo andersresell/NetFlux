@@ -1,24 +1,40 @@
+
 #include "../include/Output.hpp"
 
-void BaseOutput::write_vtk_ascii(const Config& config, bool write_grid_only){
-    string filename = config.get_unsteady_vtk_filename();
-
-    write_vtk_ascii_grid(config, filename);
-    if (!write_grid_only) write_vtk_ascii_cell_data(config, filename);    
-}
 
 
 
 
-template<ShortIndex N_EQS>
-Output<N_EQS>::Output(const geom::Grid& grid, const EulerField& solution)
-    : grid{grid}, solution{solution}
+Output::Output(const geom::Grid& grid, const Vector<const Solver&> solvers)
+    : grid{grid}, solvers{move(solvers)}
 {
 
 }
 
-template<ShortIndex N_EQS>
-void Output<N_EQS>::write_vtk_ascii_grid(const Config& config, string filename){
+void Output::write_vtk_ascii(const Config& config, bool write_grid_only){
+    const string& filename = config.get_unsteady_vtk_filename();
+
+    write_vtk_ascii_grid(config, filename);
+    if (!write_grid_only) {
+        for (const Solver& solver : solvers){
+            
+            switch (solver.get_solver_type()){
+                case SolverType::Euler:{
+                    auto solution = static_cast<const EulerVecField&>(solver.get_solver_data().get_solution());
+                    EulerOutput::write_vtk_ascii_cell_data(config, filename, solution);
+                    break;
+                }
+                default:
+                    FAIL_MSG("Error: Illegal SolverType\n");
+            }
+        }
+        
+        
+    }
+}
+
+
+void Output::write_vtk_ascii_grid(const Config& config, string filename){
     std::ofstream ost{filename};
     FAIL_IF_MSG(!ost, "Couldn't open file " + filename);
 
@@ -49,7 +65,7 @@ void Output<N_EQS>::write_vtk_ascii_grid(const Config& config, string filename){
 }
 
 
-void EulerOutput::write_vtk_ascii_cell_data(const Config& config, string filename){
+void EulerOutput::write_vtk_ascii_cell_data(const Config& config, string filename, const EulerVecField& solution){
     
     std::ofstream ost{filename, std::ios::app};
     FAIL_IF_MSG(!ost, "Couldn't open file " + filename);
