@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <iostream>
 #include <vector>
 #include <assert.h>
@@ -12,18 +13,26 @@ using Vector = std::vector<T>;
 
 using namespace std;
 
-
-template <typename T>
-class BaseClass {
+class A{
 public:
-    template <typename U>
-    virtual T getMemberX() = 0;
+    int a,b;
+    double d;
+    string str;
+    A() = default;
+
 };
 
-class DerivedClass : public BaseClass<int> {
+class MyClass {
 public:
-    template <typename U>
-    int getMemberX() override {
-        // implementation
+    int value;
+    A a;
+
+    // User-defined constructor
+    MyClass(int val) {
+        value = val;
+        std::cout << "User-defined constructor called" << std::endl;
     }
+
+    // Default constructor explicitly requested
+    MyClass() = default;
 };
