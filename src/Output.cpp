@@ -5,8 +5,8 @@
 
 
 
-Output::Output(const geom::Grid& grid, const Vector<const Solver&> solvers)
-    : grid{grid}, solvers{move(solvers)}
+Output::Output(const geom::Grid& grid, const Vector<unique_ptr<Solver>>& solvers)
+    : grid{grid}, solvers{solvers}
 {
 
 }
@@ -16,11 +16,11 @@ void Output::write_vtk_ascii(const Config& config, bool write_grid_only){
 
     write_vtk_ascii_grid(config, filename);
     if (!write_grid_only) {
-        for (const Solver& solver : solvers){
+        for (const auto& solver : solvers){
             
-            switch (solver.get_solver_type()){
+            switch (solver->get_solver_type()){
                 case SolverType::Euler:{
-                    auto solution = static_cast<const EulerVecField&>(solver.get_solver_data().get_solution());
+                    const auto solution = static_cast<const EulerVecField&>(solver->get_solver_data().get_solution());
                     EulerOutput::write_vtk_ascii_cell_data(config, filename, solution);
                     break;
                 }
@@ -46,7 +46,7 @@ void Output::write_vtk_ascii_grid(const Config& config, string filename){
     const auto& tet_connectivity = grid.get_tet_connect();
 
     ost << "# vtk DataFile Version 3.0\n"
-        << basename << "\n"
+        << "Compress 3D\n"
         << "ASCII\n\n"
         << "DATASET UNSTRUCTURED_GRID\n"
         << "POINTS " << N_NODES << " double\n";
@@ -65,7 +65,7 @@ void Output::write_vtk_ascii_grid(const Config& config, string filename){
 }
 
 
-void EulerOutput::write_vtk_ascii_cell_data(const Config& config, string filename, const EulerVecField& solution){
+void EulerOutput::write_vtk_ascii_cell_data(const Config& config, const string& filename, const EulerVecField& solution){
     
     std::ofstream ost{filename, std::ios::app};
     FAIL_IF_MSG(!ost, "Couldn't open file " + filename);
@@ -87,6 +87,6 @@ void EulerOutput::write_vtk_ascii_cell_data(const Config& config, string filenam
 
     ost << "\nSCALARS pressure double 1\n";
     for (Index i{0}; i< N_INTERIOR_CELLS; i++)
-        ost << EulerField::pressure(U[i]) << "\n";
+        ost << EulerEqs::pressure(U[i]) << "\n";
 
 }

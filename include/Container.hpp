@@ -52,11 +52,17 @@ public:
         return lhs;
     };
 
+    friend Container1D<T,N> operator*(T lhs, const Container1D<T,N>& rhs) const {
+        Container1D result{rhs};
+        for (Index i{0}; i<N; i++) result[i] = lhs*rhs[i];
+        return result;
+    };
+
     void operator*=(T rhs){
         for (Index i{0}; i<N; i++) data[i] *= rhs;
     }
 
-    Index size() const {return N;}
+    static Index size() {return N;}
     
     friend std::ostream& operator<<(std::ostream& os, const Container1D& rhs){
         for (Index i{0}; i<N; i++) os << rhs[i] << " ";

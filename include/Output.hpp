@@ -8,13 +8,16 @@ only flow::EulerVar is assumed*/
 class Output{
 protected:
     const geom::Grid& grid;
-    const Vector<const Solver&> solvers; 
+    const Vector<unique_ptr<Solver>>& solvers; 
 
     virtual void write_vtk_ascii_grid(const Config& config, string filename);
     
 public:
-    Output(const geom::Grid& grid, const Vector<const Solver&> solvers);
+    Output(const geom::Grid& grid, const Vector<unique_ptr<Solver>>& solvers);
     void write_vtk_ascii(const Config& config, bool write_grid_only=false);
+
+
+
 };
 
 

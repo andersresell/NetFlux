@@ -17,9 +17,7 @@ class Config {
 
     map<string, BoundaryType> map_patch_BC; //map from each patch to the bc type applied
 
-    GoverningEq governing_eq;
-
-    
+    MainSolverType main_solver_type;
 
     TimeIntegrationType time_integration_type;
     
@@ -64,8 +62,8 @@ public:
 
     BoundaryType get_boundary_type(string patch_name) const {return map_patch_BC.at(patch_name);}
 
-    GoverningEq get_governing_eq() const {return governing_eq;}
-    void set_governing_eq(GoverningEq val) {governing_eq = val;}
+    MainSolverType get_main_solver_type() const {return main_solver_type;}
+    void set_main_solver_type(MainSolverType val) {main_solver_type = val;}
 
     TimeIntegrationType get_time_integration_type() const {return time_integration_type;}
 

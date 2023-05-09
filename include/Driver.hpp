@@ -8,7 +8,7 @@
 class Driver{
     
     unique_ptr<geom::Grid> grid;
-    Vector<unique_ptr<Solver>> solver;
+    Vector<unique_ptr<Solver>> solvers;
 
     unique_ptr<Output> output;
 

@@ -2,8 +2,7 @@
 
 using namespace geom;
 
-template<ShortIndex N_EQS>
-Solver<N_EQS>::Solver(const geom::Grid& grid)
+Solver::Solver(const geom::Grid& grid)
     : grid{grid}
 {
 
@@ -11,14 +10,7 @@ Solver<N_EQS>::Solver(const geom::Grid& grid)
 
 EulerSolver::EulerSolver(const Config& config, const geom::Grid& grid) : Solver(grid)
 {
-    solution = std::make_unique<EulerField>();
-    solution_old = std::make_unique<EulerField>();
-    residual = std::make_unique<EulerField>();
-        
-    //Specify intial val rather
-    solution->cell_values.resize(config.get_N_INTERIOR_CELLS());
-    solution->cell_values.resize(config.get_N_INTERIOR_CELLS());
-    residual->cell_values.resize(config.get_N_INTERIOR_CELLS());
+    solver_data = make_unique<EulerSolverData>(config);
 
 }
 
@@ -38,20 +30,22 @@ void EulerSolver::evaluate_residual(Config& config){
     const auto& cells = grid.get_cells();
     const auto& faces = grid.get_faces();
     InvFluxFunction inv_flux_func = NumericalFlux::get_inviscid_flux_function(config);
-    EulerVar Flux_inv_ij; //inviscid numerical flux
+    EulerVec Flux_inv_ij; //inviscid numerical flux
+    Vec3 normal;
+    double face_area;
 
     for (Index ij{0}; ij<config.get_N_FACES(); ij++){
         i = faces[ij].i;
         j = faces[ij].j;
         const Vec3& S_ij = faces[ij].S_ij;
-        
+
         //Calculate gradients etc. 
 
-        const auto& U_L; //recinstructed state at cell i side;
+        const auto& U_L; //reconstructed state at cell i side;
         const auto& U_R; //reconstructed state at cell j side;
         
         
-        inv_flux_func(U_L, U_R, Flux_inv_ij);
+        inv_flux_func(U_L, U_R, S_ij, Flux_inv_ij);
     }
 
 }
@@ -61,9 +55,6 @@ double EulerSolver::calc_timestep(Config& config){
     // Implementing Method 2 in "Time Step on Unstructured Grids" in Blazek 
     // --------------------------------------------------------------------
     
-    
-    assert(config.get_governing_eq() == GoverningEq::Euler); //edit this when adding NavierStokes
-
     const double CFL = config.get_CFL();
     auto cells = grid.get_cells();
     auto faces = grid.get_faces();

@@ -6,17 +6,16 @@ Driver::Driver(Config& config){
     
     grid->create_grid(config);
     
-    switch (config.get_governing_eq()){
-        case GoverningEq::Euler:
-            solver = std::make_unique<EulerSolver>(config, *grid);
-            EulerSolver* euler_solver = dynamic_cast<EulerSolver*>(solver.get());
-            output = std::make_unique<EulerOutput>(*grid, euler_solver->get_solution());
+    switch (config.get_main_solver_type()){
+        case MainSolverType::Euler:
+            solvers.push_back(make_unique<EulerSolver>(config, *grid));
             break;
         dafault:
-            FAIL_MSG("Error: Illegal solver specified");
+            FAIL_MSG("Error: Illegal solver type specified");
     }
 
-    
+    output = make_unique<Output>(*grid, solvers);
+        
 }
 
 void Driver::solve(Config& config){
@@ -27,9 +26,13 @@ void Driver::solve(Config& config){
     output->write_vtk_ascii(config);
 
     while (1){
+        /*If main solvers consisting of multiple sub-solvers (for instance NS + scalar transport) are implemented in the future,
+        additional constructs should be added to handle the sequential solution of those. This is ignored for now. It is
+        assumed that there is only one solver*/
+        assert(solvers.size() == 1);
         
 
-        double delta_time = solver->calc_timestep(config);
+        double delta_time = solvers[0]->calc_timestep(config);
         config.set_delta_time(delta_time);
 
 
