@@ -41,7 +41,6 @@ public:
 
     SolverType get_solver_type() const override {return SolverType::Euler;}
 private:
-    void zero_residual();
 
     void evaluate_gradient(const Config& Config);
 

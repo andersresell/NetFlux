@@ -1,21 +1,21 @@
 #pragma once
 
-#include "includes.hpp"
+#include "../includes.hpp"
 
 
 
 /*Generic matrix type used directly or for building other data types*/
 template<typename T, Index M, Index N>
-class Container2D{
-    using C2D = Container2D<T,M,N>;
+class StaticContainer2D{
+    using C2D = StaticContainer2D<T,M,N>;
     static constexpr size_t SIZE = M * N;
 protected:
     T data[M * N];
 public:
-    Container2D() : data{} {}
+    StaticContainer2D() : data{} {}
 
     template<typename... Args>
-    Container2D(Args... args) : data{static_cast<T>(args)...} {
+    StaticContainer2D(Args... args) : data{static_cast<T>(args)...} {
         static_assert(sizeof...(args) == SIZE);
     }
     
@@ -33,7 +33,12 @@ public:
 
     T& operator[](Index i) {
         assert(i<SIZE);
-        return data[i];
+        return data[i * N];
+    }
+
+    const T& operator[](Index i) const {
+        assert(i<SIZE);
+        return data[i * N];
     }
     
     C2D operator+(C2D rhs) const {
@@ -78,13 +83,21 @@ public:
 };
 
 template<typename T, Index M>
-using Container1D = Container2D<T, M, 1>;
+class StaticContainer1D : public StaticContainer2D<T, M, 1>{
+    
+public:
+    template<typename... Args>
+    StaticContainer1D(Args&&... args) : StaticContainer2D<T,M,1>(std::forward<Args>(args)...) {}
+};
+
+
+
 
 namespace container {
     template<typename T, Index M, Index N, Index K>
-    inline void matmult(const Container2D<T, M, N>& A,
-                        const Container2D<T, N, K>& B,
-                        Container2D<T, M, K>& C) {
+    inline void matmult(const StaticContainer2D<T, M, N>& A,
+                        const StaticContainer2D<T, N, K>& B,
+                        StaticContainer2D<T, M, K>& C) {
         static_assert(A.rows() == C.rows() && A.cols() == B.rows(),
                       "Matrix dimensions are not compatible for multiplication.");
 
@@ -100,9 +113,9 @@ namespace container {
     }
 
     template<typename T, Index M, Index N, Index K>
-    inline void Vec3_mult(const Container2D<T, M, N>& A,
+    inline void Vec3_mult(const StaticContainer2D<T, M, N>& A,
                         const Vec3& x,
-                        Container2D<T, N_DIM, K>& b) {
+                        StaticContainer2D<T, N_DIM, K>& b) {
         static_assert(A.rows() == b.rows(), "Different dimensions between A and b\n");
         static_assert(N==1 || K==1 && !(K==1 && N==1)); //Either N or K should be 1, but not both
 

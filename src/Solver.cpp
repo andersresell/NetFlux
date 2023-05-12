@@ -24,7 +24,8 @@ void EulerSolver::step(Config& config){
 }
 
 void EulerSolver::evaluate_residual(Config& config){
-    zero_residual();
+    VecField& residual = solver_data->get_residual();
+    residual.set_zero();
 
     Index i,j;
     const auto& cells = grid.get_cells();
@@ -99,14 +100,17 @@ double EulerSolver::calc_timestep(Config& config){
     config.set_delta_time(delta_time);
 }
 
-void EulerSolver::zero_residual(){
-    auto& R = static_cast<EulerVecField>(solver_data->get_solution()
 
-    for (Index i{0}; i<R.size(); i++)
-        for (Index j{0}; j<N_EQS_EULER; j++)
-            R[i][j] = 0.0;
-}
 
-void EulerSolver::evaluate_gradient(const Config& Config){
-
-}
+void EulerSolver::evaluate_gradient(const Config& config){
+    const VecField& primvars= solver_data->get_primvars();
+    GradField& primvars_grad = solver_data->get_primvars_gradient();
+    
+    switch(config.get_grad_scheme()){
+        case GradientScheme::GreenGauss:
+            Gradient::calc_green_gauss_gradient<N_EQS_EULER>(config, grid, primvars, primvars_grad);
+            break;
+        default:
+            FAIL_MSG("Selected gradient scheme not implemented\n");
+    }
+}   

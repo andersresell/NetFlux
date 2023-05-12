@@ -1,67 +1,25 @@
 #pragma once
 #include "includes.hpp"
-#include "Container.hpp"
+#include "containers/DynamicContainer.hpp"
+#include "containers/StaticContainer.hpp"
 #include "Config.hpp"
 
 
 
 
-/*template<Index N_EQS>
-struct FlowVar : public Container1D<double, N_EQS> {
-    FlowVar() = default;
-    FlowVar(std::initializer_list<double> init) : Container1D(init) {} 
-};*/
-
-constexpr double GAMMA{1.4};
-constexpr double GAMMA_MINUS_ONE{1-GAMMA};
-constexpr double GAMMA_MINUS_ONE_INV{1/GAMMA_MINUS_ONE};
-
-/*Variables of the Euler / NS equations, can be both conservative, primitive, fluxes, etc.*/
-// struct EulerVar : public Container1D<double, N_EQS_EULER>{
-//     EulerVar() =  default;
-    
-//     //EulerVar(std::initializer_list<double> init) : Container1D(init) {}
-//     template<typename... Args>
-//     EulerVar(Args&&... args) : Container1D(std::forward<Args>(args)...) {}
-    
-//     static EulerVar prim_to_cons(const EulerVar& V);
-//     static EulerVar cons_to_prim(const EulerVar& U);
-
-//     static double pressure(const EulerVar& U);
-//     static double sound_speed(const EulerVar& U);
-
-//     static EulerVar inviscid_flux_x(const EulerVar& U);
-//     static EulerVar inviscid_flux_y(const EulerVar& U);
-//     static EulerVar inviscid_flux_z(const EulerVar& U);
-
-// };
 
 
-template<ShortIndex N_EQS>
-using VecType = Container1D<double, N_EQS>;
-
-template<ShortIndex N_EQS>
-using GradType = Container2D<double, N_DIM, N_EQS>;
-
-
-struct VecField {};
-
-struct GradField {};
-
-
-using EulerVec = VecType<N_EQS_EULER>; 
-
-struct EulerVecField : public VecField{
-    Vector<EulerVec> cell_values;
-    EulerVecField();
-    //Vector<EulerVec>* get_cell_values() {return &cell_values;} 
+struct VecField final : public DynamicContainer2D<double>{
+    VecField(Index N_CELLS, ShortIndex N_EQS) : DynamicContainer2D(N_CELLS, N_EQS) {}
+    ShortIndex get_N_EQS() const {return rows();}
 };
 
-using EulerGrad = GradType<N_EQS_EULER>;
+struct GradField final : public DynamicContainer3D<double>{
+    GradField(Index N_CELLS, ShortIndex N_EQS) : DynamicContainer3D(N_CELLS, N_EQS, N_DIM) {}
+    ShortIndex get_N_EQS() const {return rows();}
+}; 
 
-struct EulerGradField : public GradField{
-    Vector<EulerGrad> cell_values;
-};
+
 
 
 class SolverData{
@@ -73,8 +31,18 @@ protected:
     SolverData() = default;
 public:
 
-    virtual VecField& get_solution() = 0;
-    virtual const VecField& get_solution() const = 0;
+    VecField& get_solution() {return *solution;}
+    const VecField& get_solution() const {return *solution;}
+
+    VecField& get_residual() {return *residual;}
+    const VecField& get_residual() const {return *residual;}
+
+    VecField& get_primvars() {return *primvars;}
+    const VecField& get_primvars() const {return *primvars;}
+
+    GradField& get_primvars_gradient() {return *primvars_gradient;}
+    const GradField& get_primvars_gradient() const {return *primvars_gradient;}
+
 };
 
 
@@ -84,20 +52,20 @@ class EulerSolverData : public SolverData{
 public:
     EulerSolverData(const Config& config);
 
-
-    
-    
-    EulerVecField& get_solution() override {return static_cast<EulerVecField&>(*solution);}
-
-    const EulerVecField& get_solution() const override {
-        return static_cast<EulerVecField&>(*solution);}
 };
 
 
 
 
+    using EulerVec = StaticStaticContainer1D<double, N_EQS_EULER>; 
+    using EulerGrad = StaticContainer2D<double, N_EQS_EULER, N_DIM>; 
 
 namespace EulerEqs{
+
+    constexpr double GAMMA{1.4};
+    constexpr double GAMMA_MINUS_ONE{1-GAMMA};
+    constexpr double GAMMA_MINUS_ONE_INV{1/GAMMA_MINUS_ONE};
+
 
     EulerVec prim_to_cons(const EulerVec& V);
     EulerVec cons_to_prim(const EulerVec& U);

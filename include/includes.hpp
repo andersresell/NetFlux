@@ -27,6 +27,11 @@ using Index = uint32_t; //Used for accessing cell indices, etc
 using ShortIndex = uint16_t; //Used for looping over shorter numbers as spatial dimensions, etc
 
 using Vec3 = Eigen::Vector3d;
+using VecX = Eigen::VectorXd;
+
+
+using Mat3X = Eigen::Matrix<double, 3, -1>;
+using MatX = Eigen::Matrix<double, -1, -1>;
 
 inline string horizontal_string_Vec3(const Vec3& v) {return "["+std::to_string(v[0])+", "+std::to_string(v[1])+", "+std::to_string(v[2])+" ]";}
 

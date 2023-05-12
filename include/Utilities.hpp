@@ -1,6 +1,6 @@
 #pragma once
 #include "includes.hpp"
-#include "Container.hpp"
+#include "containers/StaticContainer.hpp"
 
 constexpr ShortIndex N_TET_NODES{4};
 constexpr ShortIndex N_TRI_NODES{3};
@@ -71,9 +71,9 @@ namespace geom{
     };
 
     /*Connectivity of a tetrahedron*/
-    struct TetConnect final : public Container1D<Index, N_TET_NODES> {
+    struct TetConnect final : public StaticContainer1D<Index, N_TET_NODES> {
         TetConnect() =  default;
-        TetConnect(std::initializer_list<Index> init) : Container1D{init} {}
+        TetConnect(Index a, Index b, Index c, Index d) : StaticContainer1D{a,b,c,d} {}
         Index& a() {return data[0];}
         Index& b() {return data[1];}
         Index& c() {return data[2];}
@@ -84,9 +84,9 @@ namespace geom{
         Index d() const {return data[3];}
     };
     /*Connectivity of a triangle*/
-    struct TriConnect final : public Container1D<Index, N_TRI_NODES> {
+    struct TriConnect final : public StaticContainer1D<Index, N_TRI_NODES> {
         TriConnect() = default;
-        TriConnect(std::initializer_list<Index> init) : Container1D{init} {}
+        TriConnect(std::initializer_list<Index> init) : StaticContainer1D{init} {}
         Index& a() {return data[0];}
         Index& b() {return data[1];}
         Index& c() {return data[2];}
