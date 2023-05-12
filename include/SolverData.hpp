@@ -37,11 +37,19 @@ constexpr double GAMMA_MINUS_ONE_INV{1/GAMMA_MINUS_ONE};
 // };
 
 
-struct VecField {
-    //virtual void* get_cell_values() = 0;
-};
+template<ShortIndex N_EQS>
+using VecType = Container1D<double, N_EQS>;
 
-using EulerVec = Container1D<double, N_EQS_EULER>; 
+template<ShortIndex N_EQS>
+using GradType = Container2D<double, N_DIM, N_EQS>;
+
+
+struct VecField {};
+
+struct GradField {};
+
+
+using EulerVec = VecType<N_EQS_EULER>; 
 
 struct EulerVecField : public VecField{
     Vector<EulerVec> cell_values;
@@ -49,11 +57,18 @@ struct EulerVecField : public VecField{
     //Vector<EulerVec>* get_cell_values() {return &cell_values;} 
 };
 
+using EulerGrad = GradType<N_EQS_EULER>;
+
+struct EulerGradField : public GradField{
+    Vector<EulerGrad> cell_values;
+};
+
 
 class SolverData{
 protected:
 
-    unique_ptr<VecField>  solution, solution_old, residual;
+    unique_ptr<VecField>  solution, solution_old, residual, primvars;
+    unique_ptr<GradField> primvars_gradient;
 
     SolverData() = default;
 public:

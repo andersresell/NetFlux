@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <memory>
 #include <any>
+#include <chrono>
 
 using std::unique_ptr;
 using std::make_unique;
@@ -29,6 +30,7 @@ using Vec3 = Eigen::Vector3d;
 
 inline string horizontal_string_Vec3(const Vec3& v) {return "["+std::to_string(v[0])+", "+std::to_string(v[1])+", "+std::to_string(v[2])+" ]";}
 
+constexpr ShortIndex N_DIM{3}; //spatial dimensions
 
 #define FAIL_IF(EXP) ({if (EXP) exit(EXIT_FAILURE);})
 #define FAIL_IF_MSG(EXP, MSG) ({if (EXP) {std::cerr << MSG << "\n"; exit(EXIT_FAILURE);}})

@@ -44,6 +44,8 @@ public:
 private:
     void zero_residual();
 
+    void evaluate_gradient(const Config& Config);
+
 };
 
 

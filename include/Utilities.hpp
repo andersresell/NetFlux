@@ -2,8 +2,6 @@
 #include "includes.hpp"
 #include "Container.hpp"
 
-constexpr ShortIndex N_DIM{3};
-constexpr ShortIndex N_VARS{N_DIM + 2};
 constexpr ShortIndex N_TET_NODES{4};
 constexpr ShortIndex N_TRI_NODES{3};
 constexpr ShortIndex N_TET_FACES{4};
@@ -25,7 +23,7 @@ enum class TimeScheme{ExplicitEuler, TVD_RK3};
 
 enum class SpatialOrder{First, Second};
 
-enum class GradientScheme{Gauss};
+enum class GradientScheme{GreenGauss};
 
 enum class InviscidFluxScheme{Rusanov, HLLC};
 

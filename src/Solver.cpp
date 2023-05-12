@@ -34,6 +34,8 @@ void EulerSolver::evaluate_residual(Config& config){
     Vec3 normal;
     double face_area;
 
+    
+
     for (Index ij{0}; ij<config.get_N_FACES(); ij++){
         i = faces[ij].i;
         j = faces[ij].j;
@@ -98,8 +100,13 @@ double EulerSolver::calc_timestep(Config& config){
 }
 
 void EulerSolver::zero_residual(){
-    auto& R = residual->cell_values;
+    auto& R = static_cast<EulerVecField>(solver_data->get_solution()
+
     for (Index i{0}; i<R.size(); i++)
         for (Index j{0}; j<N_EQS_EULER; j++)
             R[i][j] = 0.0;
+}
+
+void EulerSolver::evaluate_gradient(const Config& Config){
+
 }
