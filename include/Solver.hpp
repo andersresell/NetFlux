@@ -27,7 +27,6 @@ public:
 };
 
 
-
 class EulerSolver : public Solver{   
 
 public:
