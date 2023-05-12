@@ -1,25 +1,29 @@
 
 #include "test.hpp"
-#include <string>
 
-#include <vector>
-#include <iostream>
 using namespace std;
-int main(){
-    A a;
-    cout << a.a <<endl
-         << a.b << endl
-         << a.d <<endl
-         << a.str <<endl;
-
-
-
-    MyClass obj1{};
+int main()
+{
     
-    std::cout << "Value 1: " << obj1.value << std::endl;
-    cout << obj1.a.a <<endl
-        << obj1.a.b << endl
-        << obj1.a.d <<endl
-        << obj1.a.str <<endl;
-    return 0;
+
+    using CMat = Container2D<double, 3, 5>;
+    using EMat = Eigen::Matrix<double, 3, 5>;
+
+    const Index M = 5, N = 3, K=1;
+
+    Container2D<double,5,3> grad;
+    grad=2;
+    grad(4,0) = 1;
+    using Vec3 = Eigen::Vector3d;
+    Vec3 x;
+
+    x[0] = 1;x[1] = 2; x[2] = 3;
+    Container1D<double,5> U;
+
+    container::Vec3_mult(grad,x,U);
+
+    cout << "U:\n"<<U<<endl;
+
+
+    
 }

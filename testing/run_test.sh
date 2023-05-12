@@ -1,5 +1,7 @@
 #!/bin/bash
 
+clear
+
 FLAGS="-O2 -Wall -DNDEBUG" 
 FLAGS="-g -Wall"
 
