@@ -3,137 +3,127 @@
 #include "includes.hpp"
 
 
-/*Generic vector type used directly or for building other data types*/
-template<typename T, Index N>
-class Container1D{
-
-protected:
-    T data[N];
-public:
-
-    Container1D() : data{} {}
-
-    template<typename... Args>
-    Container1D(Args... args) : data{static_cast<T>(args)...} {
-        static_assert(sizeof...(args) == N);
-    }
-    
-    T& operator[](Index i) {
-        assert(i<N);
-        return data[i];
-    }
-    const T& operator[](Index i) const{
-        assert(i<N);
-        return data[i];
-    }
-    
-    Container1D<T,N> operator+(Container1D<T,N> rhs) const {
-        for (Index i{0}; i<N; i++) rhs.data[i] += data[i];
-        return rhs;
-    };
-
-    Container1D<T,N> operator-(const Container1D<T,N>& rhs) const {
-        Container1D lhs{*this};
-        for (Index i{0}; i<N; i++) lhs.data[i] -= rhs.data[i];
-        return lhs;
-    };
-
-    void operator-=(const Container1D<T,N>& rhs) {
-        for (Index i{0}; i<N; i++) data[i] -= rhs.data[i];
-    };
-
-    void operator+=(const Container1D<T,N>& rhs) {
-        for (Index i{0}; i<N; i++) data[i] += rhs.data[i];
-    };
-
-    Container1D<T,N> operator*(T rhs) const {
-        Container1D lhs{*this};
-        for (Index i{0}; i<N; i++) lhs.data[i] *= rhs;
-        return lhs;
-    };
-
-    friend Container1D<T,N> operator*(T lhs, const Container1D<T,N>& rhs) const {
-        Container1D result{rhs};
-        for (Index i{0}; i<N; i++) result[i] = lhs*rhs[i];
-        return result;
-    };
-
-    void operator*=(T rhs){
-        for (Index i{0}; i<N; i++) data[i] *= rhs;
-    }
-
-    static Index size() {return N;}
-    
-    friend std::ostream& operator<<(std::ostream& os, const Container1D& rhs){
-        for (Index i{0}; i<N; i++) os << rhs[i] << " ";
-        return os << std::endl;
-    }
-};
-
 
 /*Generic matrix type used directly or for building other data types*/
 template<typename T, Index M, Index N>
 class Container2D{
-    constexpr size_t SIZE = M * N;
+    using C2D = Container2D<T,M,N>;
+    static constexpr size_t SIZE = M * N;
 protected:
     T data[M * N];
 public:
     Container2D() : data{} {}
 
     template<typename... Args>
-    Container2D(Args... args) : data{args...} {}
-
-    template<typename... Args>
     Container2D(Args... args) : data{static_cast<T>(args)...} {
         static_assert(sizeof...(args) == SIZE);
     }
     
+    /*Stored in row major order*/
     T& operator()(Index i, Index j) {
         assert(i<M && j<N);
+        assert(M > 1); //Use the [] for 1D arrays
         return data[i*N+j];
     }
-    const T& operator()(Index i, Index j) {
+    /*Stored in row major order*/
+    const T& operator()(Index i, Index j) const{
         assert(i<M && j<N);
         return data[i*N+j];
     }
+
+    T& operator[](Index i) {
+        assert(i<SIZE);
+        return data[i];
+    }
     
-    Container1D<T,N> operator+(Container1D<T,N> rhs) const {
+    C2D operator+(C2D rhs) const {
         for (Index i{0}; i<SIZE; i++) rhs.data[i] += data[i];
         return rhs;
     };
 
-    Container1D<T,N> operator-(const Container1D<T,N>& rhs) const {
-        Container1D lhs{*this};
+    C2D operator-(const C2D& rhs) const {
+        C2D lhs{*this};
         for (Index i{0}; i<SIZE; i++) lhs.data[i] -= rhs.data[i];
         return lhs;
     };
 
-    void operator-=(const Container1D<T,N>& rhs) {
+    void operator-=(const C2D& rhs) {
         for (Index i{0}; i<SIZE; i++) data[i] -= rhs.data[i];
     };
 
-    void operator+=(const Container1D<T,N>& rhs) {
+    void operator+=(const C2D& rhs) {
         for (Index i{0}; i<SIZE; i++) data[i] += rhs.data[i];
     };
-
-    // Container1D<T,N> operator*(T rhs) const {
-    //     Container1D lhs{*this};
-    //     for (Index i{0}; i<N; i++) lhs.data[i] *= rhs;
-    //     return lhs;
-    // };
 
     void operator*=(T rhs){
         for (Index i{0}; i<SIZE; i++) data[i] *= rhs;
     }
 
-    Index size() const {return M*N;}
+    void operator=(T rhs){
+        for (Index i{0}; i<SIZE; i++) data[i] = rhs;
+    }
+
+    static constexpr Index size() {return SIZE;}
+    static constexpr Index rows() {return M;}
+    static constexpr Index cols() {return N;}
     
-    friend std::ostream& operator<<(std::ostream& os, const Container2D& rhs){
-        for (Index i{0}; i<N; i++){ 
-            for (Index j{0}; i<M; j++) 
+    friend std::ostream& operator<<(std::ostream& os, const C2D& rhs){
+        for (Index i{0}; i<M; i++){ 
+            for (Index j{0}; j<N; j++) 
                 os << rhs(i,j) << " ";
             os << "\n";
         }
         return os << "\n";
     }
 };
+
+template<typename T, Index M>
+using Container1D = Container2D<T, M, 1>;
+
+namespace container {
+    template<typename T, Index M, Index N, Index K>
+    inline void matmult(const Container2D<T, M, N>& A,
+                        const Container2D<T, N, K>& B,
+                        Container2D<T, M, K>& C) {
+        static_assert(A.rows() == C.rows() && A.cols() == B.rows(),
+                      "Matrix dimensions are not compatible for multiplication.");
+
+        for (Index i = 0; i < M; ++i) {
+            for (Index j = 0; j < K; ++j) {
+                T sum = 0;
+                for (Index k = 0; k < N; ++k) {
+                    sum += A(i, k) * B(k, j);
+                }
+                C(i, j) = sum;
+            }
+        }
+    }
+
+    template<typename T, Index M, Index N, Index K>
+    inline void Vec3_mult(const Container2D<T, M, N>& A,
+                        const Vec3& x,
+                        Container2D<T, N_DIM, K>& b) {
+        static_assert(A.rows() == b.rows(), "Different dimensions between A and b\n");
+        static_assert(N==1 || K==1 && !(K==1 && N==1)); //Either N or K should be 1, but not both
+
+        if constexpr (K == 1){
+            for (Index i = 0; i < M; ++i) {
+                b[i] = 0;
+                for (Index j = 0; j < N_DIM; ++j) 
+                    b[i] += A(i, j) * x[j];
+            }
+        }
+        else{ //N == 1
+            for (Index i = 0; i < M; ++i) {    
+                for (Index j = 0; j < N_DIM; ++j) 
+                    b(i,j) = A[i] * x[j];
+            }
+        }
+    }
+
+
+
+    
+}
+
+
