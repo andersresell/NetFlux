@@ -134,7 +134,10 @@ namespace container {
         }
     }
 
-
+    // template<typename T>
+    // inline T dot_product_3(const T* a, const Vec3& b){
+    //     return a[0]*b[0] + a[1]*b[1] + 
+    // }
 
     
 }

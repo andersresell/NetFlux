@@ -25,8 +25,17 @@ struct GradField final : public DynamicContainer3D<double>{
 class SolverData{
 protected:
 
-    unique_ptr<VecField>  solution, solution_old, residual, primvars;
+    unique_ptr<VecField>  solution, 
+                          solution_old, 
+                          residual, 
+                          primvars;
+
     unique_ptr<GradField> primvars_gradient;
+
+    unique_ptr<VecField> primvars_limiter,
+                         primvars_max, 
+                         primvars_min;
+
 
     SolverData() = default;
 public:
@@ -43,6 +52,16 @@ public:
     GradField& get_primvars_gradient() {return *primvars_gradient;}
     const GradField& get_primvars_gradient() const {return *primvars_gradient;}
 
+    VecField& get_primvars_limiter() {return *primvars_limiter;}
+    const VecField& get_primvars_limiter() const {return *primvars_limiter;}
+
+    VecField& get_primvars_max() {return *primvars_max;}
+    const VecField& get_primvars_max() const {return *primvars_max;}
+
+    VecField& get_primvars_min() {return *primvars_min;}
+    const VecField& get_primvars_min() const {return *primvars_min;}
+
+
 };
 
 
@@ -55,10 +74,15 @@ public:
 };
 
 
+    template<ShortIndex N_EQS>
+    using FlowVec = StaticContainer1D<double, N_EQS>;
+    template<ShortIndex N_EQS>
+    using FlowGrad = StaticContainer2D<double, N_EQS, N_DIM>;
 
 
-    using EulerVec = StaticStaticContainer1D<double, N_EQS_EULER>; 
+    using EulerVec = StaticContainer1D<double, N_EQS_EULER>; 
     using EulerGrad = StaticContainer2D<double, N_EQS_EULER, N_DIM>; 
+
 
 namespace EulerEqs{
 

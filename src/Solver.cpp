@@ -27,6 +27,15 @@ void EulerSolver::evaluate_residual(Config& config){
     VecField& residual = solver_data->get_residual();
     residual.set_zero();
 
+    VecField& primvars = solver_data->get_primvars();
+    GradField& primvars_grad = solver_data->get_primvars_gradient();
+    VecField& primvars_limiter = solver_data->get_primvars_limiter();
+
+    if (config.get_spatial_order() == SpatialOrder::Second){
+        evaluate_gradient(config);
+        evaluate_limiter(config);
+    }
+
     Index i,j;
     const auto& cells = grid.get_cells();
     const auto& faces = grid.get_faces();
@@ -35,20 +44,31 @@ void EulerSolver::evaluate_residual(Config& config){
     Vec3 normal;
     double face_area;
 
-    
+    EulerVec V_L, V_R, U_L, U_R;
 
     for (Index ij{0}; ij<config.get_N_FACES(); ij++){
         i = faces[ij].i;
         j = faces[ij].j;
         const Vec3& S_ij = faces[ij].S_ij;
-
-        //Calculate gradients etc. 
-
-        const auto& U_L; //reconstructed state at cell i side;
-        const auto& U_R; //reconstructed state at cell j side;
+        const Vec3& r_im = faces[ij].r_im;
+        const Vec3& r_jm = faces[ij].r_jm;
         
+
+        auto V_i = static_cast<const EulerVec&>(primvars[i]);
+        auto V_i_grad = static_cast<const EulerGrad&>(primvars_grad[i]);
+        auto limiter_i = static_cast<const EulerVec&>(primvars_limiter[i]);
+        Reconstruction::calc_reconstructed_value<N_EQS_EULER>(V_i, V_i_grad, limiter_i, r_im, V_L);
+
+
+        auto V_j = static_cast<const EulerVec&>(primvars[j]);
+        auto V_j_grad = static_cast<const EulerGrad&>(primvars_grad[j]);
+        auto limiter_j = static_cast<const EulerVec&>(primvars_limiter[j]);
+        Reconstruction::calc_reconstructed_value<N_EQS_EULER>(V_j, V_j_grad, limiter_j, r_jm, V_R);
+
+        U_L = EulerEqs::prim_to_cons(V_L);
+        U_R = EulerEqs::prim_to_cons(U_R);
         
-        inv_flux_func(U_L, U_R, S_ij, Flux_inv_ij);
+        inv_flux_func(U_L, U_R, S_ij, Flux_inv_ij); //might be faster to make this templated
     }
 
 }
@@ -114,3 +134,33 @@ void EulerSolver::evaluate_gradient(const Config& config){
             FAIL_MSG("Selected gradient scheme not implemented\n");
     }
 }   
+
+
+void EulerSolver::evaluate_limiter(const Config& config){
+
+    const VecField& primvars= solver_data->get_primvars();
+    const GradField& primvars_grad = solver_data->get_primvars_gradient();
+    VecField& primvars_limiter = solver_data->get_primvars_limiter();
+    VecField& primvars_max = solver_data->get_primvars_max();
+    VecField& primvars_min = solver_data->get_primvars_min();
+
+
+    switch(config.get_limiter()){
+        case Limiter::Barth:
+            Reconstruction::calc_max_and_min_values<N_EQS_EULER>(config, 
+                                                                 grid, 
+                                                                 primvars, 
+                                                                 primvars_max, 
+                                                                 primvars_min);
+            Reconstruction::calc_barth_limiter<N_EQS_EULER>(config, 
+                                                            grid, 
+                                                            primvars, 
+                                                            primvars_grad, 
+                                                            primvars_max, 
+                                                            primvars_min, 
+                                                            primvars_limiter);
+            break;
+        default:
+            FAIL_MSG("Selected limiter not implemented\n");
+    }
+}

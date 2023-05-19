@@ -42,7 +42,8 @@ public:
     SolverType get_solver_type() const override {return SolverType::Euler;}
 private:
 
-    void evaluate_gradient(const Config& Config);
+    void evaluate_gradient(const Config& config);
+    void evaluate_limiter(const Config& config);
 
 };
 

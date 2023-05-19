@@ -9,8 +9,8 @@ It is assumed that the number of colums of the matrices is known at compile time
 template<typename T>
 class DynamicContainer3D{
     Index length; //Length of outer vector
-    Index N;
     Index M;
+    Index N;
 
     T* data;
 
@@ -41,6 +41,10 @@ public:
         for (Index i{0}; i<SIZE; i++) data[i] *= rhs;
     }
 
+    void operator=(T rhs){
+        for (Index i{0}; i<SIZE; i++) data[i] = rhs;
+    }
+
     void set_zero() {for (size_t i{0}; i<length*M*N; i++) data[i] = 0;}
 
     using EigenMat = Eigen::MatrixX<T>;
@@ -57,7 +61,7 @@ public:
 
     Index length() const{return length;}
     Index rows() const {return M;}
-    Index cols() const {return M;}
+    Index cols() const {return N;}
     
 
     ~DynamicContainer3D() {delete [] data ;}
@@ -71,4 +75,14 @@ public:
 
 
     DynamicContainer2D(Index length, Index M) : DynamicContainer3D(length, M, 1) {}
+
+    T& operator()(Index l, Index i) {
+        assert(l<length && i<M);
+        return data[l * M + i];
+    }
+
+    const T& operator()(Index l, Index i) const {
+        assert(l<length && i<M);
+        return data[l * M + i];
+    }
 };

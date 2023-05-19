@@ -13,6 +13,7 @@
 #include <memory>
 #include <any>
 #include <chrono>
+#include <cfloat>
 
 using std::unique_ptr;
 using std::make_unique;
@@ -22,6 +23,8 @@ using std::map;
 using std::move;
 using std::cout;
 using std::endl;
+using std::max;
+using std::min;
 
 using Index = uint32_t; //Used for accessing cell indices, etc 
 using ShortIndex = uint16_t; //Used for looping over shorter numbers as spatial dimensions, etc
@@ -67,4 +70,9 @@ inline bool arrays_equal(const array<T, N>& a,const array<T, N>& b){
     for (size_t i{0}; i<a.size(); i++) 
         if (a[i] != b[i]) return false;
     return true;
+}
+
+template<typename T>
+inline int sign(T val){
+    return T >= 0;
 }

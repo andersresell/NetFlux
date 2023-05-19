@@ -27,7 +27,7 @@ enum class GradientScheme{GreenGauss};
 
 enum class InviscidFluxScheme{Rusanov, HLLC};
 
-enum class Limiter{Minmod};
+enum class Limiter{Barth};
 
 enum class BoundaryType{NoSlipWall, SlipWall, FarField};
 
