@@ -124,7 +124,7 @@ namespace Reconstruction{
         }
     }
 
-    /*Implementing the procedure in Blazek*/
+    /*Implementing the Barth limiter procedure in Blazek*/
     template<ShortIndex N_EQS> 
     inline void calc_barth_limiter( const Config& config,
                         const Grid& grid,

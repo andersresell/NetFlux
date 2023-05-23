@@ -32,6 +32,7 @@ namespace geom {
         const Vector<TetConnect>& get_tet_connect() const {return tet_connect;} 
         const Vector<Cell>& get_cells() const {return cells;}
         const Vector<Face>& get_faces() const {return faces;}
+        const Vector<Patch>& get_patches() const {return patches;}
 
         /*Gets the indices of the faces surrounding cell i*/
         const Vector<Index>& get_surrounding_faces(Index cell_i) const {return face_indices_from_cell[cell_i];}

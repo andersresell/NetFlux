@@ -27,7 +27,7 @@ protected:
 
     unique_ptr<VecField>  solution, 
                           solution_old, 
-                          residual, 
+                          flux_balance, 
                           primvars;
 
     unique_ptr<GradField> primvars_gradient;
@@ -43,8 +43,8 @@ public:
     VecField& get_solution() {return *solution;}
     const VecField& get_solution() const {return *solution;}
 
-    VecField& get_residual() {return *residual;}
-    const VecField& get_residual() const {return *residual;}
+    VecField& get_flux_balance() {return *flux_balance;}
+    const VecField& get_flux_balance() const {return *flux_balance;}
 
     VecField& get_primvars() {return *primvars;}
     const VecField& get_primvars() const {return *primvars;}

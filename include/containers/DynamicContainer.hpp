@@ -37,6 +37,17 @@ public:
         return data[l * M * N];
     }
 
+    
+    template<typename StaticContainerType>
+    StaticContainerType* cast(Index i){
+        return static_cast<StaticContainerType*>(data[l * M * N]);
+    }
+
+    template<typename StaticContainerType>
+    const StaticContainerType* cast(Index i) const{
+        return static_cast<StaticContainerType*>(data[l * M * N]);
+    }
+
     void operator*=(T rhs){
         for (Index i{0}; i<SIZE; i++) data[i] *= rhs;
     }

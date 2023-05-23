@@ -23,9 +23,9 @@ void EulerSolver::step(Config& config){
 
 }
 
-void EulerSolver::evaluate_residual(Config& config){
-    VecField& residual = solver_data->get_residual();
-    residual.set_zero();
+void EulerSolver::evaluate_flux_balance(Config& config){
+    VecField& flux_balance = solver_data->get_flux_balance();
+    flux_balance.set_zero();
 
     if (config.get_spatial_order() == SpatialOrder::Second){
         evaluate_gradient(config);
@@ -36,7 +36,7 @@ void EulerSolver::evaluate_residual(Config& config){
 
     switch (config.get_inv_flux_scheme()){
         case InviscidFluxScheme::Rusanov:
-            inviscid_flux_balance<InviscidFluxScheme::Rusanov>(config);
+            evaluate_inviscid_flux_balance<InviscidFluxScheme::Rusanov>(config);
             break;
         default:
             FAIL_MSG("Illegal numerical inviscid flux scheme\n");
