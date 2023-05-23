@@ -27,7 +27,7 @@ enum class GradientScheme{GreenGauss};
 
 enum class InviscidFluxScheme{Rusanov, HLLC};
 
-enum class Limiter{Barth};
+enum class Limiter{NONE, Barth};
 
 enum class BoundaryType{NoSlipWall, SlipWall, FarField};
 
@@ -51,6 +51,16 @@ namespace geom{
             ", r_im: " + horizontal_string_Vec3(f.r_im) + ", r_jm: " + horizontal_string_Vec3(f.r_jm) << endl;
             return os;
         }
+
+        bool operator<(const Face& rhs) const {
+            if (i != rhs.i) 
+                return i < rhs.i;
+    
+            assert(j != rhs.j); //This means cell indices are identical 
+                
+            return j < rhs.j;
+        }
+
     };
 
     struct Cell{
@@ -67,7 +77,9 @@ namespace geom{
 
     struct Patch{
         BoundaryType boundary_type;
-        Vector<Index> boundary_face_indices;
+        //Vector<Index> boundary_face_indices;
+        Index N_BOUNDARY_FACES;
+        Index FIRST_FACE;
     };
 
     /*Connectivity of a tetrahedron*/

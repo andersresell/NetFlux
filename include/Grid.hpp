@@ -10,7 +10,8 @@ namespace geom {
         //Native mesh
         Vector<Vec3> nodes;
         Vector<TetConnect> tet_connect; 
-        Vector<TriPatchConnect> tri_patch_connect;
+        Vector<Triangle> face_triangles;
+        Vector<TriPatchConnect> tri_patch_connect_list;
 
         //Computational grid
         Vector<Cell> cells;
@@ -45,6 +46,22 @@ namespace geom {
 
         /*------Helper functions for creating grid-------*/
 
+        /*Creates interior cells and faces*/
+        void create_interior();
+
+        /*loops over the boundary patches and creates faces and associated ghost cells*/
+        void create_boundaries(const Config& config);
+
+        //Reorders the (for now interior) faces in an optimal fashion based on the face indices
+        void reorder_faces(const Config& config);
+
+        /*Assigns cell centers, boudnary normals, etc*/
+        void assign_geometry_properties(const Config& config);
+
+        /*Find the interior cell of the boundary face with a given connectivity*/
+        Index find_boundary_face_owner(TriConnect tc);
+
+
         /*Finds the neighbouring cell j of face ij of cell i. If no neigbour exist (boundary), it returns false*/
         std::pair<Index, bool> find_neigbouring_cell(Index i, 
                                                     TriConnect face_ij, 
@@ -58,13 +75,18 @@ namespace geom {
                                        Index ij, 
                                        const Vector<TriPatchConnect>& tri_patch_connect);
 
-        void assign_patch_BC(const Config& config); 
 
         Tetrahedron tet_from_connect(const TetConnect& tc) const;
         Triangle tri_from_connect(const TriConnect& tc) const;
 
         /*Adds the indices of neiggbour cell ij to cell i in the face_indices_from_cell structure*/
         void add_face_to_cell_i(Index i, Index ij);
+
+        /*Used to find the number of ghost cells before this value is set in Config object*/
+        Index find_N_GHOST_cells();
+
+        /*Loops through tri_patch_conenct and finds the TriConnect of face ij*/
+        //TriConnect find_TriConnect_from_face_index(const Config& config, Index ij)
 
         /*Calling shrink_to_fit on the different members after grid construction to reduce allocated memory*/
         void shrink_vectors();

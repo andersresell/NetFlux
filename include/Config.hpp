@@ -9,7 +9,8 @@ class Config {
 
     Index N_INTERIOR_CELLS,
           N_TOTAL_CELLS,
-          N_FACES;
+          N_INTERIOR_FACES,
+          N_TOTAL_FACES;
     bool grid_data_set{false};
 
     string mesh_filename; 
@@ -49,13 +50,18 @@ public:
     Index get_N_TETS() const {return N_TETS;}
     Index get_N_INTERIOR_CELLS() const {return N_INTERIOR_CELLS;}
     Index get_N_TOTAL_CELLS() const { return N_TOTAL_CELLS;}
-    Index get_N_GHOST_CELLS() const { return get_N_TOTAL_CELLS() - get_N_INTERIOR_CELLS();}
-    Index get_N_FACES() const {return N_FACES;}
+    Index get_N_GHOST_CELLS() const { return N_TOTAL_CELLS - N_INTERIOR_CELLS;}
+    Index get_N_INTERIOR_FACES() const {return N_INTERIOR_FACES;}
+    Index get_N_TOTAL_FACES() const {return N_TOTAL_FACES;}
+    Index get_N_BOUNDARY_FACES() const {return N_TOTAL_FACES - N_INTERIOR_FACES;}
+    
+    
 
     void set_grid_data(Index N_NODES, 
-                       Index N_INTERIOR_CELLS, 
-                       Index N_TOTAL_CELLS, 
-                       Index N_FACES);
+                    Index N_INTERIOR_CELLS, 
+                    Index N_TOTAL_CELLS, 
+                    Index N_INTERIOR_FACES,
+                    Index N_TOTAL_FACES);
     
     string get_mesh_filename() const {return mesh_filename;}
     string get_unsteady_vtk_filename() const {return output_basename + std::to_string(timestep) + ".vtk";}

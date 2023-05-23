@@ -2,7 +2,7 @@
 #include "../include/Numerics.hpp"
 
 
-
+/*
 InvFluxFunction NumericalFlux::get_inviscid_flux_function(const Config& config){
     switch(config.get_inv_flux_scheme()){
         case InviscidFluxScheme::Rusanov:
@@ -26,4 +26,4 @@ InvFluxFunction NumericalFlux::get_inviscid_flux_function(const Config& config){
     Flux = area * 0.5*(EulerEqs::inviscid_flux(U_R, normal) + EulerEqs::inviscid_flux(U_L, normal) 
         - std::max(spec_rad_R, spec_rad_L) * (U_R - U_L));
          
-}
+}*/

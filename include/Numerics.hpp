@@ -4,7 +4,8 @@
 #include "Grid.hpp"
 #include "SolverData.hpp"
 
-
+//DEPRECATED FUNCTION POINTER IMPLEMENTATION
+/*
 using InvFluxFunction = std::function<void(const EulerVec& U_L, const EulerVec& U_R, const Vec3& S_ij, EulerVec& Flux)>;
 
 class NumericalFlux{
@@ -18,7 +19,32 @@ public:
 public:
     static InvFluxFunction get_inviscid_flux_function(const Config& config);
 
-};
+};*/
+
+
+namespace NumericalFlux{
+    /*Templated riemann solvers*/
+    using namespace geom;
+
+    template<InviscidFluxScheme Scheme>
+    inline void inviscid_flux(const EulerVec& U_L, const EulerVec& U_R, const Vec3& S_ij, EulerVec& Flux);
+
+    /*Rusanov implementation*/
+    template<>
+    inline void inviscid_flux<InviscidFluxScheme::Rusanov>(const EulerVec& U_L, const EulerVec& U_R, const Vec3& S_ij, EulerVec& Flux){
+        
+        Vec3 normal = S_ij.normalized();
+        double area = S_ij.norm();
+        double spec_rad_L = EulerEqs::conv_spec_rad(U_L, normal);
+        double spec_rad_R = EulerEqs::conv_spec_rad(U_R, normal);
+
+
+        Flux = area * 0.5*(EulerEqs::inviscid_flux(U_R, normal) + EulerEqs::inviscid_flux(U_L, normal) 
+            - std::max(spec_rad_R, spec_rad_L) * (U_R - U_L));
+            
+    }
+    
+}
 
 
 

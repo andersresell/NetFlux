@@ -64,6 +64,15 @@ public:
         for (Index i{0}; i<SIZE; i++) data[i] *= rhs;
     }
 
+    C2D operator*(T rhs) const{
+        return C2D{(*this * rhs)};
+    }
+
+    friend C2D operator*(T lhs, C2D rhs){
+        for (Index i{0}; i<SIZE; i++) rhs.data[i] *= lhs;
+        return rhs;
+    }
+
     void operator=(T rhs){
         for (Index i{0}; i<SIZE; i++) data[i] = rhs;
     }

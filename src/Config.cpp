@@ -23,7 +23,8 @@ Config::Config(string config_filename)
 void Config::set_grid_data(Index N_NODES, 
                     Index N_INTERIOR_CELLS, 
                     Index N_TOTAL_CELLS, 
-                    Index N_FACES){
+                    Index N_INTERIOR_FACES,
+                    Index N_TOTAL_FACES){
     assert(!grid_data_set);
     grid_data_set = true;
 
@@ -31,5 +32,6 @@ void Config::set_grid_data(Index N_NODES,
     this->N_TETS = N_INTERIOR_CELLS;
     this->N_INTERIOR_CELLS = N_INTERIOR_CELLS;
     this->N_TOTAL_CELLS = N_TOTAL_CELLS;
-    this->N_FACES = N_FACES;
+    this->N_INTERIOR_FACES = N_INTERIOR_FACES;
+    this->N_TOTAL_FACES = N_TOTAL_FACES;
 }
