@@ -11,7 +11,7 @@ class Config {
           N_TOTAL_CELLS,
           N_INTERIOR_FACES,
           N_TOTAL_FACES;
-    bool grid_data_set{false};
+    bool grid_metrics_set{false};
 
     string mesh_filename; 
     string output_basename;
@@ -57,7 +57,7 @@ public:
     
     
 
-    void set_grid_data(Index N_NODES, 
+    void set_grid_metrics(Index N_NODES, 
                     Index N_INTERIOR_CELLS, 
                     Index N_TOTAL_CELLS, 
                     Index N_INTERIOR_FACES,

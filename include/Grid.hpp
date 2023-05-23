@@ -10,14 +10,14 @@ namespace geom {
         //Native mesh
         Vector<Vec3> nodes;
         Vector<TetConnect> tet_connect; 
-        Vector<Triangle> face_triangles;
+        Vector<Triangle> face_triangles; //Only used for geometry computation, cleared afterwards
         Vector<TriPatchConnect> tri_patch_connect_list;
 
         //Computational grid
         Vector<Cell> cells;
         Vector<Face> faces;
         Vector<Patch> patches;
-        Vector<Vector<Index>> face_indices_from_cell;
+        Vector<Vector<Index>> face_indices_from_cell; //Should preferably not be used. More efficient to loop over faces
 
     public:    
         
@@ -39,6 +39,11 @@ namespace geom {
 
     private:
 
+        /*Read mesh file. This populates the:
+        - nodes -> native mesh nodes
+        - tet_connect -> tetrahedral elements connectivity
+        - tri_patch_connect -> patches of boundary triangles and respective BC types
+        */
         void read_mesh(string mesh_filename);
         void read_c3d_mesh(string mesh_filename);
         void read_su2_mesh(string mesh_filename);
@@ -68,13 +73,6 @@ namespace geom {
                                                     const Vector<TetConnect>& tet_connect) const;
         /*Checks if face ij has been created yet*/
         bool face_ij_created(Index i, Index j) const;
-
-        /*Adds the index of face ij to the correct boundary patch and returns the connectivity of the triangle that ensures normal 
-        pointing outwards */
-        TriConnect add_face_to_patches(TriConnect t_ij, 
-                                       Index ij, 
-                                       const Vector<TriPatchConnect>& tri_patch_connect);
-
 
         Tetrahedron tet_from_connect(const TetConnect& tc) const;
         Triangle tri_from_connect(const TriConnect& tc) const;

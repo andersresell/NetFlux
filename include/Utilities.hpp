@@ -78,7 +78,7 @@ namespace geom{
     struct Patch{
         BoundaryType boundary_type;
         //Vector<Index> boundary_face_indices;
-        Index N_BOUNDARY_FACES;
+        Index N_FACES;
         Index FIRST_FACE;
     };
 

@@ -20,10 +20,9 @@ void Grid::print_grid(const Config &config) const
     cout << "\n\nPATCHES:\n";
     for (const auto &patch : patches)
     {
-        cout << "patch type: " << (int)patch.boundary_type << "\nFace indices:\n";
-        for (Index ij : patch.boundary_face_indices)
-            cout << ij << " ";
-        cout << "\n\n";
+        cout << "patch type: " << (int)patch.boundary_type << 
+        "\nFIRST FACE: " << patch.FIRST_FACE << 
+        "\nN_FACES: " << patch.N_FACES << "\n\n";
     }
 
     cout << "\n\nFACE INDICES FROM CELLS:\n";
@@ -64,74 +63,25 @@ void Grid::print_native_mesh() const
 
 void Grid::create_grid(Config &config)
 {
-
-    /*Read mesh file. This populates the:
-    - nodes -> native mesh nodes
-    - tet_connect -> tetrahedral elements connectivity
-    - tri_patch_connect -> patches of boundary triangles and respective BC types
-     */
     read_mesh(config.get_mesh_filename());
-
-   /*
-    Index N_TETS = tet_connect.size();
-    Index N_INTERIOR_CELLS = N_TETS;
-    
-    face_indices_from_cell.resize(N_INTERIOR_CELLS);
     Index N_NODES = nodes.size();
-
-    TriConnect face_bound;
-    */
-
     
     create_interior();
+    Index N_INTERIOR_CELLS = cells.size();
+    Index N_INTERIOR_FACES = faces.size();
 
+    create_boundaries(config);
+    Index N_TOTAL_CELLS = cells.size();
+    Index N_TOTAL_FACES = faces.size();
 
-
-
-
-
-    Index N_FACES = faces.size();
-    Index N_TOTAL_CELLS = next_ghost_index;
-
-    config.set_grid_data(N_NODES, N_INTERIOR_CELLS, N_TOTAL_CELLS, N_FACES);
+    config.set_grid_metrics(N_NODES, N_INTERIOR_CELLS, N_TOTAL_CELLS, N_INTERIOR_FACES, N_TOTAL_FACES);
 
     assign_geometry_properties(config);
 
     reorder_faces(config);
 
-    // Index max_i{0}, max_j{0}; // For consistency checking
-
-    // // loop over all faces to assign area vector and centroid vectors
-    // assert(face_triangles.size() == N_FACES);
-    // for (Index ij{0}; ij < N_FACES; ij++)
-    // {
-    //     Face &face = faces.at(ij);
-    //     Index i = face.i;
-    //     Index j = face.j;
-    //     max_i = std::max(max_i, i);
-    //     max_j = std::max(max_j, j);
-
-    //     assert(i < N_INTERIOR_CELLS); // i should never belong to a ghost cell (normal pointing outwards)
-    //     // if j is a ghost cell its centoid is calculated fromt he interior
-    //     // Vec3 centroid_j = (j >= N_INTERIOR_CELLS) ? calc_ghost_centroid(cells.at(i).centroid, face_triangles.at(ij)) : cells.at(j).centroid;
-
-    //     if (j >= N_INTERIOR_CELLS)
-    //     {
-    //         // Vec3 centroid_j = calc_ghost_centroid(cells.at(i).centroid, face_triangles.at(ij));
-    //         cells.at(j).centroid = calc_ghost_centroid(cells.at(i).centroid, face_triangles.at(ij));
-    //         cells.at(j).cell_volume = 0;
-    //     }
-
-    //     assign_face_properties(face, face_triangles.at(ij), cells.at(i).centroid, cells.at(j).centroid);
-    // }
-
-    // assert(max_i == N_INTERIOR_CELLS - 1); // i should always belong to the interior cells
-    // assert(max_j == N_TOTAL_CELLS - 1);
-
-    // assert(N_TOTAL_CELLS == cells.size());
-
     shrink_vectors();
-    face_triangles.clear() //not needed anymore
+    face_triangles.clear(); //face_triangles are not needed anymore
 }
 
 void Grid::read_mesh(string mesh_filename)
@@ -223,7 +173,7 @@ void Grid::read_c3d_mesh(string mesh_filename)
             ist >> tri.a() >> tri.b() >> tri.c();
             p.triangles.at(i) = tri;
         }
-        tri_patch_connect.emplace_back(p);
+        tri_patch_connect_list.emplace_back(p);
     }
 }
 
@@ -276,7 +226,7 @@ void Grid::read_su2_mesh(string mesh_filename)
     // Reading boundary patches
     ist >> tmp_string >> N_PATCHES;
     FAIL_IF(tmp_string != "NMARK=");
-    tri_patch_connect.reserve(N_PATCHES);
+    tri_patch_connect_list.reserve(N_PATCHES);
 
     for (Index i{0}; i < N_PATCHES; i++)
     {
@@ -298,35 +248,29 @@ void Grid::read_su2_mesh(string mesh_filename)
                 FAIL_IF(element_num - first_element_num != N_MARKER_ELEMENTS - 1);
             p.triangles.at(j) = t;
         }
-        tri_patch_connect.push_back(p);
+        tri_patch_connect_list.push_back(p);
     }
 }
 
 void Grid::create_interior(){
-
     
     Index N_TETS = tet_connect.size();
     Index N_INTERIOR_CELLS = N_TETS;
-
     
     cells.reserve(N_INTERIOR_CELLS + find_N_GHOST_cells());
+    
     face_indices_from_cell.resize(N_INTERIOR_CELLS);
     Index N_NODES = nodes.size();
 
-    //TriConnect face_bound;
-    //Index next_ghost_index = N_INTERIOR_CELLS;
-
-    for (Index i = 0; i < N_INTERIOR_CELLS; i++)
-    {
+    for (Index i = 0; i < N_INTERIOR_CELLS; i++){
 
         TetConnect tc_i = tet_connect.at(i);
         Tetrahedron tet = tet_from_connect(tc_i);
 
         // Adding a new Cell
-        cells.at(i) = Cell{tet.calc_volume(), tet.calc_centroid()};
+        cells.emplace_back(tet.calc_volume(), tet.calc_centroid());
 
-        for (ShortIndex k{0}; k < N_TET_FACES; k++)
-        {
+        for (ShortIndex k{0}; k < N_TET_FACES; k++){
 
             TriConnect face_ij = tet_face_connectivity(tet_connect.at(i), k);
             Triangle tri = tri_from_connect(face_ij);
@@ -345,20 +289,6 @@ void Grid::create_interior(){
                     face_triangles.push_back(tri);
                 }
             }
-            /*else
-            { // No neigbour found. Marking a boundary face
-                Index next_ij = faces.size();
-                face_bound = add_face_to_patches(face_ij, next_ij, tri_patch_connect);
-                Triangle tri_bound = tri_from_connect(face_bound);
-                face_triangles.push_back(tri_bound);
-
-                faces.emplace_back(i, next_ghost_index);
-                cells.resize(next_ghost_index + 1);
-                cells.at(next_ghost_index) = Cell{};
-                next_ghost_index++;
-            }
-            Index neigbour_face = faces.size() - 1;
-            add_face_to_cell_i(i, neigbour_face);*/
         }
     }
 }
@@ -374,17 +304,16 @@ void Grid::create_boundaries(const Config& config){
         Patch p;
         p.boundary_type = config.get_boundary_type(tpc.patch_name);
         p.FIRST_FACE = faces.size();
+        p.N_FACES = tpc.triangles.size(); 
+        patches.push_back(p);
 
         for (const TriConnect& tc : tpc.triangles){
             Index i = find_boundary_face_owner(tc);
             Index j_ghost = cells.size();
-            cells.push_back(Cell{});
+            cells.emplace_back(); //Adding ghost cell
             faces.emplace_back(i, j_ghost);
             face_triangles.push_back(tri_from_connect(tc));
-        }
-        p.N_BOUNDARY_FACES = faces.size() - p.FIRST_FACE; 
-        
-        patches.push_back(p);
+        }   
     }
 }
 
@@ -409,12 +338,9 @@ void Grid::assign_geometry_properties(const Config& config){
 
 
         assert(i < N_INTERIOR_CELLS); // i should never belong to a ghost cell (normal pointing outwards)
-        // if j is a ghost cell its centoid is calculated from the interior
-        // Vec3 centroid_j = (j >= N_INTERIOR_CELLS) ? calc_ghost_centroid(cells.at(i).centroid, face_triangles.at(ij)) : cells.at(j).centroid;
 
         if (j >= N_INTERIOR_CELLS)
         {
-            // Vec3 centroid_j = calc_ghost_centroid(cells.at(i).centroid, face_triangles.at(ij));
             cells.at(j).centroid = calc_ghost_centroid(cells.at(i).centroid, face_triangles.at(ij));
             cells.at(j).cell_volume = 0;
         }
@@ -467,15 +393,16 @@ Index Grid::find_boundary_face_owner(TriConnect tc){
 
 void Grid::reorder_faces(const Config& config){
     /*Sorts the faces based on the indices of the neighbour cells. We want them to be sorted in increasing order,
-    with the owner cell i being prioritized first, and the neighbour cell j second. As an example,
+    with the owner cell i being prioritized first and the neighbour cell j second. As an example,
     the ordering {(0,1), (0,3), (0,2), (1,1)} should be changed to {(0,1), (0,2), (0,3), (1,1)}
     The way the grid is constructed this is allready achieved for the owner cell i. However j might need sorting. 
+    The comparison operator < for Face is defined for this purpose.
     The interior and each boundary patch is sorted separately.*/
     Index N_INTERIOR_FACES = config.get_N_INTERIOR_FACES();
     std::sort(faces.begin(), faces.begin() + N_INTERIOR_FACES);
 
     for (Patch& patch : patches){
-        std::sort(faces.begin() + patch.FIRST_FACE, faces.begin() + patch.FIRST_FACE + patch.N_BOUNDARY_FACES);
+        std::sort(faces.begin() + patch.FIRST_FACE, faces.begin() + patch.FIRST_FACE + patch.N_FACES);
     }
 }
 
@@ -521,60 +448,23 @@ std::pair<Index, bool> Grid::find_neigbouring_cell(Index i,
     return {N_CELLS, false};
 }
 
-bool Grid::face_ij_created(Index i, Index j) const
-{
+bool Grid::face_ij_created(Index i, Index j) const{
     for (const Face &face : faces)
         if ((face.i == i || face.i == j) && (face.j == i || face.j == j))
-        {
             return true;
-        }
+    
     return false;
 }
 
-TriConnect Grid::add_face_to_patches(TriConnect t_ij,
-                                     Index ij,
-                                     const Vector<TriPatchConnect> &tri_patch_connect)
-{
-    /*Function adds the index of face ij to the patch where the triangle t_ij belongs*/
-
-    array<Index, N_TRI_NODES> ij_compare{t_ij.a(), t_ij.b(), t_ij.c()}, patch_compare;
-    std::sort(ij_compare.begin(), ij_compare.end());
-
-    assert(tri_patch_connect.size() == patches.size());
-
-    for (Index patch_number{0}; patch_number < patches.size(); patch_number++)
-    {
-        for (const TriConnect &t_patch : tri_patch_connect.at(patch_number).triangles)
-        {
-
-            patch_compare = {t_patch.a(), t_patch.b(), t_patch.c()};
-            std::sort(patch_compare.begin(), patch_compare.end());
-
-            if (arrays_equal(ij_compare, patch_compare))
-            {
-                // Correct triangle found
-                return t_patch;
-            }
-        }
-    }
-    std::cerr << "Error: the face triangle was not found among the boundary pathces.\n"
-              << "Some boundary triangles might not have been assigned patches\n";
-    exit(1);
-}
-
-
-
-Tetrahedron Grid::tet_from_connect(const TetConnect &tc) const
-{
+Tetrahedron Grid::tet_from_connect(const TetConnect &tc) const{
     return Tetrahedron(nodes.at(tc.a()), nodes.at(tc.b()), nodes.at(tc.c()), nodes.at(tc.d()));
 }
-Triangle Grid::tri_from_connect(const TriConnect &tc) const
-{
+
+Triangle Grid::tri_from_connect(const TriConnect &tc) const{
     return Triangle(nodes.at(tc.a()), nodes.at(tc.b()), nodes.at(tc.c()));
 }
 
-void Grid::add_face_to_cell_i(Index i, Index ij)
-{
+void Grid::add_face_to_cell_i(Index i, Index ij){
     face_indices_from_cell.at(i).push_back(ij);
 }
 
@@ -586,28 +476,15 @@ Index Grid::find_N_GHOST_cells(){
     return N_GHOST;
 }
 
-// TriConnect Grid::find_TriConnect_from_face_index(const Config& config, Index ij){
-//     Index ij_current = config.get_N_INTERIOR_FACES();
-//     for (const auto& tpc : tri_patch_connect_list){
-//         Index PATCH_SIZE = tpc.triangles.size();
-//         if (ij_current + PATCH_SIZE < ij)
-//             ij_current += PATCH_SIZE;
-//         else{
-//             Index correct_tc = 
-//             return tpc.triangles.at()
-//         }
-
-//     }
-// }
-
 void Grid::shrink_vectors()
 {
-
     nodes.shrink_to_fit();
     tet_connect.shrink_to_fit();
-    for (auto &tpc : tri_patch_connect)
+    
+    for (auto &tpc : tri_patch_connect_list)
         tpc.triangles.shrink_to_fit();
-    tri_patch_connect.shrink_to_fit();
+    
+    tri_patch_connect_list.shrink_to_fit();
     cells.shrink_to_fit();
     faces.shrink_to_fit();
     patches.shrink_to_fit();
