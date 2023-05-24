@@ -1,5 +1,6 @@
 #pragma once
 #include "../includes.hpp"
+#include "StaticContainer.hpp"
 
 /*Dynamic container used to hold solution variables
 The type below is used to store vectors of matrices (such as gradients). 
@@ -39,12 +40,12 @@ public:
 
     
     template<typename StaticContainerType>
-    StaticContainerType* cast(Index i){
-        return static_cast<StaticContainerType*>(data[l * M * N]);
-    }
+    void convert_to_static_type(Index i, StaticContainerType& container){
+        static_assert(sizeof(T) == 8); //just doubles for now
+        assert(sizeof(StaticContainerType) == sizeof(T)*M*N);
+        
+        container.data
 
-    template<typename StaticContainerType>
-    const StaticContainerType* cast(Index i) const{
         return static_cast<StaticContainerType*>(data[l * M * N]);
     }
 

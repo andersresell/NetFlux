@@ -2,28 +2,47 @@
 #include "test.hpp"
 
 using namespace std;
+
+
+inline void convert_to_static_type2(Index i, Static& s, double* data)
+{
+    //static_assert(sizeof(StaticContainerType) == 4*sizeof(double));
+
+
+    //s = *(Static*)&data[i*4];
+
+    s = *reinterpret_cast<Static*>(&data[i * 4]);
+}
+
+
 int main()
 {
     
-
-    using CMat = Container2D<double, 3, 5>;
-    using EMat = Eigen::Matrix<double, 3, 5>;
-
-    const Index M = 5, N = 3, K=1;
-
-    Container2D<double,5,3> grad;
-    grad=2;
-    grad(4,0) = 1;
-    using Vec3 = Eigen::Vector3d;
-    Vec3 x;
-
-    x[0] = 1;x[1] = 2; x[2] = 3;
-    Container1D<double,5> U;
-
-    container::Vec3_mult(grad,x,U);
-
-    cout << "U:\n"<<U<<endl;
+    Dynamic d;
 
 
-    
+
+
+    double* arr = new double[16];
+    for (int i{0};i<16;i++) arr[i] = i;
+
+    Static& s2 = *(Static*)&d.ddata[0];
+
+    s2.print();
+    for (int i{0};i<4;i++) (s2)[i] = 0;
+    s2.print();
+
+    d.print();
+
+    // Static s1; 
+
+    // d.print();
+
+    // convert_to_static_type2(0,s1, d.ddata);
+    // s1.print();
+    // for (int i{0};i<4;i++) s1[i] = 0;
+    // s1.print();
+    // d.print();
+
+
 }

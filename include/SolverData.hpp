@@ -73,16 +73,21 @@ public:
 
 };
 
+    /*Discontinuing StaticContainer, using Eigen instead*/
 
+    // template<ShortIndex N_EQS>
+    // using FlowVec = StaticContainer1D<double, N_EQS>;
+    // template<ShortIndex N_EQS>
+    // using FlowGrad = StaticContainer2D<double, N_EQS, N_DIM>;
     template<ShortIndex N_EQS>
-    using FlowVec = StaticContainer1D<double, N_EQS>;
+    using FlowVec = Eigen::Vector<double, N_EQS>;
     template<ShortIndex N_EQS>
-    using FlowGrad = StaticContainer2D<double, N_EQS, N_DIM>;
+    using FlowGrad = Eigen::Matrix<double, N_EQS, N_DIM>;
 
-
-    using EulerVec = StaticContainer1D<double, N_EQS_EULER>; 
-    using EulerGrad = StaticContainer2D<double, N_EQS_EULER, N_DIM>; 
-
+    // using EulerVec = StaticContainer1D<double, N_EQS_EULER>; 
+    // using EulerGrad = StaticContainer2D<double, N_EQS_EULER, N_DIM>; 
+    using EulerVec = FlowVec<N_EQS_EULER>;
+    using EulerGrad = FlowGrad<N_EQS_EULER>;
 
 namespace EulerEqs{
 

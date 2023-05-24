@@ -59,6 +59,7 @@ namespace Gradient{
                         const Grid& grid,
                         const VecField& vec_field,
                         GradField& grad_field){
+                            
         assert(grad_field.cols() == N_DIM && grad_field.rows() == vec_field.rows());
         assert(N_EQS == vec_field.get_N_EQS());
     

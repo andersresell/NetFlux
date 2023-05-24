@@ -74,5 +74,5 @@ inline bool arrays_equal(const array<T, N>& a,const array<T, N>& b){
 
 template<typename T>
 inline int sign(T val){
-    return T >= 0;
+    return val >= 0;
 }
