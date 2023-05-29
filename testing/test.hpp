@@ -47,11 +47,19 @@ public:
     }
 
     //template <typename StaticContainerType>
-    void convert_to_static_type(Index i, Static& s)
-    {
-        //static_assert(sizeof(StaticContainerType) == 4*sizeof(double));
+    // void convert_to_static_type(Index i, Static& s)
+    // {
+    //     //static_assert(sizeof(StaticContainerType) == 4*sizeof(double));
 
-        s = *(Static*)&ddata[i*4];
+    //     s = *(Static*)&ddata[i*4];
 
+    // }
+
+    template<typename StaticEigenType>
+    Eigen::Map<StaticEigenType> get_variable(Index l){
+        // Eigen::Map<StaticEigenType> matrix(ddata + 4*l, 4, 1);
+        // return matrix;     
+        return Eigen::Map<StaticEigenType>(ddata + 4*l);
+        //return Eigen::Map<StaticEigenType>(ddata + 4*l, 4, 1);
     }
 };
