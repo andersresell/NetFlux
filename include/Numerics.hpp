@@ -4,47 +4,72 @@
 #include "Grid.hpp"
 #include "SolverData.hpp"
 
-//DEPRECATED FUNCTION POINTER IMPLEMENTATION
-/*
-using InvFluxFunction = std::function<void(const EulerVec& U_L, const EulerVec& U_R, const Vec3& S_ij, EulerVec& Flux)>;
+using InvFluxFunction = std::function<void(const EulerVecMap& U_L, const EulerVecMap& U_R, const Vec3& S_ij, EulerVecMap& Flux)>;
 
 class NumericalFlux{
 
 public:
 
-    static void Rusanov(const EulerVec& U_L, const EulerVec& U_R, const Vec3& S_ij, EulerVec& Flux);
+    static void Rusanov(const EulerVecMap& U_L, const EulerVecMap& U_R, const Vec3& S_ij, EulerVecMap& Flux);
 
-    static void HLLC(const EulerVec& U_L, const EulerVec& U_R, const Vec3& S_ij, EulerVec& Flux);
+    static void HLLC(const EulerVecMap& U_L, const EulerVecMap& U_R, const Vec3& S_ij, EulerVecMap& Flux);
 
 public:
     static InvFluxFunction get_inviscid_flux_function(const Config& config);
 
-};*/
+};
+
+using BC_function = std::function<void(const EulerVecMap& V_internal, EulerVecMap& V_ghost, const Vec3& S_ij)>;
+
+class BoundaryCondition{
+public:
+    static BC_function get_BC_function(BoundaryType boundary_type);
+
+private:
+    static void no_slip_wall(const EulerVecMap& V_internal, EulerVecMap& V_ghost, const Vec3& S_ij);
+
+};
 
 
-namespace NumericalFlux{
-    /*Templated riemann solvers*/
-    using namespace geom;
 
-    template<InviscidFluxScheme Scheme>
-    inline void inviscid_flux(const EulerVec& U_L, const EulerVec& U_R, const Vec3& S_ij, EulerVec& Flux);
+// namespace BoundaryCondition{
 
-    /*Rusanov implementation*/
-    template<>
-    inline void inviscid_flux<InviscidFluxScheme::Rusanov>(const EulerVec& U_L, const EulerVec& U_R, const Vec3& S_ij, EulerVec& Flux){
+//     template<BoundaryType BC_type, typename EulerVecType>
+//     inline EulerVec calc_ghost_val(const EulerVecType& V_internal, const Vec3& S_ij);
+
+//     template<typename EulerVecType>
+//     inline EulerVec BoundaryCondition::calc_ghost_val<BoundaryType::NoSlipWall>(const EulerVecType& V_internal, const Vec3& S_ij){
+//         return {V_internal[0],
+//                 -V_internal[1],
+//                 -V_internal[2],
+//                 -V_internal[3],
+//                 V_internal[4]};}    
+// }
+
+
+// namespace NumericalFlux{
+//     /*Templated riemann solvers*/
+//     using namespace geom;
+
+//     template<InviscidFluxScheme Scheme>
+//     inline void inviscid_flux(const EulerVec& U_L, const EulerVec& U_R, const Vec3& S_ij, EulerVec& Flux);
+
+//     /*Rusanov implementation*/
+//     template<>
+//     inline void inviscid_flux<InviscidFluxScheme::Rusanov>(const EulerVec& U_L, const EulerVec& U_R, const Vec3& S_ij, EulerVec& Flux){
         
-        Vec3 normal = S_ij.normalized();
-        double area = S_ij.norm();
-        double spec_rad_L = EulerEqs::conv_spec_rad(U_L, normal);
-        double spec_rad_R = EulerEqs::conv_spec_rad(U_R, normal);
+//         Vec3 normal = S_ij.normalized();
+//         double area = S_ij.norm();
+//         double spec_rad_L = EulerEqs::conv_spec_rad(U_L, normal);
+//         double spec_rad_R = EulerEqs::conv_spec_rad(U_R, normal);
 
 
-        Flux = area * 0.5*(EulerEqs::inviscid_flux(U_R, normal) + EulerEqs::inviscid_flux(U_L, normal) 
-            - std::max(spec_rad_R, spec_rad_L) * (U_R - U_L));
+//         Flux = area * 0.5*(EulerEqs::inviscid_flux(U_R, normal) + EulerEqs::inviscid_flux(U_L, normal) 
+//             - std::max(spec_rad_R, spec_rad_L) * (U_R - U_L));
             
-    }
+//     }
     
-}
+// }
 
 
 
@@ -63,8 +88,8 @@ namespace Gradient{
         assert(grad_field.cols() == N_DIM && grad_field.rows() == vec_field.rows());
         assert(N_EQS == vec_field.get_N_EQS());
     
-        using FieldVec = StaticContainer1D<double, N_EQS>;
-        using FieldGrad = StaticContainer2D<double, N_EQS, N_DIM>;
+        using FieldVec = Eigen::Vector<double, N_EQS>;
+        using FieldGrad = Eigen::matrix<double, N_EQS, N_DIM>;
 
 
         const auto& faces = grid.get_faces();
@@ -74,7 +99,7 @@ namespace Gradient{
         const Index N_CELLS = config.get_N_INTERIOR_CELLS();
         Index i,j;
         
-        FieldVec U_Face;
+        FieldVec U_face;
         FieldGrad tmp;
 
         grad_field.set_zero();
@@ -86,14 +111,12 @@ namespace Gradient{
             const Cell& cell_j = cells[face.j];
             i = cell_i.i;
             j = cell_i.j;
-
-            
-
-            //U_face = 0.5 * (vec_field.get_eigen_matrix(i) + vec_field.get_eigen_matrix(j));
-            U_face = 0.5 * ((FieldVec)vec_field[i] + (FieldVec)vec_field[j]);
-
+        
             //Simple average for now, might improve later with distance weighting and orthogonal correctors later
-            container::Vec3_mult((FieldVec)vec_field[ij], face.S_ij, tmp);
+            U_face = 0.5 * (vec_field.get_variable<FieldVec>(i) + vec_field.get_variable<FieldVec>(j));
+        
+            tmp = U_face * face.S_ij; //DOES THIS MAKE SENSE?? (ij)
+
             grad_field[i] += tmp / cell_i.cell_volume;
             if (j < N_CELLS) //only calculate gradient for interior cells?
                 grad_field[j] -= tmp / cell_j.cell_volume;      
@@ -107,22 +130,33 @@ namespace Reconstruction{
 
 
 
-    template<ShortIndex N_EQS>
-    inline void calc_reconstructed_value(
-                                   const FlowVec<N_EQS>& V_c,
-                                   const FlowGrad<N_EQS>& V_c_grad,
-                                   const FlowVec<N_EQS>& limiter_c,
-                                   const Vec3& r_cf, 
-                                   FlowVec<N_EQS>& V_f
-                                   ){
+    // template<ShortIndex N_EQS>
+    // inline void calc_limited_reconstruction(
+    //                                const FlowVec<N_EQS>& V_c,
+    //                                const FlowGrad<N_EQS>& V_c_grad,
+    //                                const FlowVec<N_EQS>& limiter_c,
+    //                                const Vec3& r_cf, 
+    //                                FlowVec<N_EQS>& V_f
+    //                                ){
         
-        for (ShortIndex k{0}; k<N_EQS; k++){
-            double Delta_V{0};
-            for (ShortIndex iDim{0}; iDim<N_DIM; iDim++)
-                Delta_V += V_c_grad(k, iDim) * r_cf[iDim];
+    //     for (ShortIndex k{0}; k<N_EQS; k++){
+    //         double Delta_V{0};
+    //         for (ShortIndex iDim{0}; iDim<N_DIM; iDim++)
+    //             Delta_V += V_c_grad(k, iDim) * r_cf[iDim];
 
-            V_f[k] = V_c[k] + limiter_c[k] * Delta_V[k];
-        }
+    //         V_f[k] = V_c[k] + limiter_c[k] * Delta_V[k];
+    //     }
+    // }
+    template<typename VecMapType, typename GradMapType, typename VecType>
+    inline void calc_limited_reconstruction(
+                                   const VecMapType& V_c,
+                                   const GradMapType& V_c_grad,
+                                   const VecMapType& limiter_c,
+                                   const Vec3& r_cf, 
+                                   VecType& V_f
+                                   ){
+        //perhaps some static assersions here
+        V_f = limiter_c.cwiseProduct(V_c_grad * r_cf); //not finished
     }
 
     /*Implementing the Barth limiter procedure in Blazek*/
@@ -139,6 +173,12 @@ namespace Reconstruction{
             N_EQS == min_field.get_N_EQS() && N_EQS == limiter.get_N_EQS());
         assert(sol_field.length() == sol_grad.length() == max_field.length() == min_field.length() == limiter.length());
 
+        using FieldVec = Eigen::Vector<double, N_EQS>;
+        using FieldGrad = Eigen::matrix<double, N_EQS, N_DIM>;
+        using FieldVecMap = Eigen::Map<FieldVec>;
+        using FieldGradMap = Eigen::Map<FieldGrad>;
+            
+        constexpr double EPS = std::numeric_limits<double>::epsilon(); 
 
         const auto& faces = grid.get_faces();
         const auto& cells = grid.get_cells();
@@ -146,9 +186,8 @@ namespace Reconstruction{
         const Index N_FACES = config.get_N_FACES();
         const Index N_CELLS = config.get_N_INTERIOR_CELLS();
         Index i,j;
-        Eigen::VectorXd Delta_2;
-        gradient.resize(N_EQS);
-        double EPS = std::numeric_limits<double>::epsilon(); 
+        FieldVec Delta_2;
+        FieldGrad gradient;
 
         limiter = DBL_MAX;
 
@@ -158,9 +197,8 @@ namespace Reconstruction{
             i = cells[face.i].i;
             j = cells[face.j].j;
 
-            const Eigen::MatrixX3d& gradient_i = sol_grad.get_eigen_matrix(i);
+            const FieldGradMap gradient_i = sol_grad.get_variable<FieldGrad>(i);
             Delta_2 = gradient_i * face.r_im;
-            assert(Delta_2.rows() == N_EQS);
 
             for (ShortIndex k{0}; k<N_EQS; k++){
                 //to avoid division by zero    
@@ -175,7 +213,7 @@ namespace Reconstruction{
             }
 
             if (j < N_CELLS){
-                const Eigen::MatrixX3d& gradient_j = sol_grad.get_eigen_matrix(j);
+                const FieldGradMap& gradient_j = sol_grad.get_variable<FieldGrad>(j);
                 Delta_2 = gradient_j * face.r_jm;
 
                 for (ShortIndex k{0}; k<N_EQS; k++){

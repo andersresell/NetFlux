@@ -7,18 +7,19 @@ The type below is used to store vectors of matrices (such as gradients).
 They are stored in this fashion [A0, A1 ... Ai ... AN], where Ai is a MxN matrix. 
 M will typically represent the number of solution variables, while  
 It is assumed that the number of colums of the matrices is known at compile time*/
-template<typename T>
+template<typename T, ShortIndex N>
 class DynamicContainer3D{
+
     Index length; //Length of outer vector
-    Index M;
-    Index N;
+    Index M; //number of rows of each variable, 
+    //Number of cols per variable is set at compile time
 
     T* data;
 
 public:
     DynamicContainer3D() {};
 
-    DynamicContainer3D(Index length, Index M, Index N) : L{L}, M{M}, N{N} {
+    DynamicContainer3D(Index length, Index M) : L{L}, M{M} {
         data = new T[length * M * N](0);
     }
 
@@ -39,15 +40,15 @@ public:
     }
 
     
-    template<typename StaticContainerType>
-    void convert_to_static_type(Index i, StaticContainerType& container){
-        static_assert(sizeof(T) == 8); //just doubles for now
-        assert(sizeof(StaticContainerType) == sizeof(T)*M*N);
+    // template<typename StaticContainerType>
+    // void convert_to_static_type(Index i, StaticContainerType& container){
+    //     static_assert(sizeof(T) == 8); //just doubles for now
+    //     assert(sizeof(StaticContainerType) == sizeof(T)*M*N);
         
-        container.data
+    //     container.data
 
-        return static_cast<StaticContainerType*>(data[l * M * N]);
-    }
+    //     return static_cast<StaticContainerType*>(data[l * M * N]);
+    // }
 
     void operator*=(T rhs){
         for (Index i{0}; i<SIZE; i++) data[i] *= rhs;
@@ -59,17 +60,41 @@ public:
 
     void set_zero() {for (size_t i{0}; i<length*M*N; i++) data[i] = 0;}
 
-    using EigenMat = Eigen::MatrixX<T>;
-    /*Maps the matrix data of element l to an eigen matrix*/
-    EigenMat& get_eigen_matrix(Index l) {
-        Eigen::Map<EigenMat> matrix(data + N*M*l, M, N);
-        return matrix;    
+    // using EigenMat = Eigen::MatrixX<T>;
+    // /*Maps the matrix data of element l to an eigen matrix*/
+    // EigenMat& get_eigen_matrix(Index l) {
+    //     Eigen::Map<EigenMat> matrix(data + N*M*l, M, N);
+    //     return matrix;    
+    // }
+
+    // /*Maps the matrix data of element l to an eigen matrix*/
+    // const EigenMat& get_eigen_matrix(Index l) const {
+    //     Eigen::Map<EigenMat> matrix(data + N*M*l, M, N);
+    //     return matrix;    
+    // }
+    template<typename StaticEigenType>
+    void set_variable(Index l, const StaticEigenType& variable){
+        assert(StaticEigenType::RowsAtCompileTime == M && StaticEigenType::ColsAtCompileTime == N);
+        for (Index i{0}; i<M; i++)
+            for (Index j{0}; j<N; j++)
+                data[l * M*N + i*N + j] = variable(i,j);
+
     }
-    /*Maps the matrix data of element l to an eigen matrix*/
-    const EigenMat& get_eigen_matrix(Index l) const {
-        Eigen::Map<EigenMat> matrix(data + N*M*l, M, N);
-        return matrix;    
+
+    template<typename StaticEigenType>
+    Eigen::Map<StaticEigenType> get_variable(Index l){
+        assert(StaticEigenType::RowsAtCompileTime == M && StaticEigenType::ColsAtCompileTime == N);
+        return Eigen::Map<StaticEigenType>(data + N*M*l);
     }
+
+    template<typename StaticEigenType>
+    const Eigen::Map<StaticEigenType> get_variable(Index l) const{
+        assert(StaticEigenType::RowsAtCompileTime == M && StaticEigenType::ColsAtCompileTime == N);
+        return Eigen::Map<StaticEigenType>(data + N*M*l);
+    }
+
+
+
 
     Index length() const{return length;}
     Index rows() const {return M;}
@@ -80,13 +105,13 @@ public:
 };
 
 template<typename T>
-class DynamicContainer2D : public DynamicContainer3D<T>{
+class DynamicContainer2D : public DynamicContainer3D<T, 1>{
 
 public:
     DynamicContainer2D() {}
 
 
-    DynamicContainer2D(Index length, Index M) : DynamicContainer3D(length, M, 1) {}
+    DynamicContainer2D(Index length, Index M) : DynamicContainer3D(length, M) {}
 
     T& operator()(Index l, Index i) {
         assert(l<length && i<M);
