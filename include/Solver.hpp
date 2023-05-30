@@ -38,6 +38,10 @@ public:
 
     double calc_timestep(Config& config) override;
 
+    /*Delta S is used to compute time step following the 2nd method in Blazek. 
+    Only needs recalculating when the grid is updated*/
+    void calc_Delta_S(const Config& config);
+
     SolverType get_solver_type() const override {return SolverType::Euler;}
 private:
 
@@ -52,7 +56,7 @@ private:
                                   const Vec3& r_im, 
                                   SpatialOrder spatial_order);
 
-    void calc_ghost_value(const EulerVecMap& U_L, EulerVecMap& U_R, const Vec3& S_ij, BoundaryType boundary_type);
+    //void calc_ghost_value(const EulerVecMap& U_L, EulerVecMap& U_R, const Vec3& S_ij, BoundaryType boundary_type);
 };
 
 

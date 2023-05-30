@@ -41,7 +41,7 @@ namespace geom {
     private:
 
         /*Read mesh file. This populates the:
-        - nodes -> native mesh nodes
+        - nodes -> nodes of native mesh
         - tet_connect -> tetrahedral elements connectivity
         - tri_patch_connect -> patches of boundary triangles and respective BC types
         */

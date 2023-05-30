@@ -4,30 +4,31 @@
 #include "Grid.hpp"
 #include "SolverData.hpp"
 
-using InvFluxFunction = std::function<void(const EulerVecMap& U_L, const EulerVecMap& U_R, const Vec3& S_ij, EulerVecMap& Flux)>;
 
 class NumericalFlux{
 
-public:
 
     static void Rusanov(const EulerVecMap& U_L, const EulerVecMap& U_R, const Vec3& S_ij, EulerVecMap& Flux);
 
     static void HLLC(const EulerVecMap& U_L, const EulerVecMap& U_R, const Vec3& S_ij, EulerVecMap& Flux);
 
 public:
+
+    using InvFluxFunction = std::function<void(const EulerVecMap& U_L, const EulerVecMap& U_R, const Vec3& S_ij, EulerVecMap& Flux)>;
+    
     static InvFluxFunction get_inviscid_flux_function(const Config& config);
 
 };
 
-using BC_function = std::function<void(const EulerVecMap& V_internal, EulerVecMap& V_ghost, const Vec3& S_ij)>;
 
 class BoundaryCondition{
-public:
-    static BC_function get_BC_function(BoundaryType boundary_type);
 
-private:
     static void no_slip_wall(const EulerVecMap& V_internal, EulerVecMap& V_ghost, const Vec3& S_ij);
 
+public:
+    using BC_function = std::function<void(const EulerVecMap& V_internal, EulerVecMap& V_ghost, const Vec3& S_ij)>;
+    
+    static BC_function get_BC_function(BoundaryType boundary_type);
 };
 
 

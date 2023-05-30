@@ -42,6 +42,8 @@ class Config {
 
     double CFL;
 
+    bool grid_motion;
+
 
 public:
     Config(string config_filename); 
@@ -101,5 +103,8 @@ public:
 
     double get_CFL() const {return CFL;}
     void set_CFL(double val) {CFL = val;}
+
+    bool get_grid_motion() const {return grid_motion;}
+    void set_grid_motion(bool val) {grid_motion = val;}
 };
 

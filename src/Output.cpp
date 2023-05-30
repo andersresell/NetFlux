@@ -16,12 +16,14 @@ void Output::write_vtk_ascii(const Config& config, bool write_grid_only){
 
     write_vtk_ascii_grid(config, filename);
     if (!write_grid_only) {
+
         for (const auto& solver : solvers){
             
+            const VecField& primvars = solver->get_solver_data().get_primvars();
+
             switch (solver->get_solver_type()){
                 case SolverType::Euler:{
-                    const auto solution = static_cast<const EulerVecField&>(solver->get_solver_data().get_solution());
-                    EulerOutput::write_vtk_ascii_cell_data(config, filename, solution);
+                    EulerOutput::write_vtk_ascii_cell_data(config, filename, primvars);
                     break;
                 }
                 default:
@@ -65,28 +67,28 @@ void Output::write_vtk_ascii_grid(const Config& config, string filename){
 }
 
 
-void EulerOutput::write_vtk_ascii_cell_data(const Config& config, const string& filename, const EulerVecField& solution){
+void EulerOutput::write_vtk_ascii_cell_data(const Config& config, const string& filename, const VecField& primvars){
     
+    assert(primvars.get_N_EQS() == N_EQS_EULER);
+
     std::ofstream ost{filename, std::ios::app};
     FAIL_IF_MSG(!ost, "Couldn't open file " + filename);
 
     const Index N_INTERIOR_CELLS = config.get_N_INTERIOR_CELLS();
-    const auto& U = solution.cell_values;
 
     ost << "\n CELL DATA " << N_INTERIOR_CELLS << "\n"; 
     
     ost << "\nSCALARS density double 1\n";
     for (Index i{0}; i< N_INTERIOR_CELLS; i++)
-        ost << U[i][0] << "\n";
+        ost << primvars(i,0) << "\n";
 
     ost << "\nVECTORS velocity double\n"; 
     for (Index i{0}; i< N_INTERIOR_CELLS; i++){
-        double density = U[i][0];
-        ost << U[i][1]/density << " " << U[i][2]/density << " " << U[i][3]/density << "\n";
+        ost << primvars(i,1) << " " << primvars(i,2) << " " << primvars(i,3) << "\n";
     }
 
     ost << "\nSCALARS pressure double 1\n";
     for (Index i{0}; i< N_INTERIOR_CELLS; i++)
-        ost << EulerEqs::pressure(U[i]) << "\n";
+        ost << primvars(i,4) << "\n";
 
 }

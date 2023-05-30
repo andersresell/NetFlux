@@ -80,9 +80,11 @@ using EulerVecMap = Eigen::Map<EulerVec>;
 using EulerGradMap = Eigen::Map<EulerGrad>;
 
 class EulerSolverData : public SolverData{
-    
+
     EulerVec U_L, U_R, V_L, V_R;
     EulerVec Flux_inv;
+
+    Vector<Vec3> Delta_S; //Used in time step computation
     
 
 public:
@@ -96,6 +98,10 @@ public:
     EulerVecMap get_V_R_map() {return EulerVecMap(V_R.data());}
     EulerVecMap get_Flux_inv_map() {return EulerVecMap(Flux_inv.data());}
 
+    EulerVecMap get_empty_map() const {return EulerVecMap(nullptr);}
+
+    Vector<Vec3>& get_Delta_S() {return Delta_S;}
+    const Vector<Vec3>& get_Delta_S() const {return Delta_S;}
 };
 
     /*Discontinuing StaticContainer, using Eigen instead*/
@@ -127,7 +133,11 @@ namespace EulerEqs{
     inline double pressure(const EulerVecType& U);
 
     template<typename EulerVecType>
-    inline double sound_speed(const EulerVecType& U);
+    inline double sound_speed_conservative(const EulerVecType& U);
+
+
+    template<typename EulerVecType>
+    inline double sound_speed_primitive(const EulerVecType& V);
 
 
     template<typename EulerVecType>
@@ -181,11 +191,16 @@ namespace EulerEqs{
 
 
     template<typename EulerVecType>
-    inline double sound_speed(const EulerVecType& U){
+    inline double sound_speed_conservative(const EulerVecType& U){
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER && EulerVecType::ColsAtCompileTime == 1);
         return sqrt(GAMMA * pressure(U) / U[0]);
     }
 
+    template<typename EulerVecType>
+    inline double sound_speed_primitive(const EulerVecType& V){
+        static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER && EulerVecType::ColsAtCompileTime == 1);
+        return sqrt(GAMMA * V[4] / V[0]);
+    }
 
     template<typename EulerVecType>
     inline double projected_velocity(const EulerVecType& U, const Vec3& normal){
