@@ -8,6 +8,62 @@ Solver::Solver(const geom::Grid& grid)
 
 }
 
+void Solver::step(const Config& config){
+    
+    assert(config.get_time_integration_type() == TimeIntegrationType::Explicit); //Remove if implementing implicit
+
+
+
+    switch (config.get_time_scheme()){
+        case TimeScheme::ExplicitEuler:
+            explicit_euler(config);
+            break;
+        case TimeScheme::TVD_RK3:
+            TVD_RKD(config);
+            break;
+        default:
+            FAIL_MSG("Error, illegal time integration scheme used\n");
+    }
+
+    solver_data->get_solution_old() = solver_data->get_solution();
+
+}
+
+void Solver::explicit_euler(const Config& config){
+    double dt = config.get_delta_time();
+    VecField& U = solver_data->get_solution();
+    VecField& R = solver_data->get_flux_balance();
+    const ShortIndex N_EQS = solver_data->get_N_EQS();
+    assert(U.size() == R.size() && U.get_N_EQS() == N_EQS && R.get_N_EQS() == N_EQS);
+    
+    //Modify evaluate_flux_balance and following functions, so that they are evaluated based on a certain field U or 
+    //perhaps privars V is sufficient to determine everything. 
+    evaluate_flux_balance(config);
+    
+    for (Index i{0}; i<config.get_N_INTERIOR_CELLS(); i++){
+        for (ShortIndex j{0}; j<N_EQS; j++){
+            U(i,j) += dt * R(i,j);
+        }
+    }
+
+}
+
+void Solver::TVD_RKD(const Config& config){
+    // double dt = config.get_delta_time();
+    // VecField& U = solver_data->get_solution();
+    // VecField& R = solver_data->get_flux_balance();
+    // const ShortIndex N_EQS = solver_data->get_N_EQS();
+    // assert(U.size() == R.size() && U.get_N_EQS() == N_EQS && R.get_N_EQS() == N_EQS);
+    
+    // evaluate_flux_balance(config);
+    
+    // for (Index i{0}; i<config.get_N_INTERIOR_CELLS(); i++){
+    //     for (ShortIndex j{0}; j<N_EQS; j++){
+    //         U(i,j) += dt * R(i,j);
+    //     }
+    // }
+}
+
 EulerSolver::EulerSolver(const Config& config, const geom::Grid& grid) : Solver(grid)
 {
     solver_data = make_unique<EulerSolverData>(config);
@@ -17,17 +73,11 @@ EulerSolver::EulerSolver(const Config& config, const geom::Grid& grid) : Solver(
 }
 
 
-void EulerSolver::step(Config& config){
-    
-    assert(config.get_time_integration_type() == TimeIntegrationType::Explicit); //Remove if implementing implicit
-
-    double dt = config.get_delta_time();
-
-}
-
-void EulerSolver::evaluate_flux_balance(Config& config){
+void EulerSolver::evaluate_flux_balance(const Config& config, const VecField& cons_vars){
     VecField& flux_balance = solver_data->get_flux_balance();
     flux_balance.set_zero();
+
+    solver_data->set_primvars(cons_vars, config);
 
     set_constant_ghost_values(config);
 
@@ -222,7 +272,6 @@ double EulerSolver::calc_timestep(Config& config){
 
         volume = cells[i].cell_volume;
 
-
         spec_rad_x = (abs(V[1]) + c) * Delta_S[i].x();
         spec_rad_y = (abs(V[2]) + c) * Delta_S[i].y();
         spec_rad_z = (abs(V[3]) + c) * Delta_S[i].z();
@@ -325,3 +374,4 @@ void EulerSolver::evaluate_limiter(const Config& config){
             FAIL_MSG("Selected limiter not implemented\n");
     }
 }
+

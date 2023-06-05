@@ -12,6 +12,7 @@
 struct VecField final : public DynamicContainer2D<double>{
     VecField(Index N_CELLS, ShortIndex N_EQS) : DynamicContainer2D(N_CELLS, N_EQS) {}
     ShortIndex get_N_EQS() const {return rows();}
+    
 };
 
 struct GradField final : public DynamicContainer3D<double, N_DIM>{
@@ -36,12 +37,17 @@ protected:
                          primvars_max, 
                          primvars_min;
 
-
     SolverData() = default;
+
+
 public:
+    virtual ShortIndex get_N_EQS() const = 0;
 
     VecField& get_solution() {return *solution;}
     const VecField& get_solution() const {return *solution;}
+
+    VecField& get_solution_old() {return *solution_old;}
+    const VecField& get_solution_old() const {return *solution_old;}
 
     VecField& get_flux_balance() {return *flux_balance;}
     const VecField& get_flux_balance() const {return *flux_balance;}
@@ -62,6 +68,8 @@ public:
     const VecField& get_primvars_min() const {return *primvars_min;}
 
     virtual SolverType get_solver_type() const = 0; 
+
+    virtual void set_primvars(const VecField& cons_vars, const Config& config) = 0;
 };
 
 
@@ -90,6 +98,8 @@ class EulerSolverData : public SolverData{
 public:
     EulerSolverData(const Config& config);
 
+    ShortIndex get_N_EQS() const final {return N_EQS_EULER;};
+
     virtual SolverType get_solver_type() const {return SolverType::Euler;}
 
     EulerVecMap get_U_L_map() {return EulerVecMap(U_L.data());}
@@ -102,6 +112,8 @@ public:
 
     Vector<Vec3>& get_Delta_S() {return Delta_S;}
     const Vector<Vec3>& get_Delta_S() const {return Delta_S;}
+
+    void set_primvars(const VecField& cons_vars, const Config& config) final;
 };
 
     /*Discontinuing StaticContainer, using Eigen instead*/

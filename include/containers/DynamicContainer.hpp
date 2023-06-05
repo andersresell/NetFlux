@@ -10,8 +10,9 @@ It is assumed that the number of colums of the matrices N is known at compile ti
 
 template<typename T, ShortIndex N>
 class DynamicContainer3D{
+    using DC3D = DynamicContainer3D;
 
-    Index length; //Length of outer vector
+    Index size_; //Length of outer vector
     Index M; //number of rows of each variable, 
 
     T* data;
@@ -19,39 +20,44 @@ class DynamicContainer3D{
 public:
     DynamicContainer3D() {};
 
-    DynamicContainer3D(Index length, Index M) : L{L}, M{M} {
-        data = new T[length * M * N](0);
+    DynamicContainer3D(Index size_, Index M) : L{L}, M{M} {
+        data = new T[size_ * M * N](0);
     }
 
     T& operator()(Index l, Index i, Index j) {
-        assert(l<length && i<M && j<N);
+        assert(l<size_ && i<M && j<N);
         return data[l * M*N + i*N + j];
     }
 
     const T& operator()(Index l, Index i, Index j) const {
-        assert(l<length && i<M && j<N);
+        assert(l<size_ && i<M && j<N);
         return data[l * M*N + i*N + j];
     }
 
     /*Returns pointer to matrix l*/
     T* operator[](Index l) {
-        assert(l < length);
+        assert(l < size_);
         return data + l * M * N;
     }
     const T* operator[](Index l) const {
-        assert(l < length);
+        assert(l < size_);
         return data + l * M * N;
     }
 
     void operator*=(T rhs){
-        for (Index i{0}; i<SIZE; i++) data[i] *= rhs;
+        for (Index i{0}; i<size_*M*N; i++) data[i] *= rhs;
     }
 
     void operator=(T rhs){
-        for (Index i{0}; i<SIZE; i++) data[i] = rhs;
+        for (Index i{0}; i<size_*M*N; i++) data[i] = rhs;
     }
 
-    void set_zero() {for (size_t i{0}; i<length*M*N; i++) data[i] = 0;}
+    void set_zero() {for (size_t i{0}; i<size_*M*N; i++) data[i] = 0;}
+
+    void operator=(const DC3D& other){
+        assert(size() == other.size());
+        std::copy(other.data, other.data + size_*M*N, data); 
+    }
 
 
     template<typename StaticEigenType>
@@ -76,9 +82,9 @@ public:
     }
 
 
+public:
 
-
-    Index length() const{return length;}
+    Index size() const{return size_;}
     Index rows() const {return M;}
     Index cols() const {return N;}
     
