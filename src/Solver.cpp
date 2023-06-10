@@ -12,8 +12,6 @@ void Solver::step(const Config& config){
     
     assert(config.get_time_integration_type() == TimeIntegrationType::Explicit); //Remove if implementing implicit
 
-
-
     switch (config.get_time_scheme()){
         case TimeScheme::ExplicitEuler:
             explicit_euler(config);
@@ -29,6 +27,27 @@ void Solver::step(const Config& config){
 
 }
 
+void Solver::evaluate_flux_balance(const Config& config, const VecField& cons_vars){
+    
+    solver_data->get_flux_balance().set_zero();
+    
+    solver_data->set_primvars(cons_vars, config);
+
+    set_constant_ghost_values(config);
+
+    if (config.get_spatial_order() == SpatialOrder::Second){
+        evaluate_gradient(config);
+
+        if (config.get_limiter() != Limiter::NONE)
+            evaluate_limiter(config);
+    }
+
+    evaluate_inviscid_fluxes(config);
+
+    evaluate_viscous_fluxes(config);
+
+}
+
 void Solver::explicit_euler(const Config& config){
     double dt = config.get_delta_time();
     VecField& U = solver_data->get_solution();
@@ -38,7 +57,7 @@ void Solver::explicit_euler(const Config& config){
     
     //Modify evaluate_flux_balance and following functions, so that they are evaluated based on a certain field U or 
     //perhaps privars V is sufficient to determine everything. 
-    evaluate_flux_balance(config);
+    evaluate_flux_balance(config, U);
     
     for (Index i{0}; i<config.get_N_INTERIOR_CELLS(); i++){
         for (ShortIndex j{0}; j<N_EQS; j++){
@@ -64,6 +83,8 @@ void Solver::TVD_RKD(const Config& config){
     // }
 }
 
+
+
 EulerSolver::EulerSolver(const Config& config, const geom::Grid& grid) : Solver(grid)
 {
     solver_data = make_unique<EulerSolverData>(config);
@@ -73,27 +94,10 @@ EulerSolver::EulerSolver(const Config& config, const geom::Grid& grid) : Solver(
 }
 
 
-void EulerSolver::evaluate_flux_balance(const Config& config, const VecField& cons_vars){
-    VecField& flux_balance = solver_data->get_flux_balance();
-    flux_balance.set_zero();
-
-    solver_data->set_primvars(cons_vars, config);
-
-    set_constant_ghost_values(config);
-
-    if (config.get_spatial_order() == SpatialOrder::Second){
-        evaluate_gradient(config);
-
-        if (config.get_limiter() != Limiter::NONE)
-            evaluate_limiter(config);
-    }
-
-    inviscid_flux_balance(config);
-
-}
 
 
-void EulerSolver::inviscid_flux_balance(const Config& config){
+
+void EulerSolver::evaluate_inviscid_fluxes(const Config& config){
     
     VecField& flux_balance = solver_data->get_flux_balance();
     //const VecField& primvars = solver_data->get_primvars();
@@ -251,6 +255,7 @@ double EulerSolver::calc_timestep(Config& config){
     // Implementing Method 2 in "Time Step on Unstructured Grids" in Blazek 
     // --------------------------------------------------------------------
     
+    /*Delta S only needs updating when the grid is moved*/
     if (config.get_grid_motion()) 
         calc_Delta_S(config);
 
@@ -262,7 +267,7 @@ double EulerSolver::calc_timestep(Config& config){
 
     const auto& primvars = solver_data->get_primvars();
     
-    double rho, u, v, w, c, volume, spec_rad_x, spec_rad_y, spec_rad_z;
+    double c, volume, spec_rad_x, spec_rad_y, spec_rad_z;
 
     double delta_time = std::numeric_limits<double>::max(); //Large number
 
@@ -275,7 +280,7 @@ double EulerSolver::calc_timestep(Config& config){
         spec_rad_x = (abs(V[1]) + c) * Delta_S[i].x();
         spec_rad_y = (abs(V[2]) + c) * Delta_S[i].y();
         spec_rad_z = (abs(V[3]) + c) * Delta_S[i].z();
-                
+
         delta_time = std::min(delta_time, CFL* volume / (spec_rad_x + spec_rad_y + spec_rad_z));
     }
     config.set_delta_time(delta_time);

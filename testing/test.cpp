@@ -1,27 +1,38 @@
 
 #include "test.hpp"
+#include <bit>
 
 using namespace std;
     using EMat = Eigen::Matrix<double, 4,1>;
 
-class A{
-    virtual void f() {cout << a<< "ho\n"; };
-    int g() {return 2;}
-protected:
-    int a{1};
-public:
-    void call_it(){this->f();}
+// 
 
+struct FlowVar{
+    double density,u,v,w,p;
+    void print(){
+        cout << density<<", "<<u<<", "<<v<<", "<<w<<", "<< p<<endl;
+    }
 };
 
-class B : A{
-public:
-    virtual void f() {cout <<g()<< a<< "hey\n"; };
-};
+    template<size_t N_VARS>
+    struct FlowVars{
+        double variables [N_VARS];
+    };
 
 int main()
 {
-    A* a = new B{};
-    a->call_it();
 
+    double arr [10];
+    for (Index i{0};i<10;i++)arr[i]=i;
+
+    const double* ptr = arr;
+
+    for (Index i{0};i<13;i++)cout<<ptr[i]<<endl;
+
+    EMat e{ptr};
+    cout << e;
+    arr[1] = 121221;
+    cout << e;
+
+    
 }

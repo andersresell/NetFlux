@@ -20,19 +20,29 @@ public:
 
     virtual double calc_timestep(Config& config) = 0;
 
+    virtual SolverType get_solver_type() const = 0;
+
 protected:
 
     const SolverData& get_solver_data() const {return *solver_data;} 
 
 private:   
 
-    virtual void evaluate_flux_balance(const Config& config, const VecField& conservative) = 0;
+    void evaluate_flux_balance(const Config& config, const VecField& cons_vars);
 
-    virtual SolverType get_solver_type() const = 0;
+    virtual void evaluate_inviscid_fluxes(const Config& config) {return; } ;
+
+    virtual void evaluate_viscous_fluxes(const Config& config) {return; };
+
+    virtual void set_constant_ghost_values(const Config& config) = 0;
 
     void explicit_euler(const Config& config);
 
     void TVD_RKD(const Config& config);
+
+    virtual void evaluate_gradient(const Config& config) = 0;
+
+    virtual void evaluate_limiter(const Config& config) = 0;
 
 
 };
@@ -47,14 +57,15 @@ public:
 
     SolverType get_solver_type() const override {return SolverType::Euler;}
 
-private:
-    void evaluate_flux_balance(const Config& config, const VecField& cons_vars) override; 
+private: 
 
-    void set_constant_ghost_values(const Config& config);
-    void evaluate_gradient(const Config& config);
-    void evaluate_limiter(const Config& config);
+    void evaluate_inviscid_fluxes(const Config& config) final;
 
-    void inviscid_flux_balance(const Config& config);
+    void set_constant_ghost_values(const Config& config) final;
+    
+    void evaluate_gradient(const Config& config) final;
+
+    void evaluate_limiter(const Config& config) final;
 
     void calc_reconstructed_value(Index i, 
                                   EulerVecMap& V_L,  

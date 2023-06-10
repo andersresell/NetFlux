@@ -46,6 +46,7 @@ template <typename T>
 class Vector final : public std::vector<T> {
 public:
     using std::vector<T>::vector;
+    
     #ifndef NDEBUG
 
     T& operator[](size_t i) {
@@ -61,8 +62,7 @@ public:
 
 template<typename T, size_t N>
 inline bool arrays_equal(const array<T, N>& a,const array<T, N>& b){
-    assert (a.size() == b.size());
-    for (size_t i{0}; i<a.size(); i++) 
+    for (size_t i{0}; i<N; i++) 
         if (a[i] != b[i]) return false;
     return true;
 }

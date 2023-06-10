@@ -12,7 +12,7 @@
 struct VecField final : public DynamicContainer2D<double>{
     VecField(Index N_CELLS, ShortIndex N_EQS) : DynamicContainer2D(N_CELLS, N_EQS) {}
     ShortIndex get_N_EQS() const {return rows();}
-    
+
 };
 
 struct GradField final : public DynamicContainer3D<double, N_DIM>{
@@ -28,8 +28,8 @@ protected:
 
     unique_ptr<VecField>  solution, 
                           solution_old, 
-                          flux_balance, 
-                          primvars;
+                          primvars,
+                          flux_balance; 
 
     unique_ptr<GradField> primvars_gradient;
 
@@ -38,6 +38,9 @@ protected:
                          primvars_min;
 
     SolverData() = default;
+
+    SolverData(const Config& config, ShortIndex n_eqs);
+
 
 
 public:
@@ -114,6 +117,8 @@ public:
     const Vector<Vec3>& get_Delta_S() const {return Delta_S;}
 
     void set_primvars(const VecField& cons_vars, const Config& config) final;
+
+    void set_freestream_values(const Config& config);
 };
 
     /*Discontinuing StaticContainer, using Eigen instead*/
@@ -138,8 +143,7 @@ namespace EulerEqs{
     inline void prim_to_cons(const EulerVecType& V, EulerVecType& U);
 
     template<typename EulerVecType>
-    inline void cons_to_prim(const EulerVec& U, EulerVecType& V);
-
+    inline void cons_to_prim(const EulerVecType& U, EulerVecType& V);
 
     template<typename EulerVecType>
     inline double pressure(const EulerVecType& U);
@@ -147,14 +151,11 @@ namespace EulerEqs{
     template<typename EulerVecType>
     inline double sound_speed_conservative(const EulerVecType& U);
 
-
     template<typename EulerVecType>
     inline double sound_speed_primitive(const EulerVecType& V);
 
-
     template<typename EulerVecType>
     inline double projected_velocity(const EulerVecType& U, const Vec3& normal);
-
 
     /*returns |V| + c where V = <velocity, normal> and c = sound speed */
     template<typename EulerVecType>
@@ -162,7 +163,6 @@ namespace EulerEqs{
 
     template<typename EulerVecType>
     inline EulerVec inviscid_flux(const EulerVecType& U, const Vec3& normal);
-
 
     template<typename EulerVecType>
     inline void prim_to_cons(const EulerVecType& V, EulerVecType& U){

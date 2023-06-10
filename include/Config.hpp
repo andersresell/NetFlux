@@ -32,6 +32,8 @@ class Config {
 
     Limiter limiter;
 
+    InitialConditionOption initial_cond_option;
+
     size_t n_timesteps;
 
     size_t timestep;
@@ -44,6 +46,7 @@ class Config {
 
     bool grid_motion;
 
+    double primvars_inf[N_EQS_EULER]; //May be used for setting initial values or boundary conditions
 
 public:
     Config(string config_filename); 
@@ -90,6 +93,9 @@ public:
     Limiter get_limiter() const {return limiter;}
     void set_limiter(Limiter val) {limiter = val;}
 
+    InitialConditionOption get_initial_cond_option() const {return initial_cond_option;}
+    void set_initial_cond_option(InitialConditionOption val) {initial_cond_option = val;}
+
     size_t get_n_timesteps() const {return n_timesteps;}
 
     size_t& get_timestep() {return timestep;}
@@ -106,5 +112,9 @@ public:
 
     bool get_grid_motion() const {return grid_motion;}
     void set_grid_motion(bool val) {grid_motion = val;}
+
+    double get_primvars_inf(ShortIndex i_var) const {assert(i_var < N_EQS_EULER); return primvars_inf[i_var];}
+    const double* get_primvars_inf() const {return primvars_inf;}
+    void set_primvars_inf(double val, ShortIndex i_var) {assert(i_var < N_EQS_EULER); primvars_inf[i_var] = val; }
 };
 

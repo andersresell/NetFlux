@@ -18,7 +18,6 @@ class DynamicContainer3D{
     T* data;
 
 public:
-    DynamicContainer3D() {};
 
     DynamicContainer3D(Index size_, Index M) : L{L}, M{M} {
         data = new T[size_ * M * N](0);
@@ -61,13 +60,26 @@ public:
 
 
     template<typename StaticEigenType>
-    void set_variable(Index l, const StaticEigenType& variable){
+    void set_variable(Index l, const StaticEigenType& variable) {
         assert(StaticEigenType::RowsAtCompileTime == M && StaticEigenType::ColsAtCompileTime == N);
         for (Index i{0}; i<M; i++)
             for (Index j{0}; j<N; j++)
                 data[l * M*N + i*N + j] = variable(i,j);
 
+    } 
+
+    template<typename StaticEigenType>
+    void set_constant_field_segment(const StaticEigenType& variable, Index first_index, Index last_index){
+        assert(first_index < last_index);
+        for (Index l{first_index}; l<last_index; l++) set_variable(l, variable);
     }
+
+    template<typename StaticEigenType>
+    void set_constant_field(const StaticEigenType& variable){
+        set_constant_field_segment(variable, 0, size_);
+    }
+
+    
 
     template<typename StaticEigenType>
     Eigen::Map<StaticEigenType> get_variable(Index l){

@@ -31,11 +31,14 @@ enum class Limiter{NONE, Barth};
 
 enum class BoundaryType{NoSlipWall, SlipWall, FarField};
 
+enum class InitialConditionOption{Freestream};
+
 const map<string, BoundaryType> boundary_type_from_string{
     {"NoSlipWall", BoundaryType::NoSlipWall},
     {"SlipWall", BoundaryType::SlipWall},
     {"FarField", BoundaryType::FarField},
 };
+
 
 
 namespace geom{
