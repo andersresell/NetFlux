@@ -4,7 +4,7 @@
 
 using namespace std;
     using EMat = Eigen::Matrix<double, 4,1>;
-
+    using EVec = Eigen::Vector<double, 4>;
 // 
 
 struct FlowVar{
@@ -32,7 +32,14 @@ int main()
     EMat e{ptr};
     cout << e;
     arr[1] = 121221;
-    cout << e;
+    cout << e << endl;
+
+    Eigen::Map<EMat> emap{e.data()};
+
+    cout << sizeof(emap)<<endl;
+
+
+    cout << sizeof(Eigen::Map<EVec>)<<endl;
 
     
 }
