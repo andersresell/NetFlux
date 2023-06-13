@@ -63,3 +63,67 @@ public:
         //return Eigen::Map<StaticEigenType>(ddata + 4*l, 4, 1);
     }
 };
+
+
+
+
+template<typename T, size_t cols_>
+class DynamicContainer3D{
+
+    size_t size_; //Length of outer vector
+    size_t rows_; //number of rows of each variable, 
+
+    T* data;
+
+public:
+
+    DynamicContainer3D(size_t size, size_t rows) : size_{size}, rows_{rows} {
+        data = new T[size_ * rows_ * cols_](0);
+    }
+
+
+    template<typename StaticEigenType>
+    Eigen::Map<StaticEigenType> get_variable(size_t i){
+        assert(StaticEigenType::RowsAtCompileTime == rows_ && StaticEigenType::ColsAtCompileTime == cols_);
+        return Eigen::Map<StaticEigenType>(data + rows_ * cols_ * i);
+    }
+
+
+
+    ~DynamicContainer3D() {delete [] data ;}
+};
+
+template<typename T>
+class DynamicContainer2D : public DynamicContainer3D<T, 1>{
+public:
+    DynamicContainer2D(size_t size, size_t rows) : DynamicContainer3D<T,1>(size, rows) {};
+};
+
+
+// template <Index size>
+// class View{
+//     double* data;
+
+// public:
+//     View(double* data) {data = data;}
+
+//     void operator*=(double rhs) {
+//         for (int i{0};i<size;i++) data[i] *= rhs;
+//     }
+
+//     View(const View& rhs){
+//         data = double[size];
+//         std::copy(rhs.data, rhs.data + size, data);
+//     }
+
+
+// };
+
+// class Container{
+//     double* data;
+
+//     template <Index size>
+//     View<size> get_variable(Index i){
+//         return View{data + i*size};
+//     }
+// };

@@ -1,0 +1,6 @@
+solver:
+  name: "MySolver"
+  max_iterations: 1000
+  tolerance: 1e-6
+algo:
+  name: "hehe"

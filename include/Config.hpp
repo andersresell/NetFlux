@@ -1,8 +1,14 @@
 #pragma once
+#include <yaml-cpp/yaml.h>
+#include <typeindex>
+#include <typeinfo>
 #include "includes.hpp"
 #include "Utilities.hpp"
 
+
 class Config {
+
+    /*Options specified when reading mesh*/
 
     Index N_NODES,
           N_TETS;
@@ -12,6 +18,8 @@ class Config {
           N_INTERIOR_FACES,
           N_TOTAL_FACES;
     bool grid_metrics_set{false};
+
+    /*Options specified by input file*/
 
     string mesh_filename; 
     string output_basename;
@@ -48,7 +56,9 @@ class Config {
 
     double primvars_inf[N_EQS_EULER]; //May be used for setting initial values or boundary conditions
 
+    //void parse_config_file(string config_filename);
 public:
+
     Config(string config_filename); 
 
     Index get_N_NODES() const {return N_NODES;}
@@ -118,3 +128,32 @@ public:
     void set_primvars_inf(double val, ShortIndex i_var) {assert(i_var < N_EQS_EULER); primvars_inf[i_var] = val; }
 };
 
+
+class ConfigParser{
+
+    YAML::Node cfg_node;
+
+
+public:
+    ConfigParser(string config_filename);
+
+
+
+
+private:
+
+    void read_options();
+    
+
+    template<typename T>
+    inline T read_single_option(string option_name){
+        T value = cfg_node[option_name].as<T>();
+    }
+
+
+    std::map<string, std::type_index> data_type_map{
+        {"MESH_FILENAME", std::type_index(typeid(string))},
+        {"OUTPUT_BAENAME", std::type_index(typeid(string))}
+    };
+
+};

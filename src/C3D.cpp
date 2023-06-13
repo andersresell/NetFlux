@@ -14,6 +14,7 @@ int main(){
     // cout << "N_TET_FACES "<<N_TET_FACES<<endl;
 
     Config c{"/home/anders/dev/Compress3D/test_mesh.c3d"};
+    
 
     geom::Grid g{c};  
 
@@ -24,7 +25,4 @@ int main(){
     Output o{g};
     o.write_vtk_ascii(c);
 
-    FlowVar flow;
-    FluxVar flux;
-    FlowVar fv = flow+flux;
 }

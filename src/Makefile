@@ -6,6 +6,10 @@ BUILD_DIR = ../build
 
 CXX_FLAGS = -g -Wall -I$(INC_DIR)
 
+#external libraries
+LDLIBS = -lyaml-cpp
+
+
 _EXE = C3D
 EXE = $(BUILD_DIR)/$(_EXE)
 
@@ -27,7 +31,7 @@ OBJ = $(patsubst %.cpp, $(BUILD_DIR)/%.o, $(SRC)) #names of src files put in bui
 
 #target for executable
 $(_EXE): $(OBJ)
-	$(CXX) -o $(EXE) $^ $(CXX_FLAGS)
+	$(CXX) -o $(EXE) $^ $(LDLIBS) $(CXX_FLAGS)
 
 
 #target for object files

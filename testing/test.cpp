@@ -2,44 +2,70 @@
 #include "test.hpp"
 #include <bit>
 
-using namespace std;
-    using EMat = Eigen::Matrix<double, 4,1>;
-    using EVec = Eigen::Vector<double, 4>;
-// 
+#include <yaml-cpp/yaml.h>
 
-struct FlowVar{
-    double density,u,v,w,p;
-    void print(){
-        cout << density<<", "<<u<<", "<<v<<", "<<w<<", "<< p<<endl;
+#include <exception>
+
+struct Config{
+
+    string solverName;
+    int maxIterations;
+    int tolerance;
+    string algo;
+
+
+
+    void load(string filePath){
+
+        std::ifstream file(filePath);
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        file.close();
+
+        YAML::Node config = YAML::Load(buffer.str());
+        solverName = config["solver"]["name"].as<std::string>();
+        maxIterations = config["solver"]["max_iterations"].as<int>();
+        tolerance = config["solver"]["tolerance"].as<double>();
+        algo = config["algo"]["name"].as<string>();
+
+
     }
+
+
+
+    void try_load(string path){
+        try{
+            load(path);
+        }catch (YAML::Exception& e){
+            std::cerr << "file read failed, " << e.msg << std::endl;
+            exit(1);
+        }
+    }
+
+
+
+
 };
 
-    template<size_t N_VARS>
-    struct FlowVars{
-        double variables [N_VARS];
-    };
+void what_is_x(int x){
+
+    try{
+    
+    if (x==0)
+        throw std::runtime_error("error: x == 0");
+    assert(x != 1);
+
+    } catch(const std::exception& e){
+        std::cerr << e.what() <<endl;
+    }            
+}
+
 
 int main()
 {
 
-    double arr [10];
-    for (Index i{0};i<10;i++)arr[i]=i;
+    //what_is_x(1);
 
-    const double* ptr = arr;
-
-    for (Index i{0};i<13;i++)cout<<ptr[i]<<endl;
-
-    EMat e{ptr};
-    cout << e;
-    arr[1] = 121221;
-    cout << e << endl;
-
-    Eigen::Map<EMat> emap{e.data()};
-
-    cout << sizeof(emap)<<endl;
-
-
-    cout << sizeof(Eigen::Map<EVec>)<<endl;
-
-    
+    std::vector v = {1,2,3};
+    cout << v.at(4);
 }
