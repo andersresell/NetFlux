@@ -52,8 +52,8 @@ void what_is_x(int x){
     try{
     
     if (x==0)
-        //throw std::runtime_error("error: x == 0");
-        throw std::exc
+        throw std::runtime_error("error: x == 0");
+ 
     assert(x != 1);
 
     } catch(const std::exception& e){
