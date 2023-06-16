@@ -1,12 +1,13 @@
 #pragma once
 #include <yaml-cpp/yaml.h>
-#include <typeindex>
-#include <typeinfo>
 #include "includes.hpp"
 #include "Utilities.hpp"
 
+class ConfigParser;
 
 class Config {
+
+    friend class ConfigParser;
 
     /*Options specified when reading mesh*/
 
@@ -129,31 +130,3 @@ public:
 };
 
 
-class ConfigParser{
-
-    YAML::Node cfg_node;
-
-
-public:
-    ConfigParser(string config_filename);
-
-
-
-
-private:
-
-    void read_options();
-    
-
-    template<typename T>
-    inline T read_single_option(string option_name){
-        T value = cfg_node[option_name].as<T>();
-    }
-
-
-    std::map<string, std::type_index> data_type_map{
-        {"MESH_FILENAME", std::type_index(typeid(string))},
-        {"OUTPUT_BAENAME", std::type_index(typeid(string))}
-    };
-
-};

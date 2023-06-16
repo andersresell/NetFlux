@@ -52,7 +52,8 @@ void what_is_x(int x){
     try{
     
     if (x==0)
-        throw std::runtime_error("error: x == 0");
+        //throw std::runtime_error("error: x == 0");
+        throw std::exc
     assert(x != 1);
 
     } catch(const std::exception& e){
@@ -64,8 +65,7 @@ void what_is_x(int x){
 int main()
 {
 
-    //what_is_x(1);
+    what_is_x(0);
+    
 
-    std::vector v = {1,2,3};
-    cout << v.at(4);
 }

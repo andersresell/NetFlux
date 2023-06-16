@@ -12,11 +12,7 @@ Config::Config(string config_filename)
                         {"outlet", BoundaryType::SlipWall},
                          {"sides", BoundaryType::NoSlipWall}};
     
-    if (time_scheme == TimeScheme::ExplicitEuler || time_scheme == TimeScheme::TVD_RK3)
-        time_integration_type = TimeIntegrationType::Explicit;
-    else{
-        FAIL_MSG("Implicit schemes are not yet implemented\n");
-    }
+
 
 }
 
@@ -37,22 +33,3 @@ void Config::set_grid_metrics(Index N_NODES,
 }
 
 
-ConfigParser::ConfigParser(string config_filename){
-    try {
-        cfg_node = YAML::LoadFile(config_filename);
-    } catch (YAML::Exception& e){
-        FAIL_MSG("Error loading config file " << e.what());
-    }
-}
-
-
-void ConfigParser::read_options(){
-
-    for (const auto& pair : cfg_node){
-        string key = pair.first.as<string>();
-        std::type_index value_type = data_type_map.at(key);
-
-        
-
-    }
-}
