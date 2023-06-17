@@ -1,16 +1,36 @@
 #include "../include/ConfigParser.hpp"
 
-ConfigParser::ConfigParser(string config_filename){
+
+ConfigParser::ConfigParser(const string& config_filename) : config_filename{config_filename} {
     try {
-        cfg_node = YAML::LoadFile(config_filename);
-    } catch (YAML::Exception& e){
-        FAIL_MSG("Error loading config file " << e.what());
+        root_node = YAML::LoadFile(config_filename);
+
+    } catch (const YAML::Exception& e){
+        throw std::runtime_error("Error parsing config file" + string(e.what()));
     }
 }
 
     
 void ConfigParser::parse_config(Config& config){
-    
+
+    try {
+
+        parse_yaml_file_options(config);
+
+        infer_hidden_options(config);
+
+    } catch(std::exception& e){
+        throw std::runtime_error("Error parsing config file" + string(e.what()));
+
+    } catch(YAML::Exception& e){
+        throw std::runtime_error("Error loading config file " + string(e.what()));
+    }
+
+    cout << "input file parsed without errors\n";
+}
+
+
+void ConfigParser::parse_yaml_file_options(Config& config){
     
     config.mesh_filename = read_required_option<string>("mesh_filename");
 
@@ -30,17 +50,66 @@ void ConfigParser::parse_config(Config& config){
 
     config.grad_scheme = read_optional_enum_option<GradientScheme>("grad_scheme", gradient_scheme_from_string, GradientScheme::GreenGauss);
     
-    
-}
+    config.initial_cond_option = read_required_enum_option<InitialConditionOption>("initial_cond", initial_condition_option_from_string);
 
+    double density_fs = read_optional_option<double>("density_fs", standard_air::density);
+    config.set_primvars_inf(primvars_index::Density, density_fs);
+    
+    Vec3 velocity_fs = read_optional_option<Vec3>("velocity_fs", Vec3{0.0, 0.0, 0.0});
+    for (ShortIndex i{0}; i<N_DIM; i++) 
+        config.set_primvars_inf(primvars_index::Velocity(i), velocity_fs[i]);
+    
+    double pressure_fs = read_optional_option<double>("pressure_fs", standard_air::pressure);
+    config.set_primvars_inf(primvars_index::Pressure, pressure_fs);
+
+    config.n_timesteps = read_required_option<size_t>("n_timesteps");
+
+    config.CFL = read_required_option<double>("CFL");
+
+    read_patches(config);
+
+
+
+
+}
 void ConfigParser::infer_hidden_options(Config& config){
     
     if (config.time_scheme == TimeScheme::ExplicitEuler || config.time_scheme == TimeScheme::TVD_RK3){
         config.time_integration_type = TimeIntegrationType::Explicit;
     
     }else{
-        FAIL_MSG("Implicit schemes are not yet implemented\n");
+        assert_msg(false, "Implicit schemes are not yet implemented\n");
     }
 
+    
+}
+
+
+void ConfigParser::read_patches(Config& config){
+    if (root_node["patches"]){
+        YAML::Node patches_node = root_node["patches"];
+
+        for (const auto& patch : patches_node){
+            
+            string patch_name = patch.first.as<string>();
+            string boundary_type_string = patch.second.as<string>();
+            
+            if (boundary_type_from_string.count(boundary_type_string) != 1)
+                throw std::runtime_error("Illegal BoundaryType specified in config file for patch with name " + patch_name);
+            
+            BoundaryType bc_type = boundary_type_from_string.at(boundary_type_string);
+
+            if (config.map_patch_BC.count(patch_name) > 0)
+                throw std::runtime_error("Duplicate patch name \"" + patch_name + "\" specified in config file");
+        
+            config.map_patch_BC.at(patch_name) = bc_type;
+        }
+    
+    }
+    else{
+        throw std::runtime_error("\"patches\" option needs to be included in the config file");
+    }
+
+    
     
 }

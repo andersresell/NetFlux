@@ -16,6 +16,7 @@ EXE = $(BUILD_DIR)/$(_EXE)
 #add source files here
 SRC = C3D.cpp \
 	  Config.cpp \
+	  ConfigParser.cpp \
 	  Grid.cpp \
 	  Solver.cpp \
 	  Utilities.cpp \

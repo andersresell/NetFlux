@@ -26,6 +26,7 @@ pressure_fs: 100000.0
 
 
 patches:
-  - patch1: Farfield
-  - patch2: NoSLipWall
+  - inlet: NoSLipWall
+  - outlet: SlipWall
+  - sides: NoSLipWall
 

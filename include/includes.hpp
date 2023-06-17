@@ -26,6 +26,7 @@ using std::endl;
 using std::max;
 using std::min;
 
+
 using Index = uint32_t; //Used for accessing cell indices, etc 
 using ShortIndex = uint16_t; //Used for looping over shorter numbers as spatial dimensions, etc
 
@@ -38,7 +39,7 @@ constexpr ShortIndex N_DIM{3}; //spatial dimensions
 #define FAIL_IF(EXP) ({if (EXP) exit(EXIT_FAILURE);})
 #define FAIL_IF_MSG(EXP, MSG) ({if (EXP) {std::cerr << MSG << "\n"; exit(EXIT_FAILURE);}})
 #define FAIL_MSG(MSG) ({std::cerr << MSG << "\n"; exit(EXIT_FAILURE);})
-
+#define assert_msg(EXP, MSG) ({if (!EXP) {std::cerr << MSG << "\n"; assert(false);}})
 
 
 /*Adding range checking to the [] operator for std::vector in debug mode (NDEBUG not defined)*/

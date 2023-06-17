@@ -1,19 +1,11 @@
 
 #include "../include/Config.hpp"
+#include "../include/ConfigParser.hpp"
 
 Config::Config(string config_filename)      
 {
-    //Todo: fix config file
-    
-
-    //tmp
-    mesh_filename = "/home/anders/dev/Compress3D/meshing/brick.su2";
-    map_patch_BC = {{"inlet", BoundaryType::NoSlipWall},
-                        {"outlet", BoundaryType::SlipWall},
-                         {"sides", BoundaryType::NoSlipWall}};
-    
-
-
+    ConfigParser parser{config_filename};
+    parser.parse_config(*this);
 }
 
 void Config::set_grid_metrics(Index N_NODES, 

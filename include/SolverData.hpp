@@ -133,36 +133,11 @@ public:
 
 namespace EulerEqs{
 
-    constexpr double GAMMA{1.4};
+    constexpr double GAMMA{standard_air::gamma};
     constexpr double GAMMA_MINUS_ONE{1-GAMMA};
     constexpr double GAMMA_MINUS_ONE_INV{1/GAMMA_MINUS_ONE};
 
     /*Templating the various functions since the EulerVecType can be either EulerVec or EulerVecMap*/
-
-    template<typename EulerVecType>
-    inline void prim_to_cons(const EulerVecType& V, EulerVecType& U);
-
-    template<typename EulerVecType>
-    inline void cons_to_prim(const EulerVecType& U, EulerVecType& V);
-
-    template<typename EulerVecType>
-    inline double pressure(const EulerVecType& U);
-
-    template<typename EulerVecType>
-    inline double sound_speed_conservative(const EulerVecType& U);
-
-    template<typename EulerVecType>
-    inline double sound_speed_primitive(const EulerVecType& V);
-
-    template<typename EulerVecType>
-    inline double projected_velocity(const EulerVecType& U, const Vec3& normal);
-
-    /*returns |V| + c where V = <velocity, normal> and c = sound speed */
-    template<typename EulerVecType>
-    inline double conv_spec_rad(const EulerVecType& U, const Vec3& normal);
-
-    template<typename EulerVecType>
-    inline EulerVec inviscid_flux(const EulerVecType& U, const Vec3& normal);
 
     template<typename EulerVecType>
     inline void prim_to_cons(const EulerVecType& V, EulerVecType& U){
@@ -222,13 +197,13 @@ namespace EulerEqs{
 
 
     template<typename EulerVecType>
-    inline double conv_spectral_rad(const EulerVecType& U, const Vec3& normal){
+    inline double conv_spectral_radii(const EulerVecType& U, const Vec3& normal){
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER && EulerVecType::ColsAtCompileTime == 1);
-        return abs(projected_velocity(U, normal)) + sound_speed(U);
+        return abs(projected_velocity(U, normal)) + sound_speed_conservative(U);
     }
 
     template<typename EulerVecType>
-    inline EulerVec inviscid_flux(const EulerVecType& U, const Vec3& normal, EulerVecType& Flux){
+    inline EulerVec inviscid_flux(const EulerVecType& U, const Vec3& normal){
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER && EulerVecType::ColsAtCompileTime == 1);
 
         double rho = U[0];

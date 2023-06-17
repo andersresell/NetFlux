@@ -1,28 +1,26 @@
 
-#include "../include/Utilities.hpp"
-#include <iostream>
-#include "../include/Grid.hpp"
-#include "../include/Output.hpp"
+
+#include "../include/Driver.hpp"
 
 int main(){
 
 
     cout << "hello jævel\n\n";
 
-    // cout << "N_DIM " << N_DIM<<endl;
-    // cout << "N_TET_NODES "<<N_TET_NODES<<endl;
-    // cout << "N_TET_FACES "<<N_TET_FACES<<endl;
+    // string mesh_filename = "/home/anders/dev/Compress3D/meshing/brick.su2";
 
-    Config c{"/home/anders/dev/Compress3D/test_mesh.c3d"};
+    // Config config{mesh_filename};
     
+    // geom::Grid g{c};  
 
-    geom::Grid g{c};  
+    // g.create_grid(c);
 
-    g.create_grid(c);
+    // g.print_grid(c);
 
-    g.print_grid(c);
-
-    Output o{g};
-    o.write_vtk_ascii(c);
-
+    // Output o{g};
+    string config_filename = "../testing/test.yaml";
+    Config config{config_filename};
+    Driver driver{config};
+    driver.solve();
+    
 }

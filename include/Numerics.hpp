@@ -90,13 +90,13 @@ namespace Gradient{
         assert(N_EQS == vec_field.get_N_EQS());
     
         using FieldVec = Eigen::Vector<double, N_EQS>;
-        using FieldGrad = Eigen::matrix<double, N_EQS, N_DIM>;
+        using FieldGrad = Eigen::Matrix<double, N_EQS, N_DIM>;
 
 
         const auto& faces = grid.get_faces();
         const auto& cells = grid.get_cells();
 
-        const Index N_FACES = config.get_N_FACES();
+        const Index N_FACES = config.get_N_TOTAL_FACES();
         const Index N_CELLS = config.get_N_INTERIOR_CELLS();
         Index i,j;
         
@@ -107,11 +107,11 @@ namespace Gradient{
 
         for (Index ij{0}; ij<N_FACES; ij++){
             const Face& face = faces[ij];
+            i = face.i;
+            j = face.j;
 
-            const Cell& cell_i = cells[face.i];
-            const Cell& cell_j = cells[face.j];
-            i = cell_i.i;
-            j = cell_i.j;
+            const Cell& cell_i = cells[i];
+            const Cell& cell_j = cells[j];
         
             //Simple average for now, might improve later with distance weighting and orthogonal correctors later
             U_face = 0.5 * (vec_field.get_variable<FieldVec>(i) + vec_field.get_variable<FieldVec>(j));
@@ -172,10 +172,10 @@ namespace Reconstruction{
         
         assert(N_EQS == sol_field.get_N_EQS() && N_EQS == sol_grad.get_N_EQS() && N_EQS == max_field.get_N_EQS() && 
             N_EQS == min_field.get_N_EQS() && N_EQS == limiter.get_N_EQS());
-        assert(sol_field.length() == sol_grad.length() == max_field.length() == min_field.length() == limiter.length());
+        assert(sol_field.size() == sol_grad.size() == max_field.size() == min_field.size() == limiter.size());
 
         using FieldVec = Eigen::Vector<double, N_EQS>;
-        using FieldGrad = Eigen::matrix<double, N_EQS, N_DIM>;
+        using FieldGrad = Eigen::Matrix<double, N_EQS, N_DIM>;
         using FieldVecMap = Eigen::Map<FieldVec>;
         using FieldGradMap = Eigen::Map<FieldGrad>;
             
@@ -184,7 +184,7 @@ namespace Reconstruction{
         const auto& faces = grid.get_faces();
         const auto& cells = grid.get_cells();
 
-        const Index N_FACES = config.get_N_FACES();
+        const Index N_FACES = config.get_N_TOTAL_FACES();
         const Index N_CELLS = config.get_N_INTERIOR_CELLS();
         Index i,j;
         FieldVec Delta_2;
@@ -193,10 +193,9 @@ namespace Reconstruction{
         limiter = DBL_MAX;
 
         for (Index ij{0}; ij<N_FACES; ij++){
-            const geom::Face& face = faces[ij];
-
-            i = cells[face.i].i;
-            j = cells[face.j].j;
+            const Face& face = faces[ij];
+            i = face.i;
+            j = face.j;
 
             const FieldGradMap gradient_i = sol_grad.get_variable<FieldGrad>(i);
             Delta_2 = gradient_i * face.r_im;
@@ -247,7 +246,7 @@ namespace Reconstruction{
                         VecField& min_field){
 
         assert(N_EQS == sol_field.get_N_EQS() && N_EQS == max_field.get_N_EQS() && N_EQS == min_field.get_N_EQS());
-        assert(sol_field.length() == max_field.length() == min_field.length());
+        assert(sol_field.size() == max_field.size() == min_field.size());
 
         /*Setting the max and min fields to either a very large or a very small value*/
         max_field = -DBL_MAX;
@@ -257,7 +256,7 @@ namespace Reconstruction{
         const auto& faces = grid.get_faces();
         const auto& cells = grid.get_cells();
 
-        const Index N_FACES = config.get_N_FACES();
+        const Index N_FACES = config.get_N_TOTAL_FACES();
         const Index N_CELLS = config.get_N_INTERIOR_CELLS();
         Index i,j;
         
@@ -267,9 +266,8 @@ namespace Reconstruction{
 
         for (Index ij{0}; ij<N_FACES; ij++){
             const Face& face = faces[ij];
-
-            i = cells[face.i].i;
-            j = cells[face.j].j;
+            i = face.i;
+            j = face.j;
 
             for (ShortIndex k{0}; k<N_EQS; k++){
                 max_field(i,k) = std::max(max_field(i,k), sol_field(i,k));

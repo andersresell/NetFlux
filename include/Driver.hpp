@@ -6,8 +6,10 @@
 
 
 class Driver{
+    Config& config;
     
     unique_ptr<geom::Grid> grid;
+
     Vector<unique_ptr<Solver>> solvers;
 
     unique_ptr<Output> output;
@@ -15,7 +17,7 @@ class Driver{
 public:
     Driver(Config& config);
 
-    void solve(Config& config);
+    void solve();
 
 
 };

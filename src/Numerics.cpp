@@ -3,7 +3,7 @@
 
 
 
-InvFluxFunction NumericalFlux::get_inviscid_flux_function(const Config& config){
+NumericalFlux::InvFluxFunction NumericalFlux::get_inviscid_flux_function(const Config& config){
     switch(config.get_inv_flux_scheme()){
         case InviscidFluxScheme::Rusanov:
             return Rusanov;
@@ -19,8 +19,8 @@ InvFluxFunction NumericalFlux::get_inviscid_flux_function(const Config& config){
  void NumericalFlux::Rusanov(const EulerVecMap& U_L, const EulerVecMap& U_R, const Vec3& S_ij, EulerVecMap& Flux){
     Vec3 normal = S_ij.normalized();
     double area = S_ij.norm();
-    double spec_rad_L = EulerEqs::conv_spec_rad(U_L, normal);
-    double spec_rad_R = EulerEqs::conv_spec_rad(U_R, normal);
+    double spec_rad_L = EulerEqs::conv_spectral_radii(U_L, normal);
+    double spec_rad_R = EulerEqs::conv_spectral_radii(U_R, normal);
 
 
     Flux = area * 0.5*(EulerEqs::inviscid_flux(U_R, normal) + EulerEqs::inviscid_flux(U_L, normal) 
@@ -29,7 +29,7 @@ InvFluxFunction NumericalFlux::get_inviscid_flux_function(const Config& config){
 }
 
 
-BC_function BoundaryCondition::get_BC_function(BoundaryType boundary_type){
+ BoundaryCondition::BC_function BoundaryCondition::get_BC_function(BoundaryType boundary_type){
         switch(boundary_type){
         case BoundaryType::NoSlipWall:
             return no_slip_wall;

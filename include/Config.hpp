@@ -53,7 +53,7 @@ class Config {
 
     double CFL;
 
-    bool grid_motion;
+    bool grid_motion{false};
 
     double primvars_inf[N_EQS_EULER]; //May be used for setting initial values or boundary conditions
 
@@ -126,7 +126,7 @@ public:
 
     double get_primvars_inf(ShortIndex i_var) const {assert(i_var < N_EQS_EULER); return primvars_inf[i_var];}
     const double* get_primvars_inf() const {return primvars_inf;}
-    void set_primvars_inf(double val, ShortIndex i_var) {assert(i_var < N_EQS_EULER); primvars_inf[i_var] = val; }
+    void set_primvars_inf(ShortIndex i_var, double val) {assert(i_var < N_EQS_EULER); primvars_inf[i_var] = val; }
 };
 
 

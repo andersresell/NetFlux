@@ -8,7 +8,12 @@ constexpr ShortIndex N_TET_FACES{4};
 
 constexpr ShortIndex N_EQS_EULER{N_DIM + 2};
 
-
+namespace primvars_index{
+    static constexpr ShortIndex Density{0};
+    static ShortIndex Velocity(ShortIndex i) {assert(i<N_DIM); return i+1;}
+    static constexpr ShortIndex Pressure{4};
+    
+}
 
 // --------------------------------------------------------------------
 // Some enums that specify solver behaviour and corresponding string -> enum maps for some
@@ -72,7 +77,13 @@ enum class InitialConditionOption{Freestream};
         {"Freestream", InitialConditionOption::Freestream}
     };
 
-
+namespace standard_air{
+    constexpr double gas_constant{287.058};
+    constexpr double gamma{1.4};
+    constexpr double density{1.225};
+    constexpr double pressure{101325.0};
+    constexpr double temperature = pressure / (density * gas_constant);
+}
 
 
 namespace geom{
@@ -135,7 +146,7 @@ namespace geom{
     /*Connectivity of a triangle*/
     struct TriConnect final : public StaticContainer1D<Index, N_TRI_NODES> {
         TriConnect() = default;
-        TriConnect(std::initializer_list<Index> init) : StaticContainer1D{init} {}
+        TriConnect(Index a, Index b, Index c) : StaticContainer1D{a, b, c} {}
         Index& a() {return data[0];}
         Index& b() {return data[1];}
         Index& c() {return data[2];}
