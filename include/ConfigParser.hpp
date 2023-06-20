@@ -1,29 +1,28 @@
 #pragma once
 #include "Config.hpp"
 
+namespace YAML{
 
-
-template<typename T, size_t N_ROWS>
-struct YAML::convert<Eigen::Vector<T, N_ROWS>>{
-    static bool decode(const Node& node, Eigen::Vector<T, N_ROWS>& vec) {
+template<>
+struct convert<Vec3>{
+    static bool decode(const Node& node, Vec3& vec) {
         if (!node.IsSequence()) {
             return false;
         }
 
-        assert(vec.cols() == 1);
         if (node.size() != vec.rows()) 
             throw std::runtime_error("The vector " + node.Tag() + " has the wrong length\n"); 
 
         size_t i{0};
         for (const auto& element : node){
-            vec[i++] = element.as<T>();
+            vec[i++] = element.as<double>();
         }
         
         return true;
     }
 };
 
-
+}
 
 class ConfigParser{
 

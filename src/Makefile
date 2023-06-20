@@ -23,11 +23,11 @@ SRC = C3D.cpp \
 	  Output.cpp \
 	  Driver.cpp \
 	  SolverData.cpp \
-	  Numerics .cpp
+	  Numerics.cpp
 
 
 
-INCLUDE = $(patsubst %, $(INC_DIR)/%, $(_INCLUDE))
+
 OBJ = $(patsubst %.cpp, $(BUILD_DIR)/%.o, $(SRC)) #names of src files put in build dir with .o extension
 
 #target for executable
@@ -42,6 +42,7 @@ $(BUILD_DIR)/%.o: %.cpp
 
 
 -include $(OBJ:.o=.d)
+
 
 .PHONY: clean
 clean:
