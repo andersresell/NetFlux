@@ -10,7 +10,7 @@ struct convert<Vec3>{
             return false;
         }
 
-        if (node.size() != vec.rows()) 
+        if (node.size() != Vec3::RowsAtCompileTime) 
             throw std::runtime_error("The vector " + node.Tag() + " has the wrong length\n"); 
 
         size_t i{0};

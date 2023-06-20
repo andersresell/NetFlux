@@ -6,7 +6,7 @@
             "command": "make",
             "args": ["C3D"],
             "options": {
-                "cwd": "${workspaceFolder}/src"
+                "cwd": "${workspaceFolder}/src/"
             },
             "group": {
                 "kind": "build",

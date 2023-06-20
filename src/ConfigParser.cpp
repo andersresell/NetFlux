@@ -6,7 +6,7 @@ ConfigParser::ConfigParser(const string& config_filename) : config_filename{conf
         root_node = YAML::LoadFile(config_filename);
 
     } catch (const YAML::Exception& e){
-        throw std::runtime_error("Error parsing config file" + string(e.what()));
+        throw std::runtime_error("Error loading config file" + string(e.what()));
     }
 }
 
@@ -19,12 +19,14 @@ void ConfigParser::parse_config(Config& config){
 
         infer_hidden_options(config);
 
-    } catch(std::exception& e){
-        throw std::runtime_error("Error parsing config file" + string(e.what()));
-
-    } catch(YAML::Exception& e){
-        throw std::runtime_error("Error loading config file " + string(e.what()));
+    } 
+    catch(YAML::Exception& e){
+        throw std::runtime_error("Error parsing config file: " + string(e.what()));
     }
+    catch(std::exception& e){
+        throw std::runtime_error("Error parsing config file: " + string(e.what()));
+
+    } 
 
     cout << "input file parsed without errors\n";
 }

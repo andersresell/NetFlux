@@ -42,8 +42,7 @@ void Output::write_vtk_ascii_grid(const Config& config, string filename){
 
     const Index N_NODES = config.get_N_NODES();
     const Index N_TETS = config.get_N_TETS();
-    const Index N_INTERIOR_CELLS = config.get_N_INTERIOR_CELLS();
-    const ShortIndex VTK_TET_TYPE = 10, VTK_TRI_TYPE = 5;
+    const ShortIndex VTK_TET_TYPE = 10; //VTK_TRI_TYPE = 5;
     const auto& nodes = grid.get_nodes();
     const auto& tet_connectivity = grid.get_tet_connect();
 

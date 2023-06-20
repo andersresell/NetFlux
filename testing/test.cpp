@@ -65,7 +65,16 @@ void what_is_x(int x){
 int main()
 {
 
-    what_is_x(0);
+
+    A<double, 6> a{};
+    a = 5.0;
+    a.print();
+
+    B b;
+    b = 6.0;
+    b+=1;
+
+    b.print();
     
 
 }

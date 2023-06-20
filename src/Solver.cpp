@@ -105,11 +105,9 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config& config){
     //const VecField& primvars_limiter = solver_data->get_primvars_limiter();
 
     Index N_INTERIOR_FACES = config.get_N_INTERIOR_FACES();
-    Index N_TOTAL_FACES = config.get_N_TOTAL_FACES();
     SpatialOrder spatial_order = config.get_spatial_order();
 
     Index i,j;
-    const auto& cells = grid.get_cells();
     const auto& faces = grid.get_faces();
     const auto& patches = grid.get_patches();
 
@@ -159,7 +157,6 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config& config){
             j = faces[ij].j;
             const Vec3& S_ij = faces[ij].S_ij;
             const Vec3& r_im = faces[ij].r_im;
-            const Vec3& r_jm = faces[ij].r_jm;
 
             calc_reconstructed_value(i, V_L, r_im, spatial_order);
             
@@ -190,7 +187,7 @@ void EulerSolver::calc_reconstructed_value(Index i,
     const EulerVecMap V_i = primvars.get_variable<EulerVec>(i);
 
     if (spatial_order == SpatialOrder::Second){
-        const EulerGradMap V_i_grad = primvars.get_variable<EulerGrad>(i);
+        const EulerGradMap V_i_grad = primvars_grad.get_variable<EulerGrad>(i);
         const EulerVecMap limiter_i = primvars_limiter.get_variable<EulerVec>(i);
 
         Reconstruction::calc_limited_reconstruction(V_i, V_i_grad, limiter_i, r_im, V_L);
@@ -250,7 +247,7 @@ void EulerSolver::calc_reconstructed_value(Index i,
 //     config.set_delta_time(delta_time);
 // }
 
-double EulerSolver::calc_timestep(Config& config){
+void EulerSolver::calc_timestep(Config& config){
     // --------------------------------------------------------------------
     // Implementing Method 2 in "Time Step on Unstructured Grids" in Blazek 
     // --------------------------------------------------------------------

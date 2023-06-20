@@ -8,7 +8,7 @@
             "program": "${workspaceFolder}/build/C3D",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/src/",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",

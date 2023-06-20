@@ -18,11 +18,9 @@ public:
 
     void step(const Config& config);
 
-    virtual double calc_timestep(Config& config) = 0;
+    virtual void calc_timestep(Config& config) = 0;
 
     virtual SolverType get_solver_type() const = 0;
-
-protected:
 
     const SolverData& get_solver_data() const {return *solver_data;} 
 
@@ -53,7 +51,7 @@ class EulerSolver : public Solver{
 public:
     EulerSolver(const Config& config, const geom::Grid& grid);
 
-    double calc_timestep(Config& config) override;
+    void calc_timestep(Config& config) override;
 
     SolverType get_solver_type() const override {return SolverType::Euler;}
 

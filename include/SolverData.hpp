@@ -11,13 +11,19 @@
 
 struct VecField final : public DynamicContainer2D<double>{
     VecField(Index N_CELLS, ShortIndex N_EQS) : DynamicContainer2D(N_CELLS, N_EQS) {}
+    
     ShortIndex get_N_EQS() const {return rows();}
+    
+    using DynamicContainer2D<double>::operator=; 
 
 };
 
 struct GradField final : public DynamicContainer3D<double, N_DIM>{
     GradField(Index N_CELLS, ShortIndex N_EQS) : DynamicContainer3D(N_CELLS, N_EQS) {}
+
     ShortIndex get_N_EQS() const {return rows();}
+
+    using DynamicContainer3D<double, N_DIM>::operator=; 
 }; 
 
 
@@ -140,33 +146,52 @@ namespace EulerEqs{
     /*Templating the various functions since the EulerVecType can be either EulerVec or EulerVecMap*/
 
     template<typename EulerVecType>
+    inline void prim_to_cons(const EulerVecType& V, EulerVecType& U);
+
+    template<typename EulerVecType>
+    inline void cons_to_prim(const EulerVecType& U, EulerVecType& V);
+
+    template<typename EulerVecType>
+    inline double pressure(const EulerVecType& U);
+
+    template<typename EulerVecType>
+    inline double sound_speed_conservative(const EulerVecType& U);
+
+    template<typename EulerVecType>
+    inline double sound_speed_primitive(const EulerVecType& V);
+
+    template<typename EulerVecType>
+    inline double projected_velocity(const EulerVecType& U, const Vec3& normal);
+
+    template<typename EulerVecType>
+    inline double conv_spectral_radii(const EulerVecType& U, const Vec3& normal);
+
+    template<typename EulerVecType>
+    inline double conv_spectral_radii(const EulerVecType& U, const Vec3& normal);
+
+    template<typename EulerVecType>
+    inline EulerVec inviscid_flux(const EulerVecType& U, const Vec3& normal);
+
+
+
+    template<typename EulerVecType>
     inline void prim_to_cons(const EulerVecType& V, EulerVecType& U){
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER and EulerVecType::ColsAtCompileTime == 1);
-        U = {V[0], 
-            V[0]*V[1],
-            V[0]*V[2],
-            V[0]*V[3],
-            GAMMA_MINUS_ONE_INV * V[4] + 0.5*V[0]*(V[1]*V[1] + V[2]*V[2] + V[3]*V[3])};
-        // U[0] = V[0];
-        // U[1] = V[0]*V[1];
-        // U[2] = V[0]*V[2],
-        // U[3] = V[0]*V[3],
-        // U[4] = GAMMA_MINUS_ONE_INV * V[4] + 0.5*V[0]*(V[1]*V[1] + V[2]*V[2] + V[3]*V[3]);
+        U[0] = V[0];
+        U[1] = V[0]*V[1];
+        U[2] = V[0]*V[2],
+        U[3] = V[0]*V[3],
+        U[4] = GAMMA_MINUS_ONE_INV * V[4] + 0.5*V[0]*(V[1]*V[1] + V[2]*V[2] + V[3]*V[3]);
     }
 
     template<typename EulerVecType>
     inline void cons_to_prim(const EulerVecType& U, EulerVecType& V){
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER and EulerVecType::ColsAtCompileTime == 1);
-        V = {U[0], 
-                U[1]/U[0],
-                U[2]/U[0],
-                U[3]/U[0],
-                pressure(U)};
-        // V[0] = U[0], 
-        // V[1] = U[1]/U[0],
-        // V[2] = U[2]/U[0],
-        // V[3] = U[3]/U[0],
-        // V[4] = pressure(U)};
+        V[0] = U[0], 
+        V[1] = U[1]/U[0],
+        V[2] = U[2]/U[0],
+        V[3] = U[3]/U[0],
+        V[4] = pressure(U);
     }    
 
 

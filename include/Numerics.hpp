@@ -116,11 +116,11 @@ namespace Gradient{
             //Simple average for now, might improve later with distance weighting and orthogonal correctors later
             U_face = 0.5 * (vec_field.get_variable<FieldVec>(i) + vec_field.get_variable<FieldVec>(j));
         
-            tmp = U_face * face.S_ij; //DOES THIS MAKE SENSE?? (ij)
+            tmp = U_face * face.S_ij.transpose(); //DOES THIS MAKE SENSE?? (ij)
 
-            grad_field[i] += tmp / cell_i.cell_volume;
+            grad_field.get_variable<FieldGrad>(i) += tmp / cell_i.cell_volume;
             if (j < N_CELLS) //only calculate gradient for interior cells?
-                grad_field[j] -= tmp / cell_j.cell_volume;      
+                grad_field.get_variable<FieldGrad>(j) -= tmp / cell_j.cell_volume;      
         }
         
     }
@@ -172,20 +172,22 @@ namespace Reconstruction{
         
         assert(N_EQS == sol_field.get_N_EQS() && N_EQS == sol_grad.get_N_EQS() && N_EQS == max_field.get_N_EQS() && 
             N_EQS == min_field.get_N_EQS() && N_EQS == limiter.get_N_EQS());
-        assert(sol_field.size() == sol_grad.size() == max_field.size() == min_field.size() == limiter.size());
+
+        const Index N_TOT_CELLS = config.get_N_TOTAL_CELLS();
+        assert(sol_field.size() == N_TOT_CELLS && sol_grad.size() == N_TOT_CELLS && max_field.size() == N_TOT_CELLS &&
+            min_field.size() == N_TOT_CELLS && limiter.size() == N_TOT_CELLS);
 
         using FieldVec = Eigen::Vector<double, N_EQS>;
         using FieldGrad = Eigen::Matrix<double, N_EQS, N_DIM>;
-        using FieldVecMap = Eigen::Map<FieldVec>;
         using FieldGradMap = Eigen::Map<FieldGrad>;
             
         constexpr double EPS = std::numeric_limits<double>::epsilon(); 
 
         const auto& faces = grid.get_faces();
-        const auto& cells = grid.get_cells();
 
         const Index N_FACES = config.get_N_TOTAL_FACES();
         const Index N_CELLS = config.get_N_INTERIOR_CELLS();
+
         Index i,j;
         FieldVec Delta_2;
         FieldGrad gradient;
@@ -205,9 +207,9 @@ namespace Reconstruction{
                 Delta_2[k] = sign(Delta_2[k])*(abs(Delta_2[k]) + EPS);
 
                 if (Delta_2[k] > 0.0)
-                    limiter(i,k) = min(limiter(i,k), min(1.0, (max_field(i,k) - sol_field(i,k))/Delta_2));
-                else if (Delta_2 < 0.0)
-                    limiter(i,k) = min(limiter(i,k), min(1.0, (min_field(i,k) - sol_field(i,k))/Delta_2));
+                    limiter(i,k) = min(limiter(i,k), min(1.0, (max_field(i,k) - sol_field(i,k))/Delta_2[k]));
+                else if (Delta_2[k] < 0.0)
+                    limiter(i,k) = min(limiter(i,k), min(1.0, (min_field(i,k) - sol_field(i,k))/Delta_2[k]));
                 else
                     limiter(i,k) = min(limiter(i,k), 1.0);
             }
@@ -221,9 +223,9 @@ namespace Reconstruction{
                     Delta_2[k] = sign(Delta_2[k])*(abs(Delta_2[k]) + EPS);
 
                     if (Delta_2[k] > 0.0)
-                        limiter(j,k) = min(limiter(j,k), min(1.0, (max_field(j,k) - sol_field(j,k))/Delta_2));
-                    else if (Delta_2 < 0.0)
-                        limiter(j,k) = min(limiter(j,k), min(1.0, (min_field(j,k) - sol_field(j,k))/Delta_2));
+                        limiter(j,k) = min(limiter(j,k), min(1.0, (max_field(j,k) - sol_field(j,k))/Delta_2[k]));
+                    else if (Delta_2[k] < 0.0)
+                        limiter(j,k) = min(limiter(j,k), min(1.0, (min_field(j,k) - sol_field(j,k))/Delta_2[k]));
                     else
                         limiter(j,k) = min(limiter(j,k), 1.0);
                 }
@@ -246,15 +248,14 @@ namespace Reconstruction{
                         VecField& min_field){
 
         assert(N_EQS == sol_field.get_N_EQS() && N_EQS == max_field.get_N_EQS() && N_EQS == min_field.get_N_EQS());
-        assert(sol_field.size() == max_field.size() == min_field.size());
+        assert(sol_field.size() == max_field.size() && sol_field.size() == min_field.size());
+
 
         /*Setting the max and min fields to either a very large or a very small value*/
         max_field = -DBL_MAX;
         min_field = DBL_MAX;
-    
 
         const auto& faces = grid.get_faces();
-        const auto& cells = grid.get_cells();
 
         const Index N_FACES = config.get_N_TOTAL_FACES();
         const Index N_CELLS = config.get_N_INTERIOR_CELLS();

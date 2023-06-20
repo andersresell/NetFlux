@@ -4,7 +4,7 @@ CXX = g++
 INC_DIR = ../include
 BUILD_DIR = ../build
 
-CXX_FLAGS = -g -Wall -I$(INC_DIR)
+CXX_FLAGS = -g -Wall -Wno-unused-function -fmax-errors=1 -I$(INC_DIR)
 
 #external libraries
 LDLIBS = -lyaml-cpp

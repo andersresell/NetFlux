@@ -12,7 +12,7 @@ NumericalFlux::InvFluxFunction NumericalFlux::get_inviscid_flux_function(const C
             return HLLC;
             break;
         default:
-            FAIL_MSG("Illegal numerical flux scheme\n");
+            throw std::runtime_error("The selected inviscid flux scheme is not implemented\n");
     }
 }
 
@@ -28,6 +28,9 @@ NumericalFlux::InvFluxFunction NumericalFlux::get_inviscid_flux_function(const C
          
 }
 
+void NumericalFlux::HLLC(const EulerVecMap& U_L, const EulerVecMap& U_R, const Vec3& S_ij, EulerVecMap& Flux){
+    FAIL_MSG("HLLC IS NOT IMPLEMENTED");
+}
 
  BoundaryCondition::BC_function BoundaryCondition::get_BC_function(BoundaryType boundary_type){
         switch(boundary_type){

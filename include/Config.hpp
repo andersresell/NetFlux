@@ -109,10 +109,10 @@ public:
 
     size_t get_n_timesteps() const {return n_timesteps;}
 
-    size_t& get_timestep() {return timestep;}
+    size_t get_timestep() const {return timestep;}
     void set_timestep(size_t val) {timestep = val;}
 
-    double& get_time() {return time;}
+    double get_time() const {return time;}
     void set_time(double val) {time = val;}
 
     double get_delta_time() const {return delta_time;}

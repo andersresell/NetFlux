@@ -10,8 +10,8 @@ Driver::Driver(Config& config) : config{config}{
         case MainSolverType::Euler:
             solvers.push_back(make_unique<EulerSolver>(config, *grid));
             break;
-        dafault:
-            FAIL_MSG("Error: Illegal solver type specified");
+        default:
+            throw std::runtime_error("Error: Illegal solver type specified");
     }
 
     output = make_unique<Output>(*grid, solvers);
@@ -32,9 +32,8 @@ void Driver::solve(){
         assert(solvers.size() == 1);
         
 
-        double delta_time = solvers.at(0)->calc_timestep(config);
+        solvers.at(0)->calc_timestep(config);
         
-        config.set_delta_time(delta_time);
 
         for (auto& solver : solvers){
             solver->step(config);
@@ -43,10 +42,9 @@ void Driver::solve(){
         output->write_vtk_ascii(config);
     
         
-        config.get_timestep()++;        
+        config.set_timestep(config.get_timestep() + 1);    
     
-        config.get_time() += delta_time;
-        
+        config.set_time(config.get_time() + config.get_delta_time());
 
         
         if (config.get_timestep() > config.get_n_timesteps()){
