@@ -21,9 +21,8 @@ namespace geom {
 
     public:    
         
-        Grid(const Config& config) {}
+        Grid(Config& config);
         
-        void create_grid(Config& config);
 
         void print_grid(const Config& config) const;
         void print_native_mesh() const;
@@ -40,6 +39,7 @@ namespace geom {
 
     private:
 
+
         /*Read mesh file. This populates the:
         - nodes -> nodes of native mesh
         - tet_connect -> tetrahedral elements connectivity
@@ -48,6 +48,9 @@ namespace geom {
         void read_mesh(string mesh_filename);
         void read_c3d_mesh(string mesh_filename);
         void read_su2_mesh(string mesh_filename);
+        
+        /*Creates computational grid from native mesh*/
+        void create_grid(Config& config);
         
 
         /*------Helper functions for creating grid-------*/

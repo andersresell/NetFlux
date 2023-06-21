@@ -2,6 +2,19 @@
 
 using namespace geom;
 
+Grid::Grid(Config& config){
+    try{
+        read_mesh(config.get_mesh_filename());
+    } catch (const std::exception& e){
+        throw std::runtime_error("Error reading mesh:\n" + string(e.what()));
+    }
+    try{
+        create_grid(config);
+    } catch (const std::exception& e){
+        throw std::runtime_error("Error creating grid:\n" + string(e.what()));
+    }
+}
+
 void Grid::print_grid(const Config &config) const
 {
 
@@ -63,7 +76,6 @@ void Grid::print_native_mesh() const
 
 void Grid::create_grid(Config &config)
 {
-    read_mesh(config.get_mesh_filename());
     Index N_NODES = nodes.size();
     
     create_interior();
@@ -82,6 +94,8 @@ void Grid::create_grid(Config &config)
 
     shrink_vectors();
     face_triangles.clear(); //face_triangles are not needed anymore
+
+    cout << "Computational grid has been created\n";
 }
 
 void Grid::read_mesh(string mesh_filename)
@@ -93,7 +107,9 @@ void Grid::read_mesh(string mesh_filename)
     else if (extension == "su2")
         read_su2_mesh(mesh_filename);
     else
-        FAIL_MSG("Error: Illegal mesh format");
+        throw std::runtime_error("Illegal mesh format used on mesh \"" + mesh_filename + "\"");
+    
+    cout << "Native mesh has been read\n";
 }
 
 void Grid::read_c3d_mesh(string mesh_filename)
@@ -102,10 +118,10 @@ void Grid::read_c3d_mesh(string mesh_filename)
     std::ifstream ist{mesh_filename};
     std::stringstream ss;
 
-    FAIL_IF_MSG(!ist, "Error: couldn't open the mesh file: " + mesh_filename);
+    if (!ist) throw std::runtime_error("Couldn't open the mesh file: " + mesh_filename);
 
     string line, tmp;
-    Index i, N_NODES, N_ELEMENTS;
+    Index N_NODES, N_ELEMENTS;
 
     // READ N_NODES
     ist >> tmp >> N_NODES;
@@ -183,7 +199,7 @@ void Grid::read_su2_mesh(string mesh_filename)
     std::ifstream ist{mesh_filename};
     std::stringstream ss;
 
-    FAIL_IF_MSG(!ist, "Error: couldn't open the mesh file: " + mesh_filename);
+    if (!ist) throw std::runtime_error("Couldn't open the mesh file: " + mesh_filename);
 
     const ShortIndex SU2_TET_TYPE = 10, SU2_TRI_TYPE = 5;
     string tmp_string;
@@ -260,7 +276,6 @@ void Grid::create_interior(){
     cells.reserve(N_INTERIOR_CELLS + find_N_GHOST_cells());
     
     face_indices_from_cell.resize(N_INTERIOR_CELLS);
-    Index N_NODES = nodes.size();
 
     for (Index i = 0; i < N_INTERIOR_CELLS; i++){
 
@@ -295,8 +310,6 @@ void Grid::create_interior(){
 
 void Grid::create_boundaries(const Config& config){
 
-    const Index N_PATCHES = tri_patch_connect_list.size(); 
-    
     faces.reserve(faces.size() + find_N_GHOST_cells());
     
     for (const auto &tpc : tri_patch_connect_list){

@@ -4,7 +4,6 @@ Driver::Driver(Config& config) : config{config}{
     
     grid = std::make_unique<geom::Grid>(config);
     
-    grid->create_grid(config);
     
     switch (config.get_main_solver_type()){
         case MainSolverType::Euler:

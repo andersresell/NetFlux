@@ -1,7 +1,7 @@
 
-mesh_filename: test_mesh.c3d
+mesh_filename: ../test_mesh.c3d
 
-output_basename: test_solution
+output_basename: ../test_solution
 
 
 

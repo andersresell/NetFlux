@@ -11,13 +11,13 @@ class Config {
 
     /*Options specified when reading mesh*/
 
-    Index N_NODES,
-          N_TETS;
+    Index N_NODES{0},
+          N_TETS{0};
 
-    Index N_INTERIOR_CELLS,
-          N_TOTAL_CELLS,
-          N_INTERIOR_FACES,
-          N_TOTAL_FACES;
+    Index N_INTERIOR_CELLS{0},
+          N_TOTAL_CELLS{0},
+          N_INTERIOR_FACES{0},
+          N_TOTAL_FACES{0};
     bool grid_metrics_set{false};
 
     /*Options specified by input file*/
@@ -27,35 +27,35 @@ class Config {
 
     map<string, BoundaryType> map_patch_BC; //map from each patch to the bc type applied
 
-    MainSolverType main_solver_type;
+    MainSolverType main_solver_type{0};
 
-    TimeIntegrationType time_integration_type;
+    TimeIntegrationType time_integration_type{0};
     
-    TimeScheme time_scheme;
+    TimeScheme time_scheme{0};
 
-    SpatialOrder spatial_order;
+    SpatialOrder spatial_order{0};
 
-    GradientScheme grad_scheme;
+    GradientScheme grad_scheme{0};
 
-    InviscidFluxScheme inv_flux_scheme;
+    InviscidFluxScheme inv_flux_scheme{0};
 
-    Limiter limiter;
+    Limiter limiter{0};
 
-    InitialConditionOption initial_cond_option;
+    InitialConditionOption initial_cond_option{0};
 
-    size_t n_timesteps;
+    size_t n_timesteps{0};
 
-    size_t timestep;
+    size_t timestep{0};
 
-    double delta_time;
+    double delta_time{0.0};
 
-    double time;
+    double time{0.0};
 
-    double CFL;
+    double CFL{0.0};
 
     bool grid_motion{false};
 
-    double primvars_inf[N_EQS_EULER]; //May be used for setting initial values or boundary conditions
+    double primvars_inf[N_EQS_EULER]{0.0}; //May be used for setting initial values or boundary conditions
 
     //void parse_config_file(string config_filename);
 public:
