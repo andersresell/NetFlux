@@ -52,19 +52,19 @@ void ConfigParser::parse_yaml_file_options(Config& config){
     
     config.initial_cond_option = read_required_enum_option<InitialConditionOption>("initial_cond", initial_condition_option_from_string);
 
-    double density_fs = read_optional_option<double>("density_fs", standard_air::density);
+    Scalar density_fs = read_optional_option<Scalar>("density_fs", standard_air::density);
     config.set_primvars_inf(primvars_index::Density, density_fs);
     
     Vec3 velocity_fs = read_optional_option<Vec3>("velocity_fs", Vec3{0.0, 0.0, 0.0});
     for (ShortIndex i{0}; i<N_DIM; i++) 
         config.set_primvars_inf(primvars_index::Velocity(i), velocity_fs[i]);
     
-    double pressure_fs = read_optional_option<double>("pressure_fs", standard_air::pressure);
+    Scalar pressure_fs = read_optional_option<Scalar>("pressure_fs", standard_air::pressure);
     config.set_primvars_inf(primvars_index::Pressure, pressure_fs);
 
     config.n_timesteps = read_required_option<size_t>("n_timesteps");
 
-    config.CFL = read_required_option<double>("CFL");
+    config.CFL = read_required_option<Scalar>("CFL");
 
     read_patches(config);
 

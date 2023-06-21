@@ -49,11 +49,12 @@ void Solver::evaluate_flux_balance(const Config& config, const VecField& cons_va
 }
 
 void Solver::explicit_euler(const Config& config){
-    double dt = config.get_delta_time();
+    Scalar dt = config.get_delta_time();
     VecField& U = solver_data->get_solution();
     VecField& R = solver_data->get_flux_balance();
     const ShortIndex N_EQS = solver_data->get_N_EQS();
-    assert(U.size() == R.size() && U.get_N_EQS() == N_EQS && R.get_N_EQS() == N_EQS);
+    assert(U.get_N_EQS() == N_EQS && R.get_N_EQS() == N_EQS);
+    assert(U.size() == config.get_N_TOTAL_CELLS() && R.size() == config.get_N_INTERIOR_CELLS());
     
     //Modify evaluate_flux_balance and following functions, so that they are evaluated based on a certain field U or 
     //perhaps privars V is sufficient to determine everything. 
@@ -68,7 +69,7 @@ void Solver::explicit_euler(const Config& config){
 }
 
 void Solver::TVD_RKD(const Config& config){
-    // double dt = config.get_delta_time();
+    // Scalar dt = config.get_delta_time();
     // VecField& U = solver_data->get_solution();
     // VecField& R = solver_data->get_flux_balance();
     // const ShortIndex N_EQS = solver_data->get_N_EQS();
@@ -200,20 +201,20 @@ void EulerSolver::calc_reconstructed_value(Index i,
 
 
 
-// double EulerSolver::calc_timestep(Config& config){
+// Scalar EulerSolver::calc_timestep(Config& config){
 //     // --------------------------------------------------------------------
 //     // Implementing Method 2 in "Time Step on Unstructured Grids" in Blazek 
 //     // --------------------------------------------------------------------
     
-//     const double CFL = config.get_CFL();
+//     const Scalar CFL = config.get_CFL();
 //     auto cells = grid.get_cells();
 //     auto faces = grid.get_faces();
 
 //     const auto& U = solution->cell_values;
     
-//     double rho, u, v, w, c, volume, spec_rad_x, spec_rad_y, spec_rad_z;
+//     Scalar rho, u, v, w, c, volume, spec_rad_x, spec_rad_y, spec_rad_z;
 
-//     double delta_time = std::numeric_limits<double>::max(); //Large number
+//     Scalar delta_time = std::numeric_limits<Scalar>::max(); //Large number
 
 //     for (Index i{0}; i<config.get_N_INTERIOR_CELLS(); i++){
 //         //solution[i].sound_speed();  
@@ -224,7 +225,7 @@ void EulerSolver::calc_reconstructed_value(Index i,
 //         c = EulerField::sound_speed(U[i]);
 //         volume = cells[i].cell_volume;
 
-//         double Delta_S_x{0}, Delta_S_y{0}, Delta_S_z{0}; //These are projections of the control volume in each spatial direction
+//         Scalar Delta_S_x{0}, Delta_S_y{0}, Delta_S_z{0}; //These are projections of the control volume in each spatial direction
         
 //         const auto& neigbour_faces = grid.get_surrounding_faces(i);
 
@@ -259,14 +260,14 @@ void EulerSolver::calc_timestep(Config& config){
     const EulerSolverData& euler_data = dynamic_cast<const EulerSolverData&>(*solver_data);
     const Vector<Vec3>& Delta_S = euler_data.get_Delta_S();
 
-    const double CFL = config.get_CFL();
+    const Scalar CFL = config.get_CFL();
     auto cells = grid.get_cells();
 
     const auto& primvars = solver_data->get_primvars();
     
-    double c, volume, spec_rad_x, spec_rad_y, spec_rad_z;
+    Scalar c, volume, spec_rad_x, spec_rad_y, spec_rad_z;
 
-    double delta_time = std::numeric_limits<double>::max(); //Large number
+    Scalar delta_time = std::numeric_limits<Scalar>::max(); //Large number
 
     for (Index i{0}; i<config.get_N_INTERIOR_CELLS(); i++){
         const EulerVecMap V = primvars.get_variable<EulerVec>(i);

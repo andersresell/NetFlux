@@ -1,6 +1,6 @@
 #pragma once
 #include <yaml-cpp/yaml.h>
-#include "includes.hpp"
+#include "Includes.hpp"
 #include "Utilities.hpp"
 
 class ConfigParser;
@@ -47,15 +47,15 @@ class Config {
 
     size_t timestep{0};
 
-    double delta_time{0.0};
+    Scalar delta_time{0.0};
 
-    double time{0.0};
+    Scalar time{0.0};
 
-    double CFL{0.0};
+    Scalar CFL{0.0};
 
     bool grid_motion{false};
 
-    double primvars_inf[N_EQS_EULER]{0.0}; //May be used for setting initial values or boundary conditions
+    Scalar primvars_inf[N_EQS_EULER]{0.0}; //May be used for setting initial values or boundary conditions
 
     //void parse_config_file(string config_filename);
 public:
@@ -112,21 +112,21 @@ public:
     size_t get_timestep() const {return timestep;}
     void set_timestep(size_t val) {timestep = val;}
 
-    double get_time() const {return time;}
-    void set_time(double val) {time = val;}
+    Scalar get_time() const {return time;}
+    void set_time(Scalar val) {time = val;}
 
-    double get_delta_time() const {return delta_time;}
-    void set_delta_time(double val) {delta_time = val;}
+    Scalar get_delta_time() const {return delta_time;}
+    void set_delta_time(Scalar val) {delta_time = val;}
 
-    double get_CFL() const {return CFL;}
-    void set_CFL(double val) {CFL = val;}
+    Scalar get_CFL() const {return CFL;}
+    void set_CFL(Scalar val) {CFL = val;}
 
     bool get_grid_motion() const {return grid_motion;}
     void set_grid_motion(bool val) {grid_motion = val;}
 
-    double get_primvars_inf(ShortIndex i_var) const {assert(i_var < N_EQS_EULER); return primvars_inf[i_var];}
-    const double* get_primvars_inf() const {return primvars_inf;}
-    void set_primvars_inf(ShortIndex i_var, double val) {assert(i_var < N_EQS_EULER); primvars_inf[i_var] = val; }
+    Scalar get_primvars_inf(ShortIndex i_var) const {assert(i_var < N_EQS_EULER); return primvars_inf[i_var];}
+    const Scalar* get_primvars_inf() const {return primvars_inf;}
+    void set_primvars_inf(ShortIndex i_var, Scalar val) {assert(i_var < N_EQS_EULER); primvars_inf[i_var] = val; }
 };
 
 

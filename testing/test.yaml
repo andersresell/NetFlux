@@ -1,5 +1,5 @@
 
-mesh_filename: ../test_mesh.c3d
+mesh_filename: ../meshing/brick.su2
 
 output_basename: ../test_solution
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "includes.hpp"
+#include "Includes.hpp"
 #include "containers/DynamicContainer.hpp"
 #include "containers/StaticContainer.hpp"
 #include "Config.hpp"
@@ -9,21 +9,21 @@
 
 
 
-struct VecField final : public DynamicContainer2D<double>{
+struct VecField final : public DynamicContainer2D<Scalar>{
     VecField(Index N_CELLS, ShortIndex N_EQS) : DynamicContainer2D(N_CELLS, N_EQS) {}
     
     ShortIndex get_N_EQS() const {return rows();}
     
-    using DynamicContainer2D<double>::operator=; 
+    using DynamicContainer2D<Scalar>::operator=; 
 
 };
 
-struct GradField final : public DynamicContainer3D<double, N_DIM>{
+struct GradField final : public DynamicContainer3D<Scalar, N_DIM>{
     GradField(Index N_CELLS, ShortIndex N_EQS) : DynamicContainer3D(N_CELLS, N_EQS) {}
 
     ShortIndex get_N_EQS() const {return rows();}
 
-    using DynamicContainer3D<double, N_DIM>::operator=; 
+    using DynamicContainer3D<Scalar, N_DIM>::operator=; 
 }; 
 
 
@@ -84,12 +84,12 @@ public:
 
 
 template<ShortIndex N_EQS>
-using FlowVec = Eigen::Vector<double, N_EQS>;
+using FlowVec = Eigen::Vector<Scalar, N_EQS>;
 template<ShortIndex N_EQS>
-using FlowGrad = Eigen::Matrix<double, N_EQS, N_DIM>;
+using FlowGrad = Eigen::Matrix<Scalar, N_EQS, N_DIM>;
 
-// using EulerVec = StaticContainer1D<double, N_EQS_EULER>; 
-// using EulerGrad = StaticContainer2D<double, N_EQS_EULER, N_DIM>; 
+// using EulerVec = StaticContainer1D<Scalar, N_EQS_EULER>; 
+// using EulerGrad = StaticContainer2D<Scalar, N_EQS_EULER, N_DIM>; 
 using EulerVec = FlowVec<N_EQS_EULER>;
 using EulerGrad = FlowGrad<N_EQS_EULER>;
 
@@ -130,18 +130,18 @@ public:
     /*Discontinuing StaticContainer, using Eigen instead*/
 
     // template<ShortIndex N_EQS>
-    // using FlowVec = StaticContainer1D<double, N_EQS>;
+    // using FlowVec = StaticContainer1D<Scalar, N_EQS>;
     // template<ShortIndex N_EQS>
-    // using FlowGrad = StaticContainer2D<double, N_EQS, N_DIM>;
+    // using FlowGrad = StaticContainer2D<Scalar, N_EQS, N_DIM>;
 
 
 
 
 namespace EulerEqs{
 
-    constexpr double GAMMA{standard_air::gamma};
-    constexpr double GAMMA_MINUS_ONE{1-GAMMA};
-    constexpr double GAMMA_MINUS_ONE_INV{1/GAMMA_MINUS_ONE};
+    constexpr Scalar GAMMA{standard_air::gamma};
+    constexpr Scalar GAMMA_MINUS_ONE{1-GAMMA};
+    constexpr Scalar GAMMA_MINUS_ONE_INV{1/GAMMA_MINUS_ONE};
 
     /*Templating the various functions since the EulerVecType can be either EulerVec or EulerVecMap*/
 
@@ -152,22 +152,22 @@ namespace EulerEqs{
     inline void cons_to_prim(const EulerVecType& U, EulerVecType& V);
 
     template<typename EulerVecType>
-    inline double pressure(const EulerVecType& U);
+    inline Scalar pressure(const EulerVecType& U);
 
     template<typename EulerVecType>
-    inline double sound_speed_conservative(const EulerVecType& U);
+    inline Scalar sound_speed_conservative(const EulerVecType& U);
 
     template<typename EulerVecType>
-    inline double sound_speed_primitive(const EulerVecType& V);
+    inline Scalar sound_speed_primitive(const EulerVecType& V);
 
     template<typename EulerVecType>
-    inline double projected_velocity(const EulerVecType& U, const Vec3& normal);
+    inline Scalar projected_velocity(const EulerVecType& U, const Vec3& normal);
 
     template<typename EulerVecType>
-    inline double conv_spectral_radii(const EulerVecType& U, const Vec3& normal);
+    inline Scalar conv_spectral_radii(const EulerVecType& U, const Vec3& normal);
 
     template<typename EulerVecType>
-    inline double conv_spectral_radii(const EulerVecType& U, const Vec3& normal);
+    inline Scalar conv_spectral_radii(const EulerVecType& U, const Vec3& normal);
 
     template<typename EulerVecType>
     inline EulerVec inviscid_flux(const EulerVecType& U, const Vec3& normal);
@@ -196,33 +196,33 @@ namespace EulerEqs{
 
 
     template<typename EulerVecType>
-    inline double pressure(const EulerVecType& U){
+    inline Scalar pressure(const EulerVecType& U){
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER && EulerVecType::ColsAtCompileTime == 1);
         return GAMMA_MINUS_ONE * (U[4] - 0.5/U[0]*(U[1]*U[1] + U[2]*U[2] + U[3]*U[3]));
     }
 
 
     template<typename EulerVecType>
-    inline double sound_speed_conservative(const EulerVecType& U){
+    inline Scalar sound_speed_conservative(const EulerVecType& U){
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER && EulerVecType::ColsAtCompileTime == 1);
         return sqrt(GAMMA * pressure(U) / U[0]);
     }
 
     template<typename EulerVecType>
-    inline double sound_speed_primitive(const EulerVecType& V){
+    inline Scalar sound_speed_primitive(const EulerVecType& V){
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER && EulerVecType::ColsAtCompileTime == 1);
         return sqrt(GAMMA * V[4] / V[0]);
     }
 
     template<typename EulerVecType>
-    inline double projected_velocity(const EulerVecType& U, const Vec3& normal){
+    inline Scalar projected_velocity(const EulerVecType& U, const Vec3& normal){
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER && EulerVecType::ColsAtCompileTime == 1);
         return (U[1]*normal.x() + U[2]*normal.y() + U[3]*normal.z())/U[0];
     }
 
 
     template<typename EulerVecType>
-    inline double conv_spectral_radii(const EulerVecType& U, const Vec3& normal){
+    inline Scalar conv_spectral_radii(const EulerVecType& U, const Vec3& normal){
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER && EulerVecType::ColsAtCompileTime == 1);
         return abs(projected_velocity(U, normal)) + sound_speed_conservative(U);
     }
@@ -231,9 +231,9 @@ namespace EulerEqs{
     inline EulerVec inviscid_flux(const EulerVecType& U, const Vec3& normal){
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER && EulerVecType::ColsAtCompileTime == 1);
 
-        double rho = U[0];
-        double p = pressure(U);
-        double V_normal = (U[1]*normal.x() + U[2]*normal.y() + U[3]*normal.z())/rho;
+        Scalar rho = U[0];
+        Scalar p = pressure(U);
+        Scalar V_normal = (U[1]*normal.x() + U[2]*normal.y() + U[3]*normal.z())/rho;
 
         return {V_normal*rho,
                 V_normal*U[1] + p*normal.x(),

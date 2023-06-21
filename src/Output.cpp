@@ -50,7 +50,7 @@ void Output::write_vtk_ascii_grid(const Config& config, string filename){
         << "Compress 3D\n"
         << "ASCII\n\n"
         << "DATASET UNSTRUCTURED_GRID\n"
-        << "POINTS " << N_NODES << " double\n";
+        << "POINTS " << N_NODES << " Scalar\n";
     
     /*Writing the grid*/
     for (const auto& node : nodes) 
@@ -77,16 +77,16 @@ void EulerOutput::write_vtk_ascii_cell_data(const Config& config, const string& 
 
     ost << "\n CELL DATA " << N_INTERIOR_CELLS << "\n"; 
     
-    ost << "\nSCALARS density double 1\n";
+    ost << "\nSCALARS density Scalar 1\n";
     for (Index i{0}; i< N_INTERIOR_CELLS; i++)
         ost << primvars(i,0) << "\n";
 
-    ost << "\nVECTORS velocity double\n"; 
+    ost << "\nVECTORS velocity Scalar\n"; 
     for (Index i{0}; i< N_INTERIOR_CELLS; i++){
         ost << primvars(i,1) << " " << primvars(i,2) << " " << primvars(i,3) << "\n";
     }
 
-    ost << "\nSCALARS pressure double 1\n";
+    ost << "\nSCALARS pressure Scalar 1\n";
     for (Index i{0}; i< N_INTERIOR_CELLS; i++)
         ost << primvars(i,4) << "\n";
 

@@ -60,9 +60,9 @@ public:
 //     inline void inviscid_flux<InviscidFluxScheme::Rusanov>(const EulerVec& U_L, const EulerVec& U_R, const Vec3& S_ij, EulerVec& Flux){
         
 //         Vec3 normal = S_ij.normalized();
-//         double area = S_ij.norm();
-//         double spec_rad_L = EulerEqs::conv_spec_rad(U_L, normal);
-//         double spec_rad_R = EulerEqs::conv_spec_rad(U_R, normal);
+//         Scalar area = S_ij.norm();
+//         Scalar spec_rad_L = EulerEqs::conv_spec_rad(U_L, normal);
+//         Scalar spec_rad_R = EulerEqs::conv_spec_rad(U_R, normal);
 
 
 //         Flux = area * 0.5*(EulerEqs::inviscid_flux(U_R, normal) + EulerEqs::inviscid_flux(U_L, normal) 
@@ -89,8 +89,8 @@ namespace Gradient{
         assert(grad_field.cols() == N_DIM && grad_field.rows() == vec_field.rows());
         assert(N_EQS == vec_field.get_N_EQS());
     
-        using FieldVec = Eigen::Vector<double, N_EQS>;
-        using FieldGrad = Eigen::Matrix<double, N_EQS, N_DIM>;
+        using FieldVec = Eigen::Vector<Scalar, N_EQS>;
+        using FieldGrad = Eigen::Matrix<Scalar, N_EQS, N_DIM>;
 
 
         const auto& faces = grid.get_faces();
@@ -141,7 +141,7 @@ namespace Reconstruction{
     //                                ){
         
     //     for (ShortIndex k{0}; k<N_EQS; k++){
-    //         double Delta_V{0};
+    //         Scalar Delta_V{0};
     //         for (ShortIndex iDim{0}; iDim<N_DIM; iDim++)
     //             Delta_V += V_c_grad(k, iDim) * r_cf[iDim];
 
@@ -177,11 +177,11 @@ namespace Reconstruction{
         assert(sol_field.size() == N_TOT_CELLS && sol_grad.size() == N_TOT_CELLS && max_field.size() == N_TOT_CELLS &&
             min_field.size() == N_TOT_CELLS && limiter.size() == N_TOT_CELLS);
 
-        using FieldVec = Eigen::Vector<double, N_EQS>;
-        using FieldGrad = Eigen::Matrix<double, N_EQS, N_DIM>;
+        using FieldVec = Eigen::Vector<Scalar, N_EQS>;
+        using FieldGrad = Eigen::Matrix<Scalar, N_EQS, N_DIM>;
         using FieldGradMap = Eigen::Map<FieldGrad>;
             
-        constexpr double EPS = std::numeric_limits<double>::epsilon(); 
+        constexpr Scalar EPS = std::numeric_limits<Scalar>::epsilon(); 
 
         const auto& faces = grid.get_faces();
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "includes.hpp"
+#include "Includes.hpp"
 #include "containers/StaticContainer.hpp"
 
 constexpr ShortIndex N_TET_NODES{4};
@@ -78,11 +78,11 @@ enum class InitialConditionOption{Freestream};
     };
 
 namespace standard_air{
-    constexpr double gas_constant{287.058};
-    constexpr double gamma{1.4};
-    constexpr double density{1.225};
-    constexpr double pressure{101325.0};
-    constexpr double temperature = pressure / (density * gas_constant);
+    constexpr Scalar gas_constant{287.058};
+    constexpr Scalar gamma{1.4};
+    constexpr Scalar density{1.225};
+    constexpr Scalar pressure{101325.0};
+    constexpr Scalar temperature = pressure / (density * gas_constant);
 }
 
 
@@ -113,8 +113,8 @@ namespace geom{
 
     struct Cell{
         Cell() = default;
-        Cell(double cell_volume, Vec3 centroid) : cell_volume{cell_volume}, centroid{centroid} {}
-        double cell_volume;
+        Cell(Scalar cell_volume, Vec3 centroid) : cell_volume{cell_volume}, centroid{centroid} {}
+        Scalar cell_volume;
         Vec3 centroid;
         friend std::ostream& operator<<(std::ostream& os, const Cell& c) {
             os << "vol = " << c.cell_volume << ", centroid = " + horizontal_string_Vec3(c.centroid) << endl; 
@@ -180,13 +180,13 @@ namespace geom{
     /*Abstract volume geometry class*/
     struct Polyhedra{
         Vector<Vec3> nodes;
-        virtual double calc_volume() const = 0;
+        virtual Scalar calc_volume() const = 0;
         virtual Vec3 calc_centroid() const = 0;
     };
 
     struct Tetrahedron final : Polyhedra{
         Tetrahedron(Vec3 a, Vec3 b, Vec3 c, Vec3 d) : Polyhedra() {nodes = {a,b,c,d};}
-        double calc_volume() const final;
+        Scalar calc_volume() const final;
         Vec3 calc_centroid() const final;
 
     };

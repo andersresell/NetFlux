@@ -15,7 +15,7 @@ struct convert<Vec3>{
 
         size_t i{0};
         for (const auto& element : node){
-            vec[i++] = element.as<double>();
+            vec[i++] = element.as<Scalar>();
         }
         
         return true;
