@@ -5,8 +5,6 @@
 int main(){
 
 
-    cout << "hello jævel\n\n";
-
     // string mesh_filename = "/home/anders/dev/Compress3D/meshing/brick.su2";
 
     // Config config{mesh_filename};
@@ -18,9 +16,16 @@ int main(){
     // g.print_grid(c);
 
     // Output o{g};
-    string config_filename = "../testing/test.yaml";
-    Config config{config_filename};
-    Driver driver{config};
-    driver.solve();
-    
+    try{
+
+        string config_filename = "../testing/test.yaml";
+        Config config{config_filename};
+        Driver driver{config};
+        driver.solve();
+    } catch (std::exception& e)
+    {
+        std::cerr << "Exception caught:\n" << e.what() <<endl;
+        return 1;
+    }
+    return 0;
 }

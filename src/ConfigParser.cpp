@@ -5,7 +5,7 @@ ConfigParser::ConfigParser(const string& config_filename) : config_filename{conf
     try {
         root_node = YAML::LoadFile(config_filename);
 
-    } catch (const YAML::Exception& e){
+    } catch (const std::exception& e){
         throw std::runtime_error("Error loading config file" + string(e.what()));
     }
 }
@@ -20,15 +20,13 @@ void ConfigParser::parse_config(Config& config){
         infer_hidden_options(config);
 
     } 
-    catch(YAML::Exception& e){
-        throw std::runtime_error("Error parsing config file: " + string(e.what()));
-    }
+    
     catch(std::exception& e){
-        throw std::runtime_error("Error parsing config file: " + string(e.what()));
+        throw std::runtime_error("Error parsing config file:\n" + string(e.what()));
 
     } 
 
-    cout << "input file parsed without errors\n";
+    cout << "Configuration file parsed without errors\n";
 }
 
 
@@ -91,20 +89,26 @@ void ConfigParser::read_patches(Config& config){
     if (root_node["patches"]){
         YAML::Node patches_node = root_node["patches"];
 
-        for (const auto& patch : patches_node){
+        if (!patches_node.IsSequence())
+            throw std::runtime_error("\"patches\" setting in configuration file is formatted crrectly (not a valid sequence)");
+        
+
+        for (const auto& patch_it : patches_node){
             
-            string patch_name = patch.first.as<string>();
-            string boundary_type_string = patch.second.as<string>();
+            if (!patch_it.IsMap()) throw std::runtime_error("Entry in \"patches\" setting in configuration file is not a key-value pair");
             
-            if (boundary_type_from_string.count(boundary_type_string) != 1)
-                throw std::runtime_error("Illegal BoundaryType specified in config file for patch with name " + patch_name);
-            
-            BoundaryType bc_type = boundary_type_from_string.at(boundary_type_string);
+            const auto& patch_kv = *patch_it.begin();
+
+            string patch_name = patch_kv.first.as<string>();
 
             if (config.map_patch_BC.count(patch_name) > 0)
                 throw std::runtime_error("Duplicate patch name \"" + patch_name + "\" specified in config file");
-        
-            config.map_patch_BC.at(patch_name) = bc_type;
+
+            string boundary_type_key = patch_kv.second.as<string>();
+
+            BoundaryType bc_type = lookup_enum_option_map(boundary_type_from_string, boundary_type_key, patch_name, "patches");
+
+            config.map_patch_BC.emplace(patch_name, bc_type);
         }
     
     }

@@ -3,9 +3,13 @@ mesh_filename: test_mesh.c3d
 
 output_basename: test_solution
 
+
+
 solver: Euler
 
+n_timesteps: 10
 
+CFL: 0.5
 
 time_scheme: ExplicitEuler
 
@@ -17,7 +21,7 @@ inviscid_flux_scheme: Rusanov
 
 limiter: Barth
 
-initial_cond: freestream
+initial_cond: Freestream
 
  
 density_fs: 1.2
@@ -26,7 +30,8 @@ pressure_fs: 100000.0
 
 
 patches:
-  - inlet: NoSLipWall
+  - inlet: NoSlipWall
   - outlet: SlipWall
-  - sides: NoSLipWall
+  - sides: NoSlipWall
+
 
