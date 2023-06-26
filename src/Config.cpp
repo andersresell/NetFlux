@@ -2,17 +2,18 @@
 #include "../include/Config.hpp"
 #include "../include/ConfigParser.hpp"
 
-Config::Config(string config_filename)      
+Config::Config(string config_filename)
 {
     ConfigParser parser{config_filename};
     parser.parse_config(*this);
 }
 
-void Config::set_grid_metrics(Index N_NODES, 
-                    Index N_INTERIOR_CELLS, 
-                    Index N_TOTAL_CELLS, 
-                    Index N_INTERIOR_FACES,
-                    Index N_TOTAL_FACES){
+void Config::set_grid_metrics(Index N_NODES,
+                              Index N_INTERIOR_CELLS,
+                              Index N_TOTAL_CELLS,
+                              Index N_INTERIOR_FACES,
+                              Index N_TOTAL_FACES)
+{
     assert(!grid_metrics_set);
     grid_metrics_set = true;
 
@@ -23,5 +24,3 @@ void Config::set_grid_metrics(Index N_NODES,
     this->N_INTERIOR_FACES = N_INTERIOR_FACES;
     this->N_TOTAL_FACES = N_TOTAL_FACES;
 }
-
-

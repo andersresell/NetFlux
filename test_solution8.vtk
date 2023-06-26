@@ -1,0 +1,118 @@
+# vtk DataFile Version 3.0
+Compress 3D
+ASCII
+
+DATASET UNSTRUCTURED_GRID
+POINTS 16 Scalar
+30 10 0
+30 10 10
+30 0 0
+30 0 10
+0 10 0
+0 10 10
+0 0 0
+0 0 10
+10 10 10
+20 10 10
+10 0 10
+20 0 10
+10.3439 10 0
+19.7564 10 0
+10.3881 0 0
+20.3343 0 0
+
+CELLS 17 85
+4 13 12 9 14
+4 2 3 15 0
+4 15 9 14 13
+4 8 6 5 10
+4 7 6 10 5
+4 8 14 12 6
+4 14 9 15 11
+4 9 13 15 0
+4 8 14 6 10
+4 0 9 3 15
+4 8 14 10 9
+4 11 14 9 10
+4 8 6 12 4
+4 8 14 9 12
+4 8 6 4 5
+4 3 11 15 9
+4 3 9 0 1
+CELL_TYPES 17
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+10
+
+ CELL DATA 17
+
+SCALARS density Scalar 1
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+
+VECTORS velocity Scalar
+-nan -nan -nan
+-nan -nan -nan
+-nan -nan -nan
+-nan -nan -nan
+-nan -nan -nan
+-nan -nan -nan
+-nan -nan -nan
+-nan -nan -nan
+-nan -nan -nan
+-nan -nan -nan
+-nan -nan -nan
+-nan -nan -nan
+-nan -nan -nan
+-nan -nan -nan
+-nan -nan -nan
+-nan -nan -nan
+-nan -nan -nan
+
+SCALARS pressure Scalar 1
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
+-nan
