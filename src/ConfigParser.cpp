@@ -69,8 +69,11 @@ void ConfigParser::parse_yaml_file_options(Config &config)
 
     config.CFL = read_required_option<Scalar>("CFL");
 
+    config.check_if_physical = read_optional_option<bool>("check_physical_validity", false);
+
     read_patches(config);
 }
+
 void ConfigParser::infer_hidden_options(Config &config)
 {
 

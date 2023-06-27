@@ -29,10 +29,12 @@ using std::unique_ptr;
 using Index = uint32_t;      // Used for accessing cell indices, etc
 using ShortIndex = uint16_t; // Used for looping over shorter numbers as spatial dimensions, etc
 
-#ifdef USE_SINGLE_PRESICION
+#ifdef USE_SINGLE_PRECISION
 using Scalar = float;
+constexpr char Scalar_name[] = "float";
 #else
 using Scalar = double;
+constexpr char Scalar_name[] = "double";
 #endif
 
 using Vec3 = Eigen::Vector3<Scalar>;
@@ -80,4 +82,22 @@ template <typename T>
 inline int sign(T val)
 {
     return val >= 0;
+}
+
+template <typename T>
+inline bool num_is_valid(T val)
+{
+    static_assert(std::is_same<T, Scalar>());
+
+    if (std::isnan(val) || !std::isfinite(val))
+        return false;
+    return true;
+}
+
+template <typename T>
+inline bool num_is_valid_and_pos(T val)
+{
+    if (!num_is_valid(val) || val <= 0.0)
+        return false;
+    return true;
 }

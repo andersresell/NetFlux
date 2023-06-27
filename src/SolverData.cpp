@@ -51,3 +51,60 @@ void EulerSolverData::set_freestream_values(const Config &config)
     primvars->set_constant_field_segment(V_inf, first, last);
     solution->set_constant_field_segment(U_inf, first, last);
 }
+
+void ValidityChecker::check_flux_balance_validity(const Config &config, const VecField &flux_balance)
+{
+    if (!config.check_physical_validity())
+        return;
+
+    Index invalid_cells = check_field_validity(flux_balance);
+
+    if (invalid_cells > 0)
+    {
+        throw std::runtime_error(std::to_string(invalid_cells) + " cells with unphysical \  
+        values detected in the flux_balance field of the " +
+                                 get_solver_name() + " solver");
+    }
+}
+
+Index ValidityChecker::check_field_validity(const VecField &field)
+{
+    Index invalid_cells{0};
+    for (Index i{0}; i < field.size(); i++)
+    {
+        for (ShortIndex j{0}; j < field.get_N_EQS(); j++)
+        {
+            if (!num_is_valid(field(i, j)))
+            {
+                invalid_cells += 1;
+                break;
+            }
+        }
+    }
+    return invalid_cells;
+}
+
+Index EulerValidityChecker::check_primvars(const VecField &V)
+{
+    assert(V.get_N_EQS() == N_EQS_EULER);
+    Index invalid_cells{0};
+    for (Index i{0}; i < V.size(); i++)
+    {
+        /*Checking density and pressure*/
+        if (!num_is_valid_and_pos(V(i, 0)) || !num_is_valid_and_pos(V(i, 4)))
+        {
+            invalid_cells += 1;
+            continue;
+        }
+        /*Checking velocity*/
+        for (ShortIndex i_dim{1}; i_dim <= N_DIM; i_dim++)
+        {
+            if (!num_is_valid(V(i, i_dim)))
+            {
+                invalid_cells += 1;
+                break;
+            }
+        }
+    }
+    return invalid_cells;
+}

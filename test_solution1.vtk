@@ -3,7 +3,8 @@ Compress 3D
 ASCII
 
 DATASET UNSTRUCTURED_GRID
-POINTS 16 Scalar
+
+POINTS 16 double
 30 10 0
 30 10 10
 30 0 0
@@ -39,6 +40,7 @@ CELLS 17 85
 4 8 6 4 5
 4 3 11 15 9
 4 3 9 0 1
+
 CELL_TYPES 17
 10
 10
@@ -58,61 +60,63 @@ CELL_TYPES 17
 10
 10
 
- CELL DATA 17
+CELL_DATA 17
 
-SCALARS density Scalar 1
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
+SCALARS density double 1
+LOOKUP_TABLE default
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
 
-VECTORS velocity Scalar
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
+VECTORS velocity double
+0 1.39519e+299 0
+0 0 0
+0 1.30799e+299 -1.39519e+299
+0 -1.39519e+299 0
+0 0 0
+1.39519e+299 6.59447e+298 1.39519e+299
+0 -1.39519e+299 -3.48798e+298
+0 -1.39519e+299 -1.39519e+299
+0 0 1.35159e+299
+0 2.79039e+299 2.79039e+299
+0 0 0
+0 0 1.39519e+299
+-1.39519e+299 0 0
+0 0 -1.39519e+299
+0 1.39519e+299 -2.79039e+299
+0 -1.39519e+299 -1.39519e+299
+0 0 0
 
-SCALARS pressure Scalar 1
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
+SCALARS pressure double 1
+LOOKUP_TABLE default
+inf
+100000
+inf
+inf
+100000
+inf
+inf
+inf
+inf
+inf
+100000
+inf
+inf
+inf
+inf
+inf
+100000

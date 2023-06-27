@@ -168,6 +168,8 @@ namespace EulerEqs
         U[2] = V[0] * V[2],
         U[3] = V[0] * V[3],
         U[4] = GAMMA_MINUS_ONE_INV * V[4] + 0.5 * V[0] * (V[1] * V[1] + V[2] * V[2] + V[3] * V[3]);
+
+        assert(!U.hasNaN() && U.allFinite());
     }
 
     template <typename EulerVecType>
@@ -179,41 +181,54 @@ namespace EulerEqs
         V[2] = U[2] / U[0],
         V[3] = U[3] / U[0],
         V[4] = pressure(U);
+
+        assert(!V.hasNaN() && V.allFinite());
+        assert(V[0] > 0.0 && V[4] > 0.0);
     }
 
     template <typename EulerVecType>
     inline Scalar pressure(const EulerVecType &U)
     {
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER && EulerVecType::ColsAtCompileTime == 1);
-        return GAMMA_MINUS_ONE * (U[4] - 0.5 / U[0] * (U[1] * U[1] + U[2] * U[2] + U[3] * U[3]));
+        Scalar p = GAMMA_MINUS_ONE * (U[4] - 0.5 / U[0] * (U[1] * U[1] + U[2] * U[2] + U[3] * U[3]));
+        assert(num_is_valid_and_pos(p));
+        return p;
     }
 
     template <typename EulerVecType>
     inline Scalar sound_speed_conservative(const EulerVecType &U)
     {
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER && EulerVecType::ColsAtCompileTime == 1);
-        return sqrt(GAMMA * pressure(U) / U[0]);
+        Scalar c = sqrt(GAMMA * pressure(U) / U[0]);
+        assert(num_is_valid_and_pos(c));
+        return c;
     }
 
     template <typename EulerVecType>
     inline Scalar sound_speed_primitive(const EulerVecType &V)
     {
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER && EulerVecType::ColsAtCompileTime == 1);
-        return sqrt(GAMMA * V[4] / V[0]);
+        Scalar c = sqrt(GAMMA * V[4] / V[0]);
+        assert(num_is_valid_and_pos(c));
+        return c;
     }
 
     template <typename EulerVecType>
     inline Scalar projected_velocity(const EulerVecType &U, const Vec3 &normal)
     {
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER && EulerVecType::ColsAtCompileTime == 1);
-        return (U[1] * normal.x() + U[2] * normal.y() + U[3] * normal.z()) / U[0];
+        Scalar vel_n = (U[1] * normal.x() + U[2] * normal.y() + U[3] * normal.z()) / U[0];
+        assert(num_is_valid(vel_n));
+        return vel_n;
     }
 
     template <typename EulerVecType>
     inline Scalar conv_spectral_radii(const EulerVecType &U, const Vec3 &normal)
     {
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER && EulerVecType::ColsAtCompileTime == 1);
-        return abs(projected_velocity(U, normal)) + sound_speed_conservative(U);
+        Scalar lambda = abs(projected_velocity(U, normal)) + sound_speed_conservative(U);
+        assert(num_is_valid_and_pos(lambda));
+        return lambda;
     }
 
     template <typename EulerVecType>
@@ -225,11 +240,37 @@ namespace EulerEqs
         Scalar p = pressure(U);
         Scalar V_normal = (U[1] * normal.x() + U[2] * normal.y() + U[3] * normal.z()) / rho;
 
-        return {V_normal * rho,
-                V_normal * U[1] + p * normal.x(),
-                V_normal * U[2] + p * normal.y(),
-                V_normal * U[3] + p * normal.z(),
-                V_normal * (U[4] + p)};
+        EulerVec F = {V_normal * rho,
+                      V_normal * U[1] + p * normal.x(),
+                      V_normal * U[2] + p * normal.y(),
+                      V_normal * U[3] + p * normal.z(),
+                      V_normal * (U[4] + p)};
+        assert(!F.hasNaN() && F.allFinite());
+        return F;
     }
 
 }
+
+/*Implements various mechanisms for checking if the various containers (solutions, fluxes etc) contain physical solutions*/
+class ValidityChecker
+{
+protected:
+    /*Checks for inf or nan values*/
+    static Index check_field_validity(const VecField &field);
+
+    /*Special check for primvars (for instance, for Euler eqs. density and pressure must be positive)*/
+    virtual Index check_primvars(const VecField &V) = 0;
+
+    virtual string get_solver_name() const = 0;
+
+public:
+    void check_flux_balance_validity(const Config &config, const VecField &flux_balance);
+};
+
+class EulerValidityChecker : public ValidityChecker
+{
+
+    Index check_primvars(const VecField &V) final;
+
+    string get_solver_name() const override { return "Euler"; }
+};

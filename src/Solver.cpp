@@ -47,12 +47,15 @@ void Solver::evaluate_flux_balance(const Config &config, const VecField &cons_va
     evaluate_inviscid_fluxes(config);
 
     evaluate_viscous_fluxes(config);
+
+    validity_checker->check_flux_balance_validity(config, solver_data->get_flux_balance());
 }
 
 void Solver::explicit_euler(const Config &config)
 {
     Scalar dt = config.get_delta_time();
     VecField &U = solver_data->get_solution();
+    assert(U.values_are_valid());
     VecField &R = solver_data->get_flux_balance();
     const ShortIndex N_EQS = solver_data->get_N_EQS();
     assert(U.get_N_EQS() == N_EQS && R.get_N_EQS() == N_EQS);
@@ -91,6 +94,7 @@ void Solver::TVD_RKD(const Config &config)
 EulerSolver::EulerSolver(const Config &config, const geom::Grid &grid) : Solver(grid)
 {
     solver_data = make_unique<EulerSolverData>(config);
+    validity_checker = make_unique<EulerValidityChecker>();
 
     calc_Delta_S(config);
 }
@@ -281,6 +285,9 @@ void EulerSolver::calc_timestep(Config &config)
 
         delta_time = std::min(delta_time, CFL * volume / (spec_rad_x + spec_rad_y + spec_rad_z));
     }
+    if (!num_is_valid_and_pos(delta_time))
+        throw std::runtime_error("Invalid dt calculated (dt = " + std::to_string(delta_time) + ")");
+
     config.set_delta_time(delta_time);
 }
 

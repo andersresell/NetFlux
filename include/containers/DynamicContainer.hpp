@@ -112,8 +112,20 @@ public:
         return Eigen::Map<StaticEigenType>(data_ + l * rows_ * cols_);
     }
 
+    /*Checks all values for nan or inf*/
+    bool values_are_valid() const
+    {
+        for (Index i{0}; i < size_ * rows_ * cols_; i++)
+            if (!num_is_valid(data_[i]))
+                return false;
+        return true;
+    }
+
 public:
-    Index size() const { return size_; }
+    Index size() const
+    {
+        return size_;
+    }
     Index rows() const { return rows_; }
     constexpr Index cols() const { return cols_; }
 

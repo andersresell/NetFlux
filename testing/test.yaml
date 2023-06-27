@@ -13,7 +13,7 @@ CFL: 0.5
 
 time_scheme: ExplicitEuler
 
-spatial_order: Second
+spatial_order: First
 
 grad_scheme: GreenGauss
 
@@ -23,6 +23,7 @@ limiter: Barth
 
 initial_cond: Freestream
 
+check_physical_validity: true
  
 density_fs: 1.2
 velocity_fs: [0, 0, 0]
