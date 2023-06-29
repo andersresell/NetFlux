@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# Assembly code
+*.s
+
+# CFD output files
+*.vtk

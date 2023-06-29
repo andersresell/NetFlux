@@ -1,16 +1,12 @@
-// #include <iostream>
+#include <iostream>
 #include <cassert>
-
+#include <limits>
 using namespace std;
 
-int func1(int a)
+int main()
 {
-    int b = a * a * a;
-    assert(b > 0);
-    return b;
-}
-
-int func2(int a)
-{
-    return a * a * a;
+    double a = 15.0 / 0.0;
+    cout << "a " << a << endl;
+    double result = std::numeric_limits<double>::max() * 0.0001; // Evaluates to +inf
+    cout << result << endl;
 }

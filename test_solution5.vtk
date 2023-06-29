@@ -64,59 +64,59 @@ CELL_DATA 17
 
 SCALARS density double 1
 LOOKUP_TABLE default
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
+1.2
 
 VECTORS velocity double
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
--nan -nan -nan
+1.96e-05 5.4124e-06 5.19454e-05
+1.59324e-05 -0.00017657 -0.00017404
+4.49755e-06 6.4455e-05 1.43108e-06
+-2.03849e-06 -0.000119208 7.33424e-05
+1.74824e-05 9.22627e-05 -3.95135e-05
+8.84937e-05 3.14885e-05 4.66845e-06
+3.26338e-06 -2.98926e-05 1.35096e-05
+-5.72482e-06 -0.000212472 -0.000172153
+-4.68672e-05 4.52389e-05 -8.98502e-06
+1.71833e-06 0.000330584 0.000318292
+1.88595e-05 -7.38549e-06 -8.20021e-07
+-1.14278e-06 4.28929e-05 3.74243e-05
+-9.36748e-05 -8.8215e-05 5.13694e-05
+-4.8356e-05 -3.70329e-05 -3.91804e-05
+4.88546e-05 0.000103706 -0.000102646
+-8.6453e-06 -0.000161752 -0.00017864
+-1.44769e-05 -0.000184234 -0.00018164
 
 SCALARS pressure double 1
 LOOKUP_TABLE default
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
--nan
+100000
+100000
+100000
+100000
+100000
+100000
+100000
+100000
+100000
+100000
+100000
+100000
+100000
+100000
+100000
+100000
+100000

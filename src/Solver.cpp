@@ -55,23 +55,21 @@ void Solver::explicit_euler(const Config &config)
 {
     Scalar dt = config.get_delta_time();
     VecField &U = solver_data->get_solution();
-    assert(U.values_are_valid());
     VecField &R = solver_data->get_flux_balance();
     const ShortIndex N_EQS = solver_data->get_N_EQS();
     assert(U.get_N_EQS() == N_EQS && R.get_N_EQS() == N_EQS);
     assert(U.size() == config.get_N_TOTAL_CELLS() && R.size() == config.get_N_INTERIOR_CELLS());
 
-    // Modify evaluate_flux_balance and following functions, so that they are evaluated based on a certain field U or
-    // perhaps privars V is sufficient to determine everything.
+    assert(validity_checker->valid_consvars_interior(U));
     evaluate_flux_balance(config, U);
+    assert(validity_checker->valid_primvars_interior(solver_data->get_primvars()));
+    assert(validity_checker->valid_flux_balance(R));
 
     for (Index i{0}; i < config.get_N_INTERIOR_CELLS(); i++)
-    {
         for (ShortIndex j{0}; j < N_EQS; j++)
-        {
             U(i, j) += dt * R(i, j);
-        }
-    }
+
+    assert(validity_checker->valid_consvars_interior(U));
 }
 
 void Solver::TVD_RKD(const Config &config)
@@ -94,7 +92,7 @@ void Solver::TVD_RKD(const Config &config)
 EulerSolver::EulerSolver(const Config &config, const geom::Grid &grid) : Solver(grid)
 {
     solver_data = make_unique<EulerSolverData>(config);
-    validity_checker = make_unique<EulerValidityChecker>();
+    validity_checker = make_unique<EulerValidityChecker>(config);
 
     calc_Delta_S(config);
 }
@@ -288,11 +286,15 @@ void EulerSolver::calc_timestep(Config &config)
     if (!num_is_valid_and_pos(delta_time))
         throw std::runtime_error("Invalid dt calculated (dt = " + std::to_string(delta_time) + ")");
 
+    if (delta_time > 0.01)
+        cout << "Warning: Delta time is high (dt = " << delta_time << ")\n";
+
     config.set_delta_time(delta_time);
 }
 
 void EulerSolver::calc_Delta_S(const Config &config)
 {
+
     const auto &faces = grid.get_faces();
     EulerSolverData &euler_data = dynamic_cast<EulerSolverData &>(*solver_data);
 
@@ -306,7 +308,7 @@ void EulerSolver::calc_Delta_S(const Config &config)
         i = faces[ij].i;
         j = faces[ij].j;
 
-        tmp = 0.5 * Delta_S[ij].cwiseAbs();
+        tmp = 0.5 * faces[ij].S_ij.cwiseAbs();
 
         Delta_S[i] += tmp;
         Delta_S[j] += tmp;

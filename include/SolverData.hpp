@@ -127,7 +127,7 @@ namespace EulerEqs
 {
 
     constexpr Scalar GAMMA{standard_air::gamma};
-    constexpr Scalar GAMMA_MINUS_ONE{1 - GAMMA};
+    constexpr Scalar GAMMA_MINUS_ONE{GAMMA - 1};
     constexpr Scalar GAMMA_MINUS_ONE_INV{1 / GAMMA_MINUS_ONE};
 
     /*Templating the various functions since the EulerVecType can be either EulerVec or EulerVecMap*/
@@ -170,6 +170,7 @@ namespace EulerEqs
         U[4] = GAMMA_MINUS_ONE_INV * V[4] + 0.5 * V[0] * (V[1] * V[1] + V[2] * V[2] + V[3] * V[3]);
 
         assert(!U.hasNaN() && U.allFinite());
+        assert(U[4] > 0.0);
     }
 
     template <typename EulerVecType>
@@ -189,6 +190,7 @@ namespace EulerEqs
     template <typename EulerVecType>
     inline Scalar pressure(const EulerVecType &U)
     {
+
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER && EulerVecType::ColsAtCompileTime == 1);
         Scalar p = GAMMA_MINUS_ONE * (U[4] - 0.5 / U[0] * (U[1] * U[1] + U[2] * U[2] + U[3] * U[3]));
         assert(num_is_valid_and_pos(p));
@@ -255,22 +257,44 @@ namespace EulerEqs
 class ValidityChecker
 {
 protected:
+    const Config &config;
     /*Checks for inf or nan values*/
-    static Index check_field_validity(const VecField &field);
+    Index check_field_validity(const VecField &field, Index first, Index last) const;
 
     /*Special check for primvars (for instance, for Euler eqs. density and pressure must be positive)*/
-    virtual Index check_primvars(const VecField &V) = 0;
+    virtual Index check_primvars(const VecField &V, Index first, Index last) const = 0;
+
+    virtual Index check_consvars(const VecField &U, Index first, Index last) const = 0;
 
     virtual string get_solver_name() const = 0;
 
+    void write_debug_info(const VecField &U) const;
+
 public:
-    void check_flux_balance_validity(const Config &config, const VecField &flux_balance);
+    void check_flux_balance_validity(const Config &config, const VecField &flux_balance) const;
+
+    bool valid_primvars_interior(const VecField &V) const;
+
+    bool valid_consvars_interior(const VecField &U) const;
+
+    bool valid_primvars_ghost(const VecField &V) const;
+
+    bool valid_consvars_ghost(const VecField &U) const;
+
+    bool valid_flux_balance(const VecField &R) const;
+
+    ValidityChecker(const Config &config) : config{config} {}
 };
 
 class EulerValidityChecker : public ValidityChecker
 {
 
-    Index check_primvars(const VecField &V) final;
+    Index check_primvars(const VecField &V, Index first, Index last) const final;
+
+    Index check_consvars(const VecField &U, Index first, Index last) const final;
 
     string get_solver_name() const override { return "Euler"; }
+
+public:
+    EulerValidityChecker(const Config &config) : ValidityChecker(config) {}
 };

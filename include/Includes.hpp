@@ -55,6 +55,8 @@ class Vector final : public std::vector<T>
 public:
     using std::vector<T>::vector;
 
+#define DEBUG_LOG_FILE "./debug_log.txt"
+
 #ifndef NDEBUG
 
     T &operator[](size_t i)
@@ -97,7 +99,7 @@ inline bool num_is_valid(T val)
 template <typename T>
 inline bool num_is_valid_and_pos(T val)
 {
-    if (!num_is_valid(val) || val <= 0.0)
-        return false;
-    return true;
+    if (num_is_valid(val) && val > 0.0)
+        return true;
+    return false;
 }

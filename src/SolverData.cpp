@@ -52,25 +52,27 @@ void EulerSolverData::set_freestream_values(const Config &config)
     solution->set_constant_field_segment(U_inf, first, last);
 }
 
-void ValidityChecker::check_flux_balance_validity(const Config &config, const VecField &flux_balance)
+void ValidityChecker::check_flux_balance_validity(const Config &config, const VecField &flux_balance) const
 {
     if (!config.check_physical_validity())
         return;
 
-    Index invalid_cells = check_field_validity(flux_balance);
+    Index invalid_cells = check_field_validity(flux_balance, 0, config.get_N_INTERIOR_CELLS());
 
     if (invalid_cells > 0)
     {
-        throw std::runtime_error(std::to_string(invalid_cells) + " cells with unphysical \  
-        values detected in the flux_balance field of the " +
+        throw std::runtime_error(std::to_string(invalid_cells) + " cells with unphysical" +
+                                 "values detected in the flux_balance field of the " +
                                  get_solver_name() + " solver");
     }
 }
 
-Index ValidityChecker::check_field_validity(const VecField &field)
+Index ValidityChecker::check_field_validity(const VecField &field, Index first, Index last) const
 {
+
+    assert(first >= 0 && last <= field.size());
     Index invalid_cells{0};
-    for (Index i{0}; i < field.size(); i++)
+    for (Index i{first}; i < last; i++)
     {
         for (ShortIndex j{0}; j < field.get_N_EQS(); j++)
         {
@@ -84,11 +86,13 @@ Index ValidityChecker::check_field_validity(const VecField &field)
     return invalid_cells;
 }
 
-Index EulerValidityChecker::check_primvars(const VecField &V)
+Index EulerValidityChecker::check_primvars(const VecField &V, Index first, Index last) const
 {
+
+    assert(first >= 0 && last <= V.size());
     assert(V.get_N_EQS() == N_EQS_EULER);
     Index invalid_cells{0};
-    for (Index i{0}; i < V.size(); i++)
+    for (Index i{first}; i < last; i++)
     {
         /*Checking density and pressure*/
         if (!num_is_valid_and_pos(V(i, 0)) || !num_is_valid_and_pos(V(i, 4)))
@@ -107,4 +111,101 @@ Index EulerValidityChecker::check_primvars(const VecField &V)
         }
     }
     return invalid_cells;
+}
+
+Index EulerValidityChecker::check_consvars(const VecField &U, Index first, Index last) const
+{
+    assert(first >= 0 && last <= U.size());
+    assert(U.get_N_EQS() == N_EQS_EULER);
+    Index invalid_cells{0};
+    for (Index i{first}; i < last; i++)
+    {
+        /*Checking density and total energy*/
+        if (!num_is_valid_and_pos(U(i, 0)) || !num_is_valid_and_pos(U(i, 4)))
+        {
+            invalid_cells += 1;
+            continue;
+        }
+        /*Checking momentum*/
+        for (ShortIndex i_dim{1}; i_dim <= N_DIM; i_dim++)
+        {
+            if (!num_is_valid(U(i, i_dim)))
+            {
+                invalid_cells += 1;
+                break;
+            }
+        }
+    }
+    return invalid_cells;
+}
+
+bool ValidityChecker::valid_primvars_interior(const VecField &V) const
+{
+    if (check_primvars(V, 0, config.get_N_INTERIOR_CELLS()) > 0)
+    {
+        write_debug_info(V);
+        return false;
+    };
+    return true;
+}
+
+bool ValidityChecker::valid_consvars_interior(const VecField &U) const
+{
+    if (check_consvars(U, 0, config.get_N_INTERIOR_CELLS()) > 0)
+    {
+        write_debug_info(U);
+        return false;
+    };
+    return true;
+}
+
+bool ValidityChecker::valid_primvars_ghost(const VecField &V) const
+{
+    if (check_consvars(V, config.get_N_INTERIOR_CELLS(), V.size()) > 0)
+    {
+        write_debug_info(V);
+        return false;
+    };
+    return true;
+}
+
+bool ValidityChecker::valid_consvars_ghost(const VecField &U) const
+{
+    if (check_consvars(U, config.get_N_INTERIOR_CELLS(), U.size()) > 0)
+    {
+        write_debug_info(U);
+        return false;
+    };
+    return true;
+}
+
+bool ValidityChecker::valid_flux_balance(const VecField &R) const
+{
+    if (check_field_validity(R, 0, config.get_N_INTERIOR_CELLS()) > 0)
+    {
+        write_debug_info(R);
+        return false;
+    };
+    return true;
+}
+
+void ValidityChecker::write_debug_info(const VecField &U) const
+{
+
+    std::ofstream ost{DEBUG_LOG_FILE};
+    FAIL_IF_MSG(!ost, "Couldn't open file debugging logging file " + string(DEBUG_LOG_FILE));
+
+    ost << "\n\nDisplaying vector field:\n\n";
+    for (Index i{0}; i < U.size(); i++)
+    {
+        for (ShortIndex j{0}; j < U.get_N_EQS(); j++)
+        {
+            ost << U(i, j);
+            if (j < U.get_N_EQS() - 1)
+                ost << ", ";
+        }
+        if (i >= config.get_N_INTERIOR_CELLS())
+            ost << " -G";
+        ost << "\n";
+    }
 }
