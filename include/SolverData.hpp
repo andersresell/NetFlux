@@ -176,6 +176,7 @@ namespace EulerEqs
     template <typename EulerVecType>
     inline void cons_to_prim(const EulerVecType &U, EulerVecType &V)
     {
+
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER and EulerVecType::ColsAtCompileTime == 1);
         V[0] = U[0],
         V[1] = U[1] / U[0],
@@ -190,7 +191,6 @@ namespace EulerEqs
     template <typename EulerVecType>
     inline Scalar pressure(const EulerVecType &U)
     {
-
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER && EulerVecType::ColsAtCompileTime == 1);
         Scalar p = GAMMA_MINUS_ONE * (U[4] - 0.5 / U[0] * (U[1] * U[1] + U[2] * U[2] + U[3] * U[3]));
         assert(num_is_valid_and_pos(p));
