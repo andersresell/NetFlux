@@ -2,24 +2,16 @@
 
 #include "../include/Driver.hpp"
 
-int main()
+int main(int argc, char *argv[])
 {
-
-    // string mesh_filename = "/home/anders/dev/Compress3D/meshing/brick.su2";
-
-    // Config config{mesh_filename};
-
-    // geom::Grid g{c};
-
-    // g.create_grid(c);
-
-    // g.print_grid(c);
-
-    // Output o{g};
     try
     {
-
-        string config_filename = "../testing/test.yaml";
+        if (argc != 2)
+        {
+            cout << "Specify config file to run NetFlux.\nUsage: $ ./NetFlux <config_file>\n";
+            return 1;
+        }
+        string config_filename = argv[1];
         Config config{config_filename};
         Driver driver{config};
         driver.solve();

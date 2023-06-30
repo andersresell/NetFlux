@@ -24,7 +24,7 @@ class Config
     /*Options specified by input file*/
 
     string mesh_filename;
-    string output_basename;
+    string sim_dir;
 
     map<string, BoundaryType> map_patch_BC; // map from each patch to the bc type applied
 
@@ -78,8 +78,10 @@ public:
                           Index N_INTERIOR_FACES,
                           Index N_TOTAL_FACES);
 
-    string get_mesh_filename() const { return mesh_filename; }
-    string get_unsteady_vtk_filename() const { return output_basename + std::to_string(timestep) + ".vtk"; }
+    const string &get_mesh_filename() const { return mesh_filename; }
+    const string &get_sim_dir() const { return sim_dir; }
+    string get_output_dir() const { return sim_dir + "output/"; }
+    string get_unsteady_vtk_filename() const { return get_output_dir() + "n=" + std::to_string(timestep) + ".vtk"; }
 
     BoundaryType get_boundary_type(string patch_name) const { return map_patch_BC.at(patch_name); }
 

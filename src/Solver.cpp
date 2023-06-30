@@ -29,6 +29,7 @@ void Solver::step(const Config &config)
 
 void Solver::evaluate_flux_balance(const Config &config, const VecField &cons_vars)
 {
+    assert(validity_checker->valid_consvars_interior(cons_vars));
 
     solver_data->get_flux_balance().set_zero();
 
@@ -61,39 +62,52 @@ void Solver::explicit_euler(const Config &config)
     VecField &U = solver_data->get_solution();
     VecField &R = solver_data->get_flux_balance();
     const ShortIndex N_EQS = solver_data->get_N_EQS();
+    const auto &cells = grid.get_cells();
+    Index i, j;
+
     assert(U.get_N_EQS() == N_EQS && R.get_N_EQS() == N_EQS);
     assert(U.size() == config.get_N_INTERIOR_CELLS() && R.size() == config.get_N_INTERIOR_CELLS());
 
-    assert(validity_checker->valid_consvars_interior(U));
-    evaluate_flux_balance(config, U);
-    assert(validity_checker->valid_flux_balance(R));
+    /*--------------------------------------------------------------------
+     U_n+1 = U_n + dt /Omega * R(U_n)
+    --------------------------------------------------------------------*/
 
-    for (Index i{0}; i < config.get_N_INTERIOR_CELLS(); i++)
-    {
-        for (ShortIndex j{0}; j < N_EQS; j++)
-        {
-            U(i, j) += dt * R(i, j);
-        }
-    }
-    assert(validity_checker->valid_consvars_interior(U));
+    evaluate_flux_balance(config, U);
+    for_all(U, i, j)
+        U(i, j) += dt / cells[i].cell_volume * R(i, j);
 }
 
 void Solver::TVD_RK3(const Config &config)
 {
-    // Scalar dt = config.get_delta_time();
-    // VecField& U = solver_data->get_solution();
-    // VecField& R = solver_data->get_flux_balance();
-    // const ShortIndex N_EQS = solver_data->get_N_EQS();
-    // assert(U.size() == R.size() && U.get_N_EQS() == N_EQS && R.get_N_EQS() == N_EQS);
+    Scalar dt = config.get_delta_time();
+    VecField &U = solver_data->get_solution();
+    VecField &U_old = solver_data->get_solution_old();
+    VecField &R = solver_data->get_flux_balance();
+    const ShortIndex N_EQS = solver_data->get_N_EQS();
+    const auto &cells = grid.get_cells();
+    Index i, j;
 
-    // evaluate_flux_balance(config);
+    assert(U.get_N_EQS() == N_EQS && U_old.get_N_EQS() == N_EQS && R.get_N_EQS() == N_EQS);
+    assert(U.size() == config.get_N_INTERIOR_CELLS() && U_old.size() == config.get_N_INTERIOR_CELLS());
+    assert(R.size() == config.get_N_INTERIOR_CELLS());
 
-    // for (Index i{0}; i<config.get_N_INTERIOR_CELLS(); i++){
-    //     for (ShortIndex j{0}; j<N_EQS; j++){
-    //         U(i,j) += dt * R(i,j);
-    //     }
-    // }
-    assert(false);
+    /*--------------------------------------------------------------------
+    U_1 = U_n + dt /Omega * R(U_n)
+    U_2 = 3/4 * U_n + 1/4 *U_1 + 1/4 * dt / Omega * R(U_1)
+    U_n+1 = 1/3 * U_n + 2/3 * U_2 + 2/3 * dt / Omega * R(U_2)
+    --------------------------------------------------------------------*/
+
+    evaluate_flux_balance(config, U);
+    for_all(U, i, j)
+        U(i, j) += dt / cells[i].cell_volume * R(i, j);
+
+    evaluate_flux_balance(config, U);
+    for_all(U, i, j)
+        U(i, j) = 3.0 / 4.0 * U_old(i, j) + 1.0 / 4.0 * U(i, j) + 1.0 / 4.0 * dt / cells[i].cell_volume * R(i, j);
+
+    evaluate_flux_balance(config, U);
+    for_all(U, i, j)
+        U(i, j) = 1.0 / 3.0 * U_old(i, j) + 2.0 / 3.0 * U(i, j) + 2.0 / 3.0 * dt / cells[i].cell_volume * R(i, j);
 }
 
 EulerSolver::EulerSolver(const Config &config, const geom::Grid &grid) : Solver(grid)

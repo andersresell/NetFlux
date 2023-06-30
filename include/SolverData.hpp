@@ -193,7 +193,7 @@ namespace EulerEqs
     {
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER && EulerVecType::ColsAtCompileTime == 1);
         Scalar p = GAMMA_MINUS_ONE * (U[4] - 0.5 / U[0] * (U[1] * U[1] + U[2] * U[2] + U[3] * U[3]));
-        finit assert(num_is_valid_and_pos(p));
+        assert(num_is_valid_and_pos(p));
         return p;
     }
 
@@ -268,9 +268,9 @@ protected:
 
     virtual string get_solver_name() const = 0;
 
-    void write_debug_info(const VecField &U) const;
-
 public:
+    ValidityChecker(const Config &config);
+
     void check_flux_balance_validity(const Config &config, const VecField &flux_balance) const;
 
     bool valid_primvars_interior(const VecField &V) const;
@@ -283,7 +283,7 @@ public:
 
     bool valid_flux_balance(const VecField &R) const;
 
-    ValidityChecker(const Config &config) : config{config} {}
+    void write_debug_info(const VecField &U, string name = "") const;
 };
 
 class EulerValidityChecker : public ValidityChecker

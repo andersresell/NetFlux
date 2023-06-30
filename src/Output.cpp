@@ -1,9 +1,17 @@
 
 #include "../include/Output.hpp"
 
-Output::Output(const geom::Grid &grid, const Vector<unique_ptr<Solver>> &solvers)
+Output::Output(const geom::Grid &grid, const Vector<unique_ptr<Solver>> &solvers, const Config &config)
     : grid{grid}, solvers{solvers}
 {
+    string output_dir = config.get_output_dir();
+
+    if (filesys::exists(output_dir))
+        if (!filesys::remove_all(output_dir))
+            throw(std::runtime_error("Couldn't remove old output directory: " + output_dir));
+
+    if (!filesys::create_directory(output_dir))
+        throw std::runtime_error("Couldn't create output directory: " + output_dir);
 }
 
 void Output::write_vtk_ascii(const Config &config, bool write_grid_only)

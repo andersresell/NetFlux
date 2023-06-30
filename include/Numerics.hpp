@@ -16,8 +16,8 @@ private:
 
     static void HLLC(const EulerVecMap &U_L, const EulerVecMap &U_R, const Vec3 &S_ij, EulerVecMap &Flux);
 
-    static inline const map<InviscidFluxScheme, InvFluxFunction> inv_flux_func_map = {{InviscidFluxScheme::Rusanov, rusanov},
-                                                                                      {InviscidFluxScheme::HLLC, HLLC}};
+    static inline const map<InviscidFluxScheme, InvFluxFunction> inv_flux_functions = {{InviscidFluxScheme::Rusanov, rusanov},
+                                                                                       {InviscidFluxScheme::HLLC, HLLC}};
 };
 
 class BoundaryCondition
@@ -34,9 +34,9 @@ private:
 
     static void farfield(const EulerVecMap &V_internal, EulerVecMap &V_ghost, const Vec3 &S_ij);
 
-    static inline const map<BoundaryType, BC_function> BC_func_map = {{BoundaryType::NoSlipWall, no_slip_wall},
-                                                                      {BoundaryType::SlipWall, slip_wall},
-                                                                      {BoundaryType::FarField, farfield}};
+    static inline const map<BoundaryType, BC_function> BC_functions = {{BoundaryType::NoSlipWall, no_slip_wall},
+                                                                       {BoundaryType::SlipWall, slip_wall},
+                                                                       {BoundaryType::FarField, farfield}};
 };
 
 // namespace BoundaryCondition{

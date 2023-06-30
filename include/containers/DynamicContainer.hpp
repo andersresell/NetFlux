@@ -13,7 +13,7 @@ class DynamicContainer3D
 {
 
 protected:
-    using DNetFlux = DynamicContainer3D;
+    using DC3D = DynamicContainer3D;
 
     Index size_{0}; // Length of outer vector
     Index rows_{0}; // number of rows of each variable,
@@ -68,7 +68,7 @@ public:
             data_[i] = 0;
     }
 
-    void operator=(const DNetFlux &other)
+    void operator=(const DC3D &other)
     {
         assert(size() == other.size());
         std::copy(other.data_, other.data_ + size_ * rows_ * cols_, data_);
@@ -127,7 +127,7 @@ public:
         return size_;
     }
     Index rows() const { return rows_; }
-    constexpr Index cols() const { return cols_; }
+    static constexpr Index cols() { return cols_; }
 
     ~DynamicContainer3D() { delete[] data_; }
 };
@@ -135,9 +135,10 @@ public:
 template <typename T>
 class DynamicContainer2D : public DynamicContainer3D<T, 1>
 {
+    using DC2D = DynamicContainer3D<T, 1>;
 
 public:
-    using DynamicContainer3D<T, 1>::operator=;
+    using DC2D::operator=;
 
     DynamicContainer2D() {}
 
@@ -154,4 +155,32 @@ public:
         assert(l < this->size_ && i < this->rows_);
         return this->data_[l * this->rows_ + i];
     }
+
+    using DC2D::rows;
+    using DC2D::size;
+
+    string to_string() const
+    {
+        std::stringstream ss;
+        ss << endl
+           << endl;
+        for (Index l{0}; l < size(); l++)
+        {
+            for (Index i{0}; i < rows(); i++)
+            {
+                ss << (*this)(l, i);
+                if (i < rows())
+                    ss << ", ";
+            }
+            ss << "\n";
+        }
+        ss << endl
+           << endl;
+        return ss.str();
+    }
 };
+
+#define for_all(container2D, i, j)           \
+    static_assert(container2D.cols() == 1);  \
+    for (i = 0; i < container2D.size(); i++) \
+        for (j = 0; j < container2D.rows(); j++)

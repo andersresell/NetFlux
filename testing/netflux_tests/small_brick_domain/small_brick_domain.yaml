@@ -1,7 +1,7 @@
 
-mesh_filename: ../meshing/brick.su2
+mesh_filename: ../testing/meshing/brick.su2
 
-output_basename: ../test_solution
+sim_dir: ../testing/netflux_tests/small_brick_domain
 
 
 
@@ -9,7 +9,7 @@ solver: Euler
 
 n_timesteps: 10
 
-CFL: 0.5
+CFL: 0.01
 
 time_scheme: ExplicitEuler
 
@@ -26,7 +26,7 @@ initial_cond: Freestream
 check_physical_validity: true
  
 density_fs: 1.2
-velocity_fs: [0, 0, 0]
+velocity_fs: [500, 0, 0]
 pressure_fs: 100000.0
 
 

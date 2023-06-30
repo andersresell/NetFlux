@@ -6,7 +6,9 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/NetFlux",
-            "args": [],
+            "args": [
+                "${workspaceFolder}/testing/netflux_tests/small_brick_domain/small_brick_domain.yaml"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/src/",
             "environment": [],

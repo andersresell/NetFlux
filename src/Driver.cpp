@@ -14,7 +14,7 @@ Driver::Driver(Config &config) : config{config}
         throw std::runtime_error("Error: Illegal solver type specified");
     }
 
-    output = make_unique<Output>(*grid, solvers);
+    output = make_unique<Output>(*grid, solvers, config);
 }
 
 void Driver::solve()

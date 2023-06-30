@@ -14,7 +14,7 @@ private:
     void write_vtk_ascii_grid(const Config &config, string filename);
 
 public:
-    Output(const geom::Grid &grid, const Vector<unique_ptr<Solver>> &solvers);
+    Output(const geom::Grid &grid, const Vector<unique_ptr<Solver>> &solvers, const Config &config);
     void write_vtk_ascii(const Config &config, bool write_grid_only = false);
 };
 

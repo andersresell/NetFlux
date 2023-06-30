@@ -14,6 +14,8 @@
 #include <any>
 #include <chrono>
 #include <cfloat>
+#include <type_traits>
+#include <filesystem>
 
 using std::array;
 using std::cout;
@@ -25,6 +27,7 @@ using std::min;
 using std::move;
 using std::string;
 using std::unique_ptr;
+namespace filesys = std::filesystem;
 
 using Index = uint32_t;      // Used for accessing cell indices, etc
 using ShortIndex = uint16_t; // Used for looping over shorter numbers as spatial dimensions, etc

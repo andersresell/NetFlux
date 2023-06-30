@@ -36,7 +36,9 @@ void ConfigParser::parse_yaml_file_options(Config &config)
 
     config.mesh_filename = read_required_option<string>("mesh_filename");
 
-    config.output_basename = read_optional_option<string>("output_basename", "output");
+    config.sim_dir = read_optional_option<string>("sim_dir", "./");
+    if (config.sim_dir.back() != '/')
+        config.sim_dir += '/';
 
     config.main_solver_type = read_required_enum_option<MainSolverType>("solver", main_solver_from_string);
 

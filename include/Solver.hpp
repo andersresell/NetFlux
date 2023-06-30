@@ -27,6 +27,8 @@ public:
 private:
     void evaluate_flux_balance(const Config &config, const VecField &cons_vars);
 
+    void update_cell_averages(VecField &U, double dt);
+
     virtual void evaluate_inviscid_fluxes(const Config &config) { return; };
 
     virtual void evaluate_viscous_fluxes(const Config &config) { return; };
@@ -35,7 +37,7 @@ private:
 
     void explicit_euler(const Config &config);
 
-    void TVD_RKD(const Config &config);
+    void TVD_RK3(const Config &config);
 
     virtual void evaluate_gradient(const Config &config) = 0;
 
