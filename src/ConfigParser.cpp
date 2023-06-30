@@ -8,7 +8,7 @@ ConfigParser::ConfigParser(const string &config_filename) : config_filename{conf
     }
     catch (const std::exception &e)
     {
-        throw std::runtime_error("Error loading config file" + string(e.what()));
+        throw std::runtime_error("Error loading config file '" + config_filename + "', " + string(e.what()));
     }
 }
 
