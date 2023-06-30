@@ -13,7 +13,7 @@ class DynamicContainer3D
 {
 
 protected:
-    using DC3D = DynamicContainer3D;
+    using DNetFlux = DynamicContainer3D;
 
     Index size_{0}; // Length of outer vector
     Index rows_{0}; // number of rows of each variable,
@@ -68,7 +68,7 @@ public:
             data_[i] = 0;
     }
 
-    void operator=(const DC3D &other)
+    void operator=(const DNetFlux &other)
     {
         assert(size() == other.size());
         std::copy(other.data_, other.data_ + size_ * rows_ * cols_, data_);

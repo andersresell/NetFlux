@@ -193,7 +193,7 @@ namespace EulerEqs
     {
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER && EulerVecType::ColsAtCompileTime == 1);
         Scalar p = GAMMA_MINUS_ONE * (U[4] - 0.5 / U[0] * (U[1] * U[1] + U[2] * U[2] + U[3] * U[3]));
-        assert(num_is_valid_and_pos(p));
+        finit assert(num_is_valid_and_pos(p));
         return p;
     }
 

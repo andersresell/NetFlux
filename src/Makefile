@@ -10,11 +10,11 @@ CXX_FLAGS = -g -Wall -Wno-unused-function -fmax-errors=1 -I$(INC_DIR)
 LDLIBS = -lyaml-cpp
 
 
-_EXE = C3D
+_EXE = NetFlux
 EXE = $(BUILD_DIR)/$(_EXE)
 
 #add source files here
-SRC = C3D.cpp \
+SRC = NetFlux.cpp \
 	  Config.cpp \
 	  ConfigParser.cpp \
 	  Grid.cpp \

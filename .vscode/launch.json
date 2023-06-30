@@ -2,19 +2,17 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "runC3D",
+            "name": "runNetFlux",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/C3D",
+            "program": "${workspaceFolder}/build/NetFlux",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/src/",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
-            "preLaunchTask": "build debug C3D",
-
-     
+            "preLaunchTask": "build debug NetFlux",
         },
     ]
 }

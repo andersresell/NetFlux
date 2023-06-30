@@ -2,9 +2,11 @@
     "tasks": [
         {
             "type": "cppbuild",
-            "label": "build debug C3D",
+            "label": "build debug NetFlux",
             "command": "make",
-            "args": ["C3D"],
+            "args": [
+                "NetFlux"
+            ],
             "options": {
                 "cwd": "${workspaceFolder}/src/"
             },
