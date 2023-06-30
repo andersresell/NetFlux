@@ -36,3 +36,6 @@
 
 # CFD output files
 *.vtk
+
+#other
+debug_log.txt
