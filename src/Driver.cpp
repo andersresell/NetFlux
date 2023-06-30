@@ -44,6 +44,8 @@ void Driver::solve()
 
         config.set_time(config.get_time() + config.get_delta_time());
 
+        cout << "Time step " << config.get_timestep() << " finished\n";
+
         if (config.get_timestep() > config.get_n_timesteps())
         {
             break;

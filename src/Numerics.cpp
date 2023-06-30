@@ -3,8 +3,8 @@
 
 NumericalFlux::InvFluxFunction NumericalFlux::get_inviscid_flux_function(InviscidFluxScheme inv_flux_scheme)
 {
-    assert(inv_flux_func_map.count(inv_flux_scheme) == 1);
-    return inv_flux_func_map.at(inv_flux_scheme);
+    assert(inv_flux_functions.count(inv_flux_scheme) == 1);
+    return inv_flux_functions.at(inv_flux_scheme);
 }
 
 void NumericalFlux::rusanov(const EulerVecMap &U_L, const EulerVecMap &U_R, const Vec3 &S_ij, EulerVecMap &Flux)
@@ -24,8 +24,8 @@ void NumericalFlux::HLLC(const EulerVecMap &U_L, const EulerVecMap &U_R, const V
 
 BoundaryCondition::BC_function BoundaryCondition::get_BC_function(BoundaryType boundary_type)
 {
-    assert(BC_func_map.count(boundary_type) == 1);
-    return BC_func_map.at(boundary_type);
+    assert(BC_functions.count(boundary_type) == 1);
+    return BC_functions.at(boundary_type);
 }
 
 void BoundaryCondition::no_slip_wall(const EulerVecMap &V_internal, EulerVecMap &V_ghost, const Vec3 &S_ij)

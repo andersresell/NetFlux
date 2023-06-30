@@ -5,15 +5,15 @@ SolverData::SolverData(const Config &config, ShortIndex n_eqs)
     Index N_TOTAL_CELLS = config.get_N_TOTAL_CELLS();
     Index N_INTERIOR_CELLS = config.get_N_INTERIOR_CELLS();
 
-    solution = make_unique<VecField>(N_TOTAL_CELLS, n_eqs);
-    solution_old = make_unique<VecField>(N_TOTAL_CELLS, n_eqs);
+    solution = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs);
+    solution_old = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs);
     primvars = make_unique<VecField>(N_TOTAL_CELLS, n_eqs);
     flux_balance = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs);
 
     primvars_gradient = make_unique<GradField>(N_INTERIOR_CELLS, n_eqs);
     primvars_limiter = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs);
-    primvars_max = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs);
-    primvars_min = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs);
+    primvars_max = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs); //?correct size
+    primvars_min = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs); //?correct size
 }
 
 EulerSolverData::EulerSolverData(const Config &config) : SolverData(config, N_EQS_EULER)
@@ -32,7 +32,8 @@ EulerSolverData::EulerSolverData(const Config &config) : SolverData(config, N_EQ
 
 void EulerSolverData::set_primvars(const VecField &cons_vars, const Config &config)
 {
-    assert(cons_vars.size() == primvars->size() && cons_vars.get_N_EQS() == primvars->get_N_EQS());
+    assert(cons_vars.size() == config.get_N_INTERIOR_CELLS() && primvars->size() == config.get_N_TOTAL_CELLS());
+    assert(cons_vars.get_N_EQS() == primvars->get_N_EQS());
 
     for (Index i{0}; i < config.get_N_INTERIOR_CELLS(); i++)
     {
@@ -50,6 +51,12 @@ void EulerSolverData::set_freestream_values(const Config &config)
     EulerEqs::prim_to_cons(V_inf, U_inf);
     primvars->set_constant_field_segment(V_inf, first, last);
     solution->set_constant_field_segment(U_inf, first, last);
+}
+
+ValidityChecker::ValidityChecker(const Config &config) : config{config}
+{
+    std::ofstream ost{DEBUG_LOG_FILE};
+    FAIL_IF_MSG(!ost, "Couldn't open file debugging logging file " + string(DEBUG_LOG_FILE));
 }
 
 void ValidityChecker::check_flux_balance_validity(const Config &config, const VecField &flux_balance) const
@@ -189,13 +196,12 @@ bool ValidityChecker::valid_flux_balance(const VecField &R) const
     return true;
 }
 
-void ValidityChecker::write_debug_info(const VecField &U) const
+void ValidityChecker::write_debug_info(const VecField &U, string name) const
 {
-
-    std::ofstream ost{DEBUG_LOG_FILE};
+    std::ofstream ost{DEBUG_LOG_FILE, std::ios::app};
     FAIL_IF_MSG(!ost, "Couldn't open file debugging logging file " + string(DEBUG_LOG_FILE));
 
-    ost << "\n\nDisplaying vector field:\n\n";
+    ost << "\n\nDisplaying vector field " + name + "\n\n";
     for (Index i{0}; i < U.size(); i++)
     {
         for (ShortIndex j{0}; j < U.get_N_EQS(); j++)

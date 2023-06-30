@@ -18,10 +18,10 @@ void Solver::step(const Config &config)
         explicit_euler(config);
         break;
     case TimeScheme::TVD_RK3:
-        TVD_RKD(config);
+        TVD_RK3(config);
         break;
     default:
-        FAIL_MSG("Error, illegal time integration scheme used\n");
+        assert(false);
     }
 
     solver_data->get_solution_old() = solver_data->get_solution();
@@ -33,8 +33,12 @@ void Solver::evaluate_flux_balance(const Config &config, const VecField &cons_va
     solver_data->get_flux_balance().set_zero();
 
     solver_data->set_primvars(cons_vars, config);
+    assert(validity_checker->valid_primvars_interior(solver_data->get_primvars()));
 
     set_constant_ghost_values(config);
+    assert(validity_checker->valid_primvars_ghost(solver_data->get_primvars()));
+
+    validity_checker->write_debug_info(solver_data->get_primvars(), "Primvars");
 
     if (config.get_spatial_order() == SpatialOrder::Second)
     {
@@ -58,21 +62,23 @@ void Solver::explicit_euler(const Config &config)
     VecField &R = solver_data->get_flux_balance();
     const ShortIndex N_EQS = solver_data->get_N_EQS();
     assert(U.get_N_EQS() == N_EQS && R.get_N_EQS() == N_EQS);
-    assert(U.size() == config.get_N_TOTAL_CELLS() && R.size() == config.get_N_INTERIOR_CELLS());
+    assert(U.size() == config.get_N_INTERIOR_CELLS() && R.size() == config.get_N_INTERIOR_CELLS());
 
     assert(validity_checker->valid_consvars_interior(U));
     evaluate_flux_balance(config, U);
-    assert(validity_checker->valid_primvars_interior(solver_data->get_primvars()));
     assert(validity_checker->valid_flux_balance(R));
 
     for (Index i{0}; i < config.get_N_INTERIOR_CELLS(); i++)
+    {
         for (ShortIndex j{0}; j < N_EQS; j++)
+        {
             U(i, j) += dt * R(i, j);
-
+        }
+    }
     assert(validity_checker->valid_consvars_interior(U));
 }
 
-void Solver::TVD_RKD(const Config &config)
+void Solver::TVD_RK3(const Config &config)
 {
     // Scalar dt = config.get_delta_time();
     // VecField& U = solver_data->get_solution();
@@ -87,6 +93,7 @@ void Solver::TVD_RKD(const Config &config)
     //         U(i,j) += dt * R(i,j);
     //     }
     // }
+    assert(false);
 }
 
 EulerSolver::EulerSolver(const Config &config, const geom::Grid &grid) : Solver(grid)
@@ -99,8 +106,8 @@ EulerSolver::EulerSolver(const Config &config, const geom::Grid &grid) : Solver(
 
 void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
 {
-
     VecField &flux_balance = solver_data->get_flux_balance();
+
     // const VecField& primvars = solver_data->get_primvars();
     // const GradField& primvars_grad = solver_data->get_primvars_gradient();
     // const VecField& primvars_limiter = solver_data->get_primvars_limiter();
@@ -121,7 +128,7 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
     EulerVecMap V_R = euler_data.get_V_R_map();
     EulerVecMap Flux_inv = euler_data.get_Flux_inv_map();
 
-    NumericalFlux::InvFluxFunction inviscid_flux = NumericalFlux::get_inviscid_flux_function(config.get_inv_flux_scheme());
+    NumericalFlux::InvFluxFunction numerical_flux_func = NumericalFlux::get_inviscid_flux_function(config.get_inv_flux_scheme());
 
     /*First interior cells*/
     for (Index ij{0}; ij < N_INTERIOR_FACES; ij++)
@@ -138,7 +145,10 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
         EulerEqs::prim_to_cons(V_L, U_L);
         EulerEqs::prim_to_cons(V_R, U_R);
 
-        inviscid_flux(U_L, U_R, S_ij, Flux_inv);
+        numerical_flux_func(U_L, U_R, S_ij, Flux_inv);
+        // cout << "F_inf " << endl
+        //      << Flux_inv << endl
+        //      << endl;
 
         flux_balance.get_variable<EulerVec>(i) -= Flux_inv;
         flux_balance.get_variable<EulerVec>(j) += Flux_inv;
@@ -169,7 +179,7 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
             EulerEqs::prim_to_cons(V_L, U_L);
             EulerEqs::prim_to_cons(V_R, U_R);
 
-            inviscid_flux(U_L, U_R, S_ij, Flux_inv);
+            numerical_flux_func(U_L, U_R, S_ij, Flux_inv);
 
             flux_balance.get_variable<EulerVec>(i) -= Flux_inv;
         }
@@ -332,6 +342,8 @@ void EulerSolver::set_constant_ghost_values(const Config &config)
         {
             i = faces[ij].i;
             j = faces[ij].j;
+            assert(i < config.get_N_INTERIOR_CELLS() && j >= config.get_N_INTERIOR_CELLS());
+
             const Vec3 &S_ij = faces[ij].S_ij;
             // primvars.map_to_variable<EulerVec>(j) =
             //     BoundaryCondition::calc_ghost_val<BC_type, EulerVec>(primvars.map_to_variable<EulerVec>(i), S_ij);
