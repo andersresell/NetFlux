@@ -240,13 +240,13 @@ namespace EulerEqs
 
         Scalar rho = U[0];
         Scalar p = pressure(U);
-        Scalar V_normal = (U[1] * normal.x() + U[2] * normal.y() + U[3] * normal.z()) / rho;
+        Scalar vel_normal = (U[1] * normal.x() + U[2] * normal.y() + U[3] * normal.z()) / rho;
 
-        EulerVec F = {V_normal * rho,
-                      V_normal * U[1] + p * normal.x(),
-                      V_normal * U[2] + p * normal.y(),
-                      V_normal * U[3] + p * normal.z(),
-                      V_normal * (U[4] + p)};
+        EulerVec F = {vel_normal * rho,
+                      vel_normal * U[1] + p * normal.x(),
+                      vel_normal * U[2] + p * normal.y(),
+                      vel_normal * U[3] + p * normal.z(),
+                      vel_normal * (U[4] + p)};
         assert(!F.hasNaN() && F.allFinite());
         return F;
     }
@@ -284,6 +284,8 @@ public:
     bool valid_flux_balance(const VecField &R) const;
 
     void write_debug_info(const VecField &U, string name = "") const;
+
+    virtual bool valid_boundary_flux(const Scalar *flux_vals, BoundaryType bc_type) const;
 };
 
 class EulerValidityChecker : public ValidityChecker
@@ -294,6 +296,8 @@ class EulerValidityChecker : public ValidityChecker
     Index check_consvars(const VecField &U, Index first, Index last) const final;
 
     string get_solver_name() const override { return "Euler"; }
+
+    bool valid_boundary_flux(const Scalar *flux_vals, BoundaryType bc_type) const final;
 
 public:
     EulerValidityChecker(const Config &config) : ValidityChecker(config) {}

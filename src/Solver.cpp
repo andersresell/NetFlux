@@ -195,6 +195,8 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
 
             numerical_flux_func(U_L, U_R, S_ij, Flux_inv);
 
+            assert(validity_checker->valid_boundary_flux(Flux_inv.data(), patch.boundary_type));
+
             flux_balance.get_variable<EulerVec>(i) -= Flux_inv;
         }
     }

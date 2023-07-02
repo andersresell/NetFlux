@@ -215,3 +215,17 @@ void ValidityChecker::write_debug_info(const VecField &U, string name) const
         ost << "\n";
     }
 }
+
+bool EulerValidityChecker::valid_boundary_flux(const Scalar *flux_vals, BoundaryType bc_type) const
+{
+    const EulerVec flux = EulerVec{flux_vals};
+    assert(flux.allFinite() && !flux.hasNaN());
+
+    if (bc_type == BoundaryType::NoSlipWall || bc_type == BoundaryType::SlipWall)
+    {
+        /*Check that the density and energy flux is zero due to zero normal velocity*/
+        if (!is_approx_zero(flux[0]) && !is_approx_zero(flux[4]))
+            return false;
+    }
+    return true;
+}

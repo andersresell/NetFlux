@@ -39,7 +39,17 @@ void BoundaryCondition::no_slip_wall(const EulerVecMap &V_internal, EulerVecMap 
 
 void BoundaryCondition::slip_wall(const EulerVecMap &V_internal, EulerVecMap &V_ghost, const Vec3 &S_ij)
 {
-    assert(false); // not implemented
+    // normal velocity = <velocity, normal>
+    const Vec3 normal = S_ij.normalized();
+    const Scalar vel_normal = (V_internal[1] * normal.x() + V_internal[2] * normal.y() + V_internal[3] * normal.z());
+
+    V_ghost[0] = V_internal[0];
+
+    /*vel_ghost = vel_internal - 2 * vel_normal * normal */
+    for (ShortIndex i_dim{0}; i_dim < N_DIM; i_dim++)
+        V_ghost[i_dim + 1] = V_internal[i_dim + 1] - 2 * vel_normal * normal[i_dim];
+
+    V_ghost[4] = V_internal[4];
 }
 void BoundaryCondition::farfield(const EulerVecMap &V_internal, EulerVecMap &V_ghost, const Vec3 &S_ij)
 {

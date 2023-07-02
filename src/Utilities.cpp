@@ -19,7 +19,7 @@ namespace geom
     Vec3 Triangle::calc_area_normal() const
     {
         assert(nodes.size() == 3);
-        // Using that the cross product of two vectors is the area of a parallelogram (with correct normal), so the half is a the area of a triangle
+        // Using that the cross product of two vectors is the area of a parallelogram (with correct normal), so the half is the area of a triangle
         Vec3 ab = nodes.at(1) - nodes.at(0);
         Vec3 ac = nodes.at(2) - nodes.at(0);
         return 0.5 * ab.cross(ac);

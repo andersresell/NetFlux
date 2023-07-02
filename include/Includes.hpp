@@ -89,6 +89,17 @@ inline int sign(T val)
     return val >= 0;
 }
 
+inline bool is_approx_equal(Scalar a, Scalar b)
+{
+    constexpr Scalar EPS = 1e-8;
+    return abs(a - b) < EPS;
+}
+
+inline bool is_approx_zero(Scalar val)
+{
+    return is_approx_equal(val, 0.0);
+}
+
 template <typename T>
 inline bool num_is_valid(T val)
 {
