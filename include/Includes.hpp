@@ -51,26 +51,27 @@ constexpr ShortIndex N_DIM{3}; // spatial dimensions
 #define FAIL_MSG(MSG) ({std::cerr << MSG << "\n"; exit(EXIT_FAILURE); })
 #define assert_msg(EXP, MSG) ({if (!EXP) {std::cerr << MSG << "\n"; assert(false);} })
 
+#define DEBUG_LOG_FILE "./debug_log.txt"
+
 /*Adding range checking to the [] operator for std::vector in debug mode (NDEBUG not defined)*/
 template <typename T>
 class Vector final : public std::vector<T>
 {
 public:
     using std::vector<T>::vector;
-
-#define DEBUG_LOG_FILE "./debug_log.txt"
-
 #ifndef NDEBUG
 
     T &operator[](size_t i)
     {
-        return this->at(i);
-    }
-    const T &operator[](size_t i) const
-    {
-        return this->at(i);
+        assert(i < this->size());
+        return *(this->_M_impl._M_start + i);
     }
 
+    const T &operator[](size_t i) const
+    {
+        assert(i < this->size());
+        return *(this->_M_impl._M_start + i);
+    }
 #endif
 };
 
@@ -93,7 +94,7 @@ template <typename EigenTypeOrScalar>
 inline bool is_approx_equal(EigenTypeOrScalar a, EigenTypeOrScalar b)
 {
     constexpr Scalar EPS = 1e-8;
-    if constexpr (std::is_scalar<T>)
+    if constexpr (std::is_scalar<EigenTypeOrScalar>())
         return abs(a - b) < EPS;
     else
         return a.isApprox(b, EPS);

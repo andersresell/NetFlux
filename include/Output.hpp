@@ -20,5 +20,5 @@ public:
 
 struct EulerOutput
 {
-    static void write_vtk_ascii_cell_data(const Config &config, const string &filename, const VecField &primvars);
+    static void write_vtk_ascii_cell_data(const Config &config, const string &filename, const VecField &consvars);
 };

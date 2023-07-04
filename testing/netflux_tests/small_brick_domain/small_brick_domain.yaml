@@ -7,9 +7,9 @@ sim_dir: ../testing/netflux_tests/small_brick_domain
 
 solver: Euler
 
-n_timesteps: 10
+n_timesteps: 20
 
-CFL: 0.01
+CFL: 0.5
 
 time_scheme: ExplicitEuler
 
@@ -26,7 +26,7 @@ initial_cond: Freestream
 check_physical_validity: true
  
 density_fs: 1.2
-velocity_fs: [500, 0, 0]
+velocity_fs: [600, 0, 0]
 pressure_fs: 100000.0
 
 

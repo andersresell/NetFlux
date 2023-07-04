@@ -25,13 +25,13 @@ void Output::write_vtk_ascii(const Config &config, bool write_grid_only)
         for (const auto &solver : solvers)
         {
 
-            const VecField &primvars = solver->get_solver_data().get_primvars();
+            const VecField &consvars = solver->get_solver_data().get_solution();
 
             switch (solver->get_solver_type())
             {
             case SolverType::Euler:
             {
-                EulerOutput::write_vtk_ascii_cell_data(config, filename, primvars);
+                EulerOutput::write_vtk_ascii_cell_data(config, filename, consvars);
                 break;
             }
             default:
@@ -71,10 +71,10 @@ void Output::write_vtk_ascii_grid(const Config &config, string filename)
         ost << VTK_TET_TYPE << "\n";
 }
 
-void EulerOutput::write_vtk_ascii_cell_data(const Config &config, const string &filename, const VecField &primvars)
+void EulerOutput::write_vtk_ascii_cell_data(const Config &config, const string &filename, const VecField &consvars)
 {
 
-    assert(primvars.get_N_EQS() == N_EQS_EULER);
+    assert(consvars.get_N_EQS() == N_EQS_EULER);
 
     std::ofstream ost{filename, std::ios::app};
     FAIL_IF_MSG(!ost, "Couldn't open file " + filename);
@@ -86,17 +86,19 @@ void EulerOutput::write_vtk_ascii_cell_data(const Config &config, const string &
     ost << "\nSCALARS density " + string(Scalar_name) + " 1\n"
         << "LOOKUP_TABLE default\n";
     for (Index i{0}; i < N_INTERIOR_CELLS; i++)
-        ost << primvars(i, 0) << "\n";
+        ost << consvars(i, 0) << "\n";
 
     ost << "\nVECTORS velocity " + string(Scalar_name) + "\n";
     for (Index i{0}; i < N_INTERIOR_CELLS; i++)
     {
-        ost << primvars(i, 1) << " " << primvars(i, 2) << " " << primvars(i, 3) << "\n";
+        ost << consvars(i, 1) / consvars(i, 0) << " " << consvars(i, 2) / consvars(i, 0) << " " << consvars(i, 3) / consvars(i, 0) << "\n";
     }
 
     ost << "\nSCALARS pressure " + string(Scalar_name) + " 1\n"
         << "LOOKUP_TABLE default\n";
 
     for (Index i{0}; i < N_INTERIOR_CELLS; i++)
-        ost << primvars(i, 4) << "\n";
+    {
+        ost << EulerEqs::pressure(consvars.get_variable<EulerVec>(i)) << "\n";
+    }
 }

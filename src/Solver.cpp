@@ -58,8 +58,8 @@ void Solver::evaluate_flux_balance(const Config &config, const VecField &cons_va
     solver_data->get_flux_balance().set_zero();
 
     solver_data->set_primvars(cons_vars, config);
-    assert(validity_checker->valid_primvars_interior(solver_data->get_primvars()));
 
+    assert(validity_checker->valid_primvars_interior(solver_data->get_primvars()));
     set_constant_ghost_values(config);
     assert(validity_checker->valid_primvars_ghost(solver_data->get_primvars()));
 
@@ -82,7 +82,7 @@ void Solver::evaluate_flux_balance(const Config &config, const VecField &cons_va
 
 void Solver::explicit_euler(const Config &config)
 {
-    Scalar dt = config.get_delta_time();
+    const Scalar dt = config.get_delta_time();
     VecField &U = solver_data->get_solution();
     VecField &R = solver_data->get_flux_balance();
     const ShortIndex N_EQS = solver_data->get_N_EQS();
@@ -103,7 +103,7 @@ void Solver::explicit_euler(const Config &config)
 
 void Solver::TVD_RK3(const Config &config)
 {
-    Scalar dt = config.get_delta_time();
+    const Scalar dt = config.get_delta_time();
     VecField &U = solver_data->get_solution();
     VecField &U_old = solver_data->get_solution_old();
     VecField &R = solver_data->get_flux_balance();
