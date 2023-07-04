@@ -160,6 +160,9 @@ namespace EulerEqs
     inline EulerVec inviscid_flux(const EulerVecType &U, const Vec3 &normal);
 
     template <typename EulerVecType>
+    inline Scalar entropy_primitive(const EulerVecType &V);
+
+    template <typename EulerVecType>
     inline void prim_to_cons(const EulerVecType &V, EulerVecType &U)
     {
         static_assert(EulerVecType::RowsAtCompileTime == N_EQS_EULER and EulerVecType::ColsAtCompileTime == 1);
@@ -251,6 +254,13 @@ namespace EulerEqs
         return F;
     }
 
+    template <typename EulerVecType>
+    inline Scalar entropy_primitive(const EulerVecType &V)
+    {
+        // s = p / rho^gamma
+        return V[4] * pow(V[0], -EulerEqs::GAMMA);
+    }
+
 }
 
 /*Implements various mechanisms for checking if the various containers (solutions, fluxes etc) contain physical solutions*/
@@ -285,7 +295,7 @@ public:
 
     void write_debug_info(const VecField &U, string name = "") const;
 
-    virtual bool valid_boundary_flux(const Scalar *flux_vals, BoundaryType bc_type) const;
+    virtual bool valid_boundary_flux(const Scalar *flux_vals, BoundaryType bc_type) const = 0;
 };
 
 class EulerValidityChecker : public ValidityChecker

@@ -20,61 +20,62 @@ private:
                                                                                        {InviscidFluxScheme::HLLC, HLLC}};
 };
 
+// class BoundaryCondition
+// {
+// public:
+//     using BC_function = std::function<void(const EulerVecMap &V_domain, EulerVecMap &V_ghost, const Vec3 &S_ij)>;
+
+//     static BC_function get_BC_function(BoundaryType boundary_type);
+
+// private:
+//     static void no_slip_wall(const EulerVecMap &V_domain, EulerVecMap &V_ghost, const Vec3 &S_ij);
+
+//     static void slip_wall(const EulerVecMap &V_domain, EulerVecMap &V_ghost, const Vec3 &S_ij);
+
+//     static void farfield(const EulerVecMap &V_domain, EulerVecMap &V_ghost, const Vec3 &S_ij);
+
+//     static inline const map<BoundaryType, BC_function> BC_functions = {{BoundaryType::NoSlipWall, no_slip_wall},
+//                                                                        {BoundaryType::SlipWall, slip_wall},
+//                                                                        {BoundaryType::FarField, farfield}};
+// };
+
 class BoundaryCondition
 {
+
 public:
-    using BC_function = std::function<void(const EulerVecMap &V_internal, EulerVecMap &V_ghost, const Vec3 &S_ij)>;
-
-    static BC_function get_BC_function(BoundaryType boundary_type);
-
-private:
-    static void no_slip_wall(const EulerVecMap &V_internal, EulerVecMap &V_ghost, const Vec3 &S_ij);
-
-    static void slip_wall(const EulerVecMap &V_internal, EulerVecMap &V_ghost, const Vec3 &S_ij);
-
-    static void farfield(const EulerVecMap &V_internal, EulerVecMap &V_ghost, const Vec3 &S_ij);
-
-    static inline const map<BoundaryType, BC_function> BC_functions = {{BoundaryType::NoSlipWall, no_slip_wall},
-                                                                       {BoundaryType::SlipWall, slip_wall},
-                                                                       {BoundaryType::FarField, farfield}};
+    virtual void calc_ghost_val(const EulerVecMap &V_domain, EulerVecMap &V_ghost, const Vec3 &S_ij) = 0;
 };
 
-// namespace BoundaryCondition{
+class BC_NoSlipWall : public BoundaryCondition
+{
+public:
+    void calc_ghost_val(const EulerVecMap &V_domain, EulerVecMap &V_ghost, const Vec3 &S_ij) final;
+};
 
-//     template<BoundaryType BC_type, typename EulerVecType>
-//     inline EulerVec calc_ghost_val(const EulerVecType& V_internal, const Vec3& S_ij);
+class BC_SlipWall : public BoundaryCondition
+{
+    Vec3 normal;
+    Scalar vel_normal;
 
-//     template<typename EulerVecType>
-//     inline EulerVec BoundaryCondition::calc_ghost_val<BoundaryType::NoSlipWall>(const EulerVecType& V_internal, const Vec3& S_ij){
-//         return {V_internal[0],
-//                 -V_internal[1],
-//                 -V_internal[2],
-//                 -V_internal[3],
-//                 V_internal[4]};}
-// }
+public:
+    void calc_ghost_val(const EulerVecMap &V_domain, EulerVecMap &V_ghost, const Vec3 &S_ij) final;
+};
 
-// namespace NumericalFlux{
-//     /*Templated riemann solvers*/
-//     using namespace geom;
+class BC_FarField : public BoundaryCondition
+{
+    Scalar c_domain, c_fs, c_boundary;
+    Scalar entropy_fs, entropy_domain, entropy_boundary;
+    Scalar density_fs, density_boundary;
+    Vec3 vel_domain, vel_fs, vel_boundary;
+    Scalar pressure_fs, pressure_boundary;
+    Vec3 normal;
+    Scalar vel_n_domain, vel_n_fs, vel_n_boundary;
+    Scalar Riemann_plus, Riemann_minus;
 
-//     template<InviscidFluxScheme Scheme>
-//     inline void inviscid_flux(const EulerVec& U_L, const EulerVec& U_R, const Vec3& S_ij, EulerVec& Flux);
-
-//     /*Rusanov implementation*/
-//     template<>
-//     inline void inviscid_flux<InviscidFluxScheme::Rusanov>(const EulerVec& U_L, const EulerVec& U_R, const Vec3& S_ij, EulerVec& Flux){
-
-//         Vec3 normal = S_ij.normalized();
-//         Scalar area = S_ij.norm();
-//         Scalar spec_rad_L = EulerEqs::conv_spec_rad(U_L, normal);
-//         Scalar spec_rad_R = EulerEqs::conv_spec_rad(U_R, normal);
-
-//         Flux = area * 0.5*(EulerEqs::inviscid_flux(U_R, normal) + EulerEqs::inviscid_flux(U_L, normal)
-//             - std::max(spec_rad_R, spec_rad_L) * (U_R - U_L));
-
-//     }
-
-// }
+public:
+    BC_FarField(const Config &config);
+    void calc_ghost_val(const EulerVecMap &V_domain, EulerVecMap &V_ghost, const Vec3 &S_ij) final;
+};
 
 namespace Gradient
 {

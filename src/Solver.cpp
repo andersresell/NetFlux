@@ -2,9 +2,33 @@
 
 using namespace geom;
 
-Solver::Solver(const geom::Grid &grid)
+Solver::Solver(const geom::Grid &grid, const Config &config)
     : grid{grid}
 {
+    create_BC_container(config);
+}
+
+void Solver::create_BC_container(const Config &config)
+{
+    for (const auto &patch : grid.get_patches())
+    {
+        unique_ptr<BoundaryCondition> BC;
+        switch (patch.boundary_type)
+        {
+        case BoundaryType::NoSlipWall:
+            BC = make_unique<BC_NoSlipWall>();
+            break;
+        case BoundaryType::SlipWall:
+            BC = make_unique<BC_SlipWall>();
+            break;
+        case BoundaryType::FarField:
+            BC = make_unique<BC_FarField>(config);
+            break;
+        default:
+            assert(false);
+        }
+        BC_container.emplace_back(move(BC));
+    }
 }
 
 void Solver::step(const Config &config)
@@ -110,7 +134,7 @@ void Solver::TVD_RK3(const Config &config)
         U(i, j) = 1.0 / 3.0 * U_old(i, j) + 2.0 / 3.0 * U(i, j) + 2.0 / 3.0 * dt / cells[i].cell_volume * R(i, j);
 }
 
-EulerSolver::EulerSolver(const Config &config, const geom::Grid &grid) : Solver(grid)
+EulerSolver::EulerSolver(const Config &config, const geom::Grid &grid) : Solver(grid, config)
 {
     solver_data = make_unique<EulerSolverData>(config);
     validity_checker = make_unique<EulerValidityChecker>(config);
@@ -171,10 +195,11 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
     /*Then boundaries. Here ghost cells has to be assigned based on the boundary conditions.
     This is handled patch-wise*/
 
-    for (const auto &patch : patches)
+    for (Index i_patch{0}; i_patch < patches.size(); i_patch++)
     {
-
-        BoundaryCondition::BC_function BC_func = BoundaryCondition::get_BC_function(patch.boundary_type);
+        const auto &patch = patches[i_patch];
+        auto &boundary_condition = BC_container[i_patch];
+        // BoundaryCondition::BC_function BC_func = BoundaryCondition::get_BC_function(patch.boundary_type);
 
         for (Index ij{patch.FIRST_FACE}; ij < patch.FIRST_FACE + patch.N_FACES; ij++)
         {
@@ -186,9 +211,7 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
 
             calc_reconstructed_value(i, V_L, r_im, spatial_order);
 
-            // calc_ghost_value(V_L, V_R, S_ij, patch.boundary_type);
-
-            BC_func(V_L, V_R, S_ij);
+            boundary_condition->calc_ghost_val(V_L, V_R, S_ij);
 
             EulerEqs::prim_to_cons(V_L, U_L);
             EulerEqs::prim_to_cons(V_R, U_R);
@@ -201,78 +224,6 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
         }
     }
 }
-
-void EulerSolver::calc_reconstructed_value(Index i,
-                                           EulerVecMap &V_L,
-                                           const Vec3 &r_im,
-                                           SpatialOrder spatial_order)
-{
-
-    const VecField &primvars = solver_data->get_primvars();
-    const GradField &primvars_grad = solver_data->get_primvars_gradient();
-    const VecField &primvars_limiter = solver_data->get_primvars_limiter();
-
-    const EulerVecMap V_i = primvars.get_variable<EulerVec>(i);
-
-    if (spatial_order == SpatialOrder::Second)
-    {
-        const EulerGradMap V_i_grad = primvars_grad.get_variable<EulerGrad>(i);
-        const EulerVecMap limiter_i = primvars_limiter.get_variable<EulerVec>(i);
-
-        Reconstruction::calc_limited_reconstruction(V_i, V_i_grad, limiter_i, r_im, V_L);
-    }
-    else
-    { // Spatial order == First
-        V_L = V_i;
-    }
-}
-
-// Scalar EulerSolver::calc_timestep(Config& config){
-//     // --------------------------------------------------------------------
-//     // Implementing Method 2 in "Time Step on Unstructured Grids" in Blazek
-//     // --------------------------------------------------------------------
-
-//     const Scalar CFL = config.get_CFL();
-//     auto cells = grid.get_cells();
-//     auto faces = grid.get_faces();
-
-//     const auto& U = solution->cell_values;
-
-//     Scalar rho, u, v, w, c, volume, spec_rad_x, spec_rad_y, spec_rad_z;
-
-//     Scalar delta_time = std::numeric_limits<Scalar>::max(); //Large number
-
-//     for (Index i{0}; i<config.get_N_INTERIOR_CELLS(); i++){
-//         //solution[i].sound_speed();
-//         rho = U[i][0];
-//         u = U[i][1]/rho;
-//         v = U[i][2]/rho;
-//         w = U[i][3]/rho;
-//         c = EulerField::sound_speed(U[i]);
-//         volume = cells[i].cell_volume;
-
-//         Scalar Delta_S_x{0}, Delta_S_y{0}, Delta_S_z{0}; //These are projections of the control volume in each spatial direction
-
-//         const auto& neigbour_faces = grid.get_surrounding_faces(i);
-
-//         for (Index ij : neigbour_faces){
-//             const Vec3& S_ij = faces[ij].S_ij;
-//             Delta_S_x += abs(S_ij.x());
-//             Delta_S_y += abs(S_ij.y());
-//             Delta_S_z += abs(S_ij.z());
-//         }
-//         Delta_S_x *= 0.5;
-//         Delta_S_y *= 0.5;
-//         Delta_S_z *= 0.5;
-
-//         spec_rad_x = (abs(u) + c) * Delta_S_x;
-//         spec_rad_y = (abs(v) + c) * Delta_S_y;
-//         spec_rad_z = (abs(w) + c) * Delta_S_z;
-
-//         delta_time = std::min(delta_time, CFL* volume / (spec_rad_x + spec_rad_y + spec_rad_z));
-//     }
-//     config.set_delta_time(delta_time);
-// }
 
 void EulerSolver::calc_timestep(Config &config)
 {
@@ -343,16 +294,16 @@ void EulerSolver::calc_Delta_S(const Config &config)
 
 void EulerSolver::set_constant_ghost_values(const Config &config)
 {
-
     const auto &patches = grid.get_patches();
     const auto &faces = grid.get_faces();
     VecField &primvars = solver_data->get_primvars();
     Index i, j;
 
-    for (const auto &patch : patches)
+    // for (const auto &patch : patches)
+    for (Index i_patch{0}; i_patch < patches.size(); i_patch++)
     {
-
-        BoundaryCondition::BC_function bc_func = BoundaryCondition::get_BC_function(patch.boundary_type);
+        const auto &patch = patches[i_patch];
+        auto &boundary_condition = BC_container[i_patch];
 
         for (Index ij{patch.FIRST_FACE}; ij < patch.FIRST_FACE + patch.N_FACES; ij++)
         {
@@ -368,7 +319,7 @@ void EulerSolver::set_constant_ghost_values(const Config &config)
             EulerVecMap V_i = primvars.get_variable<EulerVec>(i);
             EulerVecMap V_j = primvars.get_variable<EulerVec>(j);
 
-            bc_func(V_i, V_j, S_ij);
+            boundary_condition->calc_ghost_val(V_i, V_j, S_ij);
         }
     }
 }

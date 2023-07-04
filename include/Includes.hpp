@@ -89,10 +89,14 @@ inline int sign(T val)
     return val >= 0;
 }
 
-inline bool is_approx_equal(Scalar a, Scalar b)
+template <typename EigenTypeOrScalar>
+inline bool is_approx_equal(EigenTypeOrScalar a, EigenTypeOrScalar b)
 {
     constexpr Scalar EPS = 1e-8;
-    return abs(a - b) < EPS;
+    if constexpr (std::is_scalar<T>)
+        return abs(a - b) < EPS;
+    else
+        return a.isApprox(b, EPS);
 }
 
 inline bool is_approx_zero(Scalar val)
