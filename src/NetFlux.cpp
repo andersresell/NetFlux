@@ -8,11 +8,11 @@ int main(int argc, char *argv[])
     {
         if (argc != 2)
         {
-            cout << "Specify config file to run NetFlux.\nUsage: $ ./NetFlux <config_file>\n";
+            cout << "Specify config file to run NetFlux.\nUsage: $ ./NetFlux <path-to-sim-directory>\n";
             return 1;
         }
-        string config_filename = argv[1];
-        Config config{config_filename};
+        string sim_dir_path = argv[1];
+        Config config{sim_dir_path};
         Driver driver{config};
         driver.solve();
     }

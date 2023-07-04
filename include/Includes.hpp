@@ -46,7 +46,7 @@ inline string horizontal_string_Vec3(const Vec3 &v) { return "[" + std::to_strin
 
 constexpr ShortIndex N_DIM{3}; // spatial dimensions
 
-#define FAIL_IF(EXP) ({if (EXP) exit(EXIT_FAILURE); })
+// #define FAIL_IF(EXP) ({if (EXP) exit(EXIT_FAILURE); })
 #define FAIL_IF_MSG(EXP, MSG) ({if (EXP) {std::cerr << MSG << "\n"; exit(EXIT_FAILURE);} })
 #define FAIL_MSG(MSG) ({std::cerr << MSG << "\n"; exit(EXIT_FAILURE); })
 #define assert_msg(EXP, MSG) ({if (!EXP) {std::cerr << MSG << "\n"; assert(false);} })

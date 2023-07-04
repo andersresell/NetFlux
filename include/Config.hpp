@@ -81,6 +81,7 @@ public:
     const string &get_mesh_filename() const { return mesh_filename; }
     const string &get_sim_dir() const { return sim_dir; }
     string get_output_dir() const { return sim_dir + "output/"; }
+    string get_mesh_filename_path() const { return sim_dir + mesh_filename; }
     string get_unsteady_vtk_filename() const { return get_output_dir() + "n=" + std::to_string(timestep) + ".vtk"; }
 
     BoundaryType get_boundary_type(string patch_name) const { return map_patch_BC.at(patch_name); }

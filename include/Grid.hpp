@@ -19,7 +19,6 @@ namespace geom
         Vector<Cell> cells;
         Vector<Face> faces;
         Vector<Patch> patches;
-        Vector<Vector<Index>> face_indices_from_cell; // Should preferably not be used. More efficient to loop over faces
 
     public:
         Grid(Config &config);
@@ -32,9 +31,6 @@ namespace geom
         const Vector<Cell> &get_cells() const { return cells; }
         const Vector<Face> &get_faces() const { return faces; }
         const Vector<Patch> &get_patches() const { return patches; }
-
-        /*Gets the indices of the faces surrounding cell i*/
-        const Vector<Index> &get_surrounding_faces(Index cell_i) const { return face_indices_from_cell[cell_i]; }
 
     private:
         /*Read mesh file. This populates the:
@@ -75,9 +71,6 @@ namespace geom
 
         Tetrahedron tet_from_connect(const TetConnect &tc) const;
         Triangle tri_from_connect(const TriConnect &tc) const;
-
-        /*Adds the indices of neiggbour cell ij to cell i in the face_indices_from_cell structure*/
-        void add_face_to_cell_i(Index i, Index ij);
 
         /*Used to find the number of ghost cells before this value is set in Config object*/
         Index find_N_GHOST_cells();

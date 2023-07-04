@@ -1,14 +1,18 @@
 #include "../include/ConfigParser.hpp"
 
-ConfigParser::ConfigParser(const string &config_filename) : config_filename{config_filename}
+ConfigParser::ConfigParser(const string &sim_dir) : sim_dir_path{sim_dir}
 {
+    if (sim_dir_path.back() != '/')
+        sim_dir_path += '/';
+    config_filename = sim_dir_path + "input.yml";
     try
     {
         root_node = YAML::LoadFile(config_filename);
     }
     catch (const std::exception &e)
     {
-        throw std::runtime_error("Error loading config file '" + config_filename + "', " + string(e.what()));
+        throw std::runtime_error("Error loading config file '" + config_filename + "', " + string(e.what()) +
+                                 "\nNote that the input file has to be named input.yml and be located in the sim directory.\n");
     }
 }
 
@@ -34,11 +38,12 @@ void ConfigParser::parse_config(Config &config)
 void ConfigParser::parse_yaml_file_options(Config &config)
 {
 
-    config.mesh_filename = read_required_option<string>("mesh_filename");
+    config.sim_dir = sim_dir_path;
+    // config.sim_dir = read_optional_option<string>("sim_dir", "./");
+    // if (config.sim_dir.back() != '/')
+    //     config.sim_dir += '/';
 
-    config.sim_dir = read_optional_option<string>("sim_dir", "./");
-    if (config.sim_dir.back() != '/')
-        config.sim_dir += '/';
+    config.mesh_filename = read_required_option<string>("mesh_filename");
 
     config.main_solver_type = read_required_enum_option<MainSolverType>("solver", main_solver_from_string);
 

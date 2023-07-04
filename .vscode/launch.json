@@ -2,12 +2,42 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "runNetFlux",
+            "name": "runNetFluxBrick",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/NetFlux",
             "args": [
                 "${workspaceFolder}/testing/netflux_tests/small_brick_domain/small_brick_domain.yaml"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/src/",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "preLaunchTask": "build debug NetFlux",
+        },
+        {
+            "name": "runNetFluxBoxMedium",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/NetFlux",
+            "args": [
+                "${workspaceFolder}/testing/netflux_tests/medium_box_domain/medium_box.yml"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/src/",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "preLaunchTask": "build debug NetFlux",
+        },
+        {
+            "name": "runNetFluxBoxFine",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/NetFlux",
+            "args": [
+                "${workspaceFolder}/testing/netflux_tests/fine_box_domain"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/src/",

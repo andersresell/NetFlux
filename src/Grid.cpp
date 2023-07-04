@@ -4,14 +4,9 @@ using namespace geom;
 
 Grid::Grid(Config &config)
 {
-    try
-    {
-        read_mesh(config.get_mesh_filename());
-    }
-    catch (const std::exception &e)
-    {
-        throw std::runtime_error("Error reading mesh:\n" + string(e.what()));
-    }
+
+    read_mesh(config.get_mesh_filename_path());
+
     try
     {
         create_grid(config);
@@ -41,15 +36,6 @@ void Grid::print_grid(const Config &config) const
     for (const auto &patch : patches)
     {
         cout << "patch type: " << (int)patch.boundary_type << "\nFIRST FACE: " << patch.FIRST_FACE << "\nN_FACES: " << patch.N_FACES << "\n\n";
-    }
-
-    cout << "\n\nFACE INDICES FROM CELLS:\n";
-    for (Index i{0}; i < face_indices_from_cell.size(); i++)
-    {
-        cout << i << ": ";
-        for (const auto &ind : face_indices_from_cell.at(i))
-            cout << ind << " ";
-        cout << endl;
     }
 }
 
@@ -81,26 +67,36 @@ void Grid::print_native_mesh() const
 
 void Grid::create_grid(Config &config)
 {
+    cout << "Creating grid from native mesh\n";
     Index N_NODES = nodes.size();
 
+    cout << "Creating interior..\n";
     create_interior();
+    cout << "Done.\n";
     Index N_INTERIOR_CELLS = cells.size();
     Index N_INTERIOR_FACES = faces.size();
 
+    cout << "Creating boundaries..\n";
     create_boundaries(config);
+    cout << "Done.\n";
+
     Index N_TOTAL_CELLS = cells.size();
     Index N_TOTAL_FACES = faces.size();
 
     config.set_grid_metrics(N_NODES, N_INTERIOR_CELLS, N_TOTAL_CELLS, N_INTERIOR_FACES, N_TOTAL_FACES);
 
+    cout << "Assign geometrical properties..\n";
     assign_geometry_properties(config);
+    cout << "Done.\n";
 
+    cout << "Reorder faces\n";
     reorder_faces(config);
+    cout << "Done.\n";
 
     shrink_vectors();
     face_triangles.clear(); // face_triangles are not needed anymore
 
-    cout << "Computational grid has been created\n";
+    cout << "Computational grid has been created.\n";
 }
 
 void Grid::read_mesh(string mesh_filename)
@@ -108,9 +104,23 @@ void Grid::read_mesh(string mesh_filename)
     string extension = mesh_filename.substr(mesh_filename.find_last_of(".") + 1);
 
     if (extension == "nf")
-        read_netflux_mesh(mesh_filename);
+        try
+        {
+            read_netflux_mesh(mesh_filename);
+        }
+        catch (const std::exception &e)
+        {
+            throw std::runtime_error("Error reading netflux mesh " + mesh_filename + ", " + string(e.what()));
+        }
     else if (extension == "su2")
-        read_su2_mesh(mesh_filename);
+        try
+        {
+            read_su2_mesh(mesh_filename);
+        }
+        catch (const std::exception &e)
+        {
+            throw std::runtime_error("Error reading su2 mesh " + mesh_filename + ", " + string(e.what()));
+        }
     else
         throw std::runtime_error("Illegal mesh format used on mesh \"" + mesh_filename + "\"");
 
@@ -119,6 +129,7 @@ void Grid::read_mesh(string mesh_filename)
 
 void Grid::read_netflux_mesh(string mesh_filename)
 {
+    assert(false); // Fix error handling
 
     std::ifstream ist{mesh_filename};
     std::stringstream ss;
@@ -131,19 +142,19 @@ void Grid::read_netflux_mesh(string mesh_filename)
 
     // READ N_NODES
     ist >> tmp >> N_NODES;
-    FAIL_IF(tmp != "N_NODES");
+    // FAIL_IF(tmp != "N_NODES");
 
     // READ N_ELEMENTS
     ist >> tmp;
     ist >> N_ELEMENTS;
-    FAIL_IF(tmp != "N_ELEMENTS");
+    // FAIL_IF(tmp != "N_ELEMENTS");
 
     nodes.resize(N_NODES);
     while (getline(ist, line))
     {
         if (line.size() != 0)
         {
-            FAIL_IF(line != "#nodes");
+            // FAIL_IF(line != "#nodes");
             break;
         }
     }
@@ -160,7 +171,7 @@ void Grid::read_netflux_mesh(string mesh_filename)
     {
         if (line.size() != 0)
         {
-            FAIL_IF(line != "#tetrahedra");
+            // FAIL_IF(line != "#tetrahedra");
             break;
         }
     }
@@ -176,7 +187,7 @@ void Grid::read_netflux_mesh(string mesh_filename)
     {
         if (line.size() != 0)
         {
-            FAIL_IF(line != "#patches");
+            // FAIL_IF(line != "#patches");
             break;
         }
     }
@@ -213,30 +224,45 @@ void Grid::read_su2_mesh(string mesh_filename)
     ShortIndex tmp_int, element_type;
     Index N_NODES, N_ELEMENTS, N_PATCHES, element_num, first_element_num;
 
-    ist >> tmp_string >> tmp_int;
-    FAIL_IF(tmp_string != "NDIME=");
-    FAIL_IF(tmp_int != 3);
+    auto check_string_correctness = [](string actual_string, string correct_string)
+    {
+        if (actual_string != correct_string)
+            throw std::runtime_error("symbol '" + actual_string + "' parsed instead of correct symbol '" + correct_string + "'\n");
+    };
 
+    ist >> tmp_string >> tmp_int;
+    check_string_correctness(tmp_string, "NDIME=");
+
+    if (tmp_int != 3)
+        throw std::runtime_error("Only three dimensions (NDIME=3) is accepted, NDIME = " + tmp_int);
     // Reading element connectivity. Only permitting tetrahedral type
     ist >> tmp_string >> N_ELEMENTS;
-    FAIL_IF(tmp_string != "NELEM=");
+    check_string_correctness(tmp_string, "NELEM=");
     tet_connect.resize(N_ELEMENTS);
 
     for (Index i{0}; i < N_ELEMENTS; i++)
     {
         TetConnect t;
         ist >> element_type >> t.a() >> t.b() >> t.c() >> t.d() >> element_num;
-        if (i == 0)
-            first_element_num = element_num;
-        FAIL_IF(element_type != SU2_TET_TYPE);
-        if (i == N_ELEMENTS - 1)
-            assert(element_num - first_element_num == N_ELEMENTS - 1);
+        // if (i == 0)
+        //     first_element_num = element_num;
+        if (element_type != SU2_TET_TYPE)
+        {
+            throw std::runtime_error("Only tetrahedral volume elements are accepted (element type " +
+                                     std::to_string(SU2_TET_TYPE) + "), element type parsed = " + std::to_string(element_type) + "\n");
+        }
+        // if (i == N_ELEMENTS - 1)
+        //     if (element_num - first_element_num != N_ELEMENTS - 1)
+        //     {
+        //         throw("Inconsistency between number of elements parsed (" +
+        //               std::to_string(element_num - first_element_num + 1) + ") and NELEM (" + std::to_string(N_ELEMENTS) + "), inspect mesh file\n");
+        //     }
         tet_connect.at(i) = t;
     }
 
     // Reading nodes
     ist >> tmp_string >> N_NODES;
-    FAIL_IF(tmp_string != "NPOIN=");
+    check_string_correctness(tmp_string, "NPOIN=");
     nodes.resize(N_NODES);
 
     for (Index i{0}; i < N_NODES; i++)
@@ -248,7 +274,7 @@ void Grid::read_su2_mesh(string mesh_filename)
 
     // Reading boundary patches
     ist >> tmp_string >> N_PATCHES;
-    FAIL_IF(tmp_string != "NMARK=");
+    check_string_correctness(tmp_string, "NMARK=");
     tri_patch_connect_list.reserve(N_PATCHES);
 
     for (Index i{0}; i < N_PATCHES; i++)
@@ -256,19 +282,29 @@ void Grid::read_su2_mesh(string mesh_filename)
         TriPatchConnect p;
         Index N_MARKER_ELEMENTS;
         ist >> tmp_string >> p.patch_name;
-        FAIL_IF(tmp_string != "MARKER_TAG=");
+        check_string_correctness(tmp_string, "MARKER_TAG=");
         ist >> tmp_string >> N_MARKER_ELEMENTS;
-        FAIL_IF(tmp_string != "MARKER_ELEMS=");
+        check_string_correctness(tmp_string, "MARKER_ELEMS=");
         p.triangles.resize(N_MARKER_ELEMENTS);
         for (Index j{0}; j < N_MARKER_ELEMENTS; j++)
         {
             TriConnect t;
             ist >> element_type >> t.a() >> t.b() >> t.c() >> element_num;
-            FAIL_IF(element_type != SU2_TRI_TYPE);
-            if (j == 0)
-                first_element_num = element_num;
-            if (j == N_MARKER_ELEMENTS - 1)
-                FAIL_IF(element_num - first_element_num != N_MARKER_ELEMENTS - 1);
+            if (element_type != SU2_TRI_TYPE)
+            {
+                throw std::runtime_error("Only triangular surface elements are accepted (element type " +
+                                         std::to_string(SU2_TRI_TYPE) + "), element type parsed = " + std::to_string(element_type) + "\n");
+            }
+            // if (j == 0)
+            //     first_element_num = element_num;
+            // if (j == N_MARKER_ELEMENTS - 1)
+            //     if (element_num - first_element_num != N_MARKER_ELEMENTS - 1)
+            //     {
+            //         throw std::runtime_error("Inconsistency between number of marker elements parsed (" +
+            //                                  std::to_string(element_num - first_element_num + 1) +
+            //                                  ") and MARKER_ELEMS (" + std::to_string(N_MARKER_ELEMENTS) +
+            //                                  ") for patch with MARKER_TAG= '" + p.patch_name + "', inspect mesh file\n");
+            //     }
             p.triangles.at(j) = t;
         }
         tri_patch_connect_list.push_back(p);
@@ -277,18 +313,16 @@ void Grid::read_su2_mesh(string mesh_filename)
 
 void Grid::create_interior()
 {
-
     Index N_TETS = tet_connect.size();
     Index N_INTERIOR_CELLS = N_TETS;
 
     cells.reserve(N_INTERIOR_CELLS + find_N_GHOST_cells());
-
-    face_indices_from_cell.resize(N_INTERIOR_CELLS);
+    faces.reserve(2 * cells.size()); // just a placeholder until I find a way to estimate the number of faces in a tet mesh
 
     for (Index i = 0; i < N_INTERIOR_CELLS; i++)
     {
-
-        TetConnect tc_i = tet_connect.at(i);
+        cout << "i" << i << endl;
+        TetConnect tc_i = tet_connect[i];
         Tetrahedron tet = tet_from_connect(tc_i);
 
         // Adding a new Cell
@@ -297,8 +331,7 @@ void Grid::create_interior()
         for (ShortIndex k{0}; k < N_TET_FACES; k++)
         {
 
-            TriConnect face_ij = tet_face_connectivity(tet_connect.at(i), k);
-            Triangle tri = tri_from_connect(face_ij);
+            TriConnect face_ij = tet_face_connectivity(tet_connect[i], k);
 
             std::pair<Index, bool> pair = find_neigbouring_cell(i, face_ij, tet_connect);
             bool neigbouring_cell_found = pair.second;
@@ -310,7 +343,8 @@ void Grid::create_interior()
                 {
                     // Create new face
                     faces.emplace_back(i, j);
-                    add_face_to_cell_i(i, j);
+                    // add_face_to_cell_i(i, j);
+                    Triangle tri = tri_from_connect(face_ij);
                     face_triangles.push_back(tri);
                 }
             }
@@ -497,11 +531,6 @@ Triangle Grid::tri_from_connect(const TriConnect &tc) const
     return Triangle(nodes.at(tc.a()), nodes.at(tc.b()), nodes.at(tc.c()));
 }
 
-void Grid::add_face_to_cell_i(Index i, Index ij)
-{
-    face_indices_from_cell.at(i).push_back(ij);
-}
-
 Index Grid::find_N_GHOST_cells()
 {
     Index N_GHOST{0};
@@ -522,8 +551,4 @@ void Grid::shrink_vectors()
     cells.shrink_to_fit();
     faces.shrink_to_fit();
     patches.shrink_to_fit();
-
-    for (auto &indices : face_indices_from_cell)
-        indices.shrink_to_fit();
-    face_indices_from_cell.shrink_to_fit();
 }

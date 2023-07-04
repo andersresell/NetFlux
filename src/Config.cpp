@@ -2,9 +2,9 @@
 #include "../include/Config.hpp"
 #include "../include/ConfigParser.hpp"
 
-Config::Config(string config_filename)
+Config::Config(string sim_dir_path)
 {
-    ConfigParser parser{config_filename};
+    ConfigParser parser{sim_dir_path};
     parser.parse_config(*this);
 }
 
