@@ -4,8 +4,7 @@ using namespace geom;
 
 Grid::Grid(Config &config)
 {
-
-    read_mesh(config.get_mesh_filename_path());
+    read_mesh(config);
 
     try
     {
@@ -15,121 +14,6 @@ Grid::Grid(Config &config)
     {
         throw std::runtime_error("Error creating grid:\n" + string(e.what()));
     }
-}
-
-void Grid::create_grid(Config &config)
-{
-    cout << "Creating grid from native mesh\n";
-
-    /*--------------------------------------------------------------------
-    Step 1: Create all cells from elements, this is straight forward
-    --------------------------------------------------------------------*/
-
-    cells.reserve(tet_connect.size() + find_N_GHOST_cells());
-    for (Index i{0}; i < tet_connect.size(); i++)
-    {
-        TetConnect tc_i = tet_connect[i];
-        Tetrahedron tet = tet_from_connect(tc_i);
-        cells.emplace_back(tet.calc_volume(), tet.calc_centroid());
-    }
-
-    /*--------------------------------------------------------------------
-    Step 2: Associate the face nodes with its two neighboring cells.
-    --------------------------------------------------------------------*/
-
-    Vector<Index> face_indices;
-    map<SortedTriConnect, pair<Index, long int>> face_to_cells;
-    constexpr int CELL_NOT_YET_ASSIGNED{-1};
-    for (Index cell_index{0}; cell_index < tet_connect.size(); cell_index++)
-    {
-
-        for (ShortIndex k{0}; k < N_TET_FACES; k++)
-        {
-            // Get the sorted node indices of face k
-            SortedTriConnect face_ij{tet_face_connectivity(tet_connect[cell_index], k)};
-
-            assert(face_to_cells.count(face_ij) <= 1);
-            if (face_to_cells.count(face_ij) == 0)
-            {
-                // Discovered a new face
-                face_to_cells.insert({face_ij, {cell_index, CELL_NOT_YET_ASSIGNED}});
-            }
-            else
-            {
-                // Face allready discovered by previous cell
-                face_to_cells.at(face_ij).second = cell_index;
-            }
-        }
-    }
-
-    /*--------------------------------------------------------------------
-    Step 3: Create ghost cells and add these indices to the face map
-    --------------------------------------------------------------------*/
-    cout << "Creating ghost cells..\n";
-    Vector<Triangle> face_triangles;
-    for (const auto &tpc : tri_patch_connect_list)
-    {
-
-        Patch p;
-        p.boundary_type = config.get_boundary_type(tpc.patch_name);
-        p.FIRST_FACE = faces.size();
-        p.N_FACES = tpc.triangles.size();
-        patches.push_back(p);
-
-        for (const TriConnect &tc : tpc.triangles)
-        {
-            SortedTriConnect face_ij{tc};
-            Index j_ghost = cells.size();
-            assert(face_to_cells.at(face_ij).second == CELL_NOT_YET_ASSIGNED);
-            face_to_cells.at(face_ij).second = j_ghost;
-
-            cells.emplace_back(); // Adding ghost cell
-            face_triangles.push_back(tri_from_connect(tc));
-        }
-    }
-
-    /*--------------------------------------------------------------------
-    Step 5: Create the Face objects from the map
-    --------------------------------------------------------------------*/
-
-    faces.reserve(face_to_cells.size());
-    for (const auto &face : face_to_cells)
-    {
-        Index cell_i = face.second.first;
-        Index cell_j = face.second.second;
-        faces.emplace_back(cell_i, cell_j);
-    }
-
-    /*--------------------------------------------------------------------
-    Set some grid metrics in the config object
-    --------------------------------------------------------------------*/
-    Index N_NODES = nodes.size();
-    Index N_INTERIOR_CELLS = tet_connect.size();
-    Index N_TOTAL_CELLS = cells.size();
-    Index N_INTERIOR_FACES = faces.size() - find_N_GHOST_cells();
-    Index N_TOTAL_FACES = faces.size();
-    config.set_grid_metrics(N_NODES, N_INTERIOR_CELLS, N_TOTAL_CELLS, N_INTERIOR_FACES, N_TOTAL_FACES);
-
-    /*--------------------------------------------------------------------
-    Assigning geometrical properties to faces and ghost cells
-    --------------------------------------------------------------------*/
-    cout << "Assign geometrical properties..\n";
-    assign_geometry_properties(config, face_triangles);
-
-    /*--------------------------------------------------------------------
-    Sort faces so that the interior faces appear first with the owner index
-    i allways being less than neigbour index j. The same logic is applied
-    patch-wise to the boundaries
-    --------------------------------------------------------------------*/
-    cout << "Reorder faces..\n";
-    reorder_faces(config);
-
-    /*--------------------------------------------------------------------
-    Reducing allocated memory
-    --------------------------------------------------------------------*/
-    shrink_vectors();
-
-    cout << "Computational grid has been created.\n";
 }
 
 // void Grid::create_grid(Config &config)
@@ -214,38 +98,38 @@ void Grid::print_native_mesh() const
     }
 }
 
-void Grid::read_mesh(string mesh_filename)
+void Grid::read_mesh(const Config &config)
 {
-    string extension = mesh_filename.substr(mesh_filename.find_last_of(".") + 1);
-
+    string mesh_filename_path = config.get_mesh_filename_path();
+    string extension = mesh_filename_path.substr(mesh_filename_path.find_last_of(".") + 1);
     if (extension == "nf")
         try
         {
-            read_netflux_mesh(mesh_filename);
+            read_netflux_mesh(config);
         }
         catch (const std::exception &e)
         {
-            throw std::runtime_error("Error reading netflux mesh " + mesh_filename + ", " + string(e.what()));
+            throw std::runtime_error("Error reading netflux mesh '" + mesh_filename_path + "', " + string(e.what()));
         }
     else if (extension == "su2")
         try
         {
-            read_su2_mesh(mesh_filename);
+            read_su2_mesh(config);
         }
         catch (const std::exception &e)
         {
-            throw std::runtime_error("Error reading su2 mesh " + mesh_filename + ", " + string(e.what()));
+            throw std::runtime_error("Error reading su2 mesh '" + mesh_filename_path + "', " + string(e.what()));
         }
     else
-        throw std::runtime_error("Illegal mesh format used on mesh \"" + mesh_filename + "\"");
+        assert(false);
 
     cout << "Native mesh has been read\n";
 }
 
-void Grid::read_netflux_mesh(string mesh_filename)
+void Grid::read_netflux_mesh(const Config &config)
 {
     assert(false); // Fix error handling
-
+    string mesh_filename = config.get_mesh_filename_path();
     std::ifstream ist{mesh_filename};
     std::stringstream ss;
 
@@ -315,6 +199,8 @@ void Grid::read_netflux_mesh(string mesh_filename)
         TriConnect tri;
         TriPatchConnect p;
         p.patch_name = patch_name;
+        if (!config.input_file_contains_patch_name(p.patch_name))
+            throw std::runtime_error("Patch with name '" + p.patch_name + "' is not named in input file\n");
         p.triangles.resize(N_surface_elements);
         for (Index i{0}; i < N_surface_elements; i++)
         {
@@ -325,9 +211,9 @@ void Grid::read_netflux_mesh(string mesh_filename)
     }
 }
 
-void Grid::read_su2_mesh(string mesh_filename)
+void Grid::read_su2_mesh(const Config &config)
 {
-
+    const string mesh_filename = config.get_mesh_filename_path();
     std::ifstream ist{mesh_filename};
     std::stringstream ss;
 
@@ -337,7 +223,7 @@ void Grid::read_su2_mesh(string mesh_filename)
     const ShortIndex SU2_TET_TYPE = 10, SU2_TRI_TYPE = 5;
     string tmp_string;
     ShortIndex tmp_int, element_type;
-    Index N_NODES, N_ELEMENTS, N_PATCHES, element_num, first_element_num;
+    Index N_NODES, N_ELEMENTS, N_PATCHES, element_num;
 
     auto check_string_correctness = [](string actual_string, string correct_string)
     {
@@ -390,6 +276,8 @@ void Grid::read_su2_mesh(string mesh_filename)
         Index N_MARKER_ELEMENTS;
         ist >> tmp_string >> p.patch_name;
         check_string_correctness(tmp_string, "MARKER_TAG=");
+        if (!config.input_file_contains_patch_name(p.patch_name))
+            throw std::runtime_error("Patch with name '" + p.patch_name + "' is not named in input file\n");
         ist >> tmp_string >> N_MARKER_ELEMENTS;
         check_string_correctness(tmp_string, "MARKER_ELEMS=");
         p.triangles.resize(N_MARKER_ELEMENTS);
@@ -474,6 +362,145 @@ void Grid::read_su2_mesh(string mesh_filename)
 //     }
 // }
 
+void Grid::create_grid(Config &config)
+{
+    cout << "Creating grid from native mesh\n";
+
+    /*--------------------------------------------------------------------
+    Step 1: Create all cells from elements, this is straight forward
+    --------------------------------------------------------------------*/
+
+    cells.reserve(tet_connect.size() + find_N_GHOST_cells());
+    for (Index i{0}; i < tet_connect.size(); i++)
+    {
+        TetConnect tc_i = tet_connect[i];
+        Tetrahedron tet = tet_from_connect(tc_i);
+        cells.emplace_back(tet.calc_volume(), tet.calc_centroid());
+    }
+
+    /*--------------------------------------------------------------------
+    Step 2: Associate the face nodes with its two neighboring cells.
+    --------------------------------------------------------------------*/
+
+    Vector<Index> face_indices;
+    map<SortedTriConnect, pair<Index, long int>> face_to_cells;
+    constexpr int CELL_NOT_YET_ASSIGNED{-1};
+
+    for (Index cell_index{0}; cell_index < tet_connect.size(); cell_index++)
+    {
+
+        for (ShortIndex k{0}; k < N_TET_FACES; k++)
+        {
+            TriConnect tc{tet_face_connectivity(tet_connect[cell_index], k)};
+
+            // Get the sorted node indices of face k
+            SortedTriConnect face_ij{tc};
+
+            assert(face_to_cells.count(face_ij) <= 1);
+            if (face_to_cells.count(face_ij) == 0)
+            {
+                // cerr << "new face i=" << cell_index << ", tc = [" << tc.a() << ", " << tc.b() << ", " << tc.c() << "]"
+                //      << ",sorted tc = [" << face_ij.a() << ", " << face_ij.b() << ", " << face_ij.c() << " ]" << endl;
+                // Discovered a new face
+                face_to_cells.insert({face_ij, {cell_index, CELL_NOT_YET_ASSIGNED}});
+            }
+            else
+            {
+
+                // cerr << "discovered face, i=" << face_to_cells.at(face_ij).first;
+                // cerr << ", j = " << cell_index;
+                // cerr << " ,sorted tc = [" << face_ij.a() << ", " << face_ij.b() << ", " << face_ij.c() << " ]" << endl;
+                // Face allready discovered by previous cell
+                face_to_cells.at(face_ij).second = cell_index;
+            }
+        }
+    }
+    Vector<Triangle> face_triangles;
+    face_triangles.reserve(face_to_cells.size());
+
+    /*--------------------------------------------------------------------
+    Step 3: Adding internal faces to the map. (Boundary faces are added
+    later, this is to get the correct grouping of patches). Face triangles
+    (used for calculating geometry properties) are created simultaneously
+    as faces, to get the correct ordering.
+    --------------------------------------------------------------------*/
+
+    faces.reserve(face_to_cells.size());
+    for (const auto &face : face_to_cells)
+    {
+        Index cell_i = face.second.first;
+        long int cell_j = face.second.second;
+        if (cell_j != CELL_NOT_YET_ASSIGNED)
+        { // Only add internal faces
+            assert(cell_i < cell_j);
+            faces.emplace_back(cell_i, cell_j);
+            face_triangles.emplace_back(tri_from_connect(face.first));
+        }
+    }
+    assert(face_triangles.size() == faces.size());
+
+    /*--------------------------------------------------------------------
+    Step 4: Create the faces at the boundaries and ghost cells.
+    Also add the face triangles at the boundaries.
+    --------------------------------------------------------------------*/
+    cout << "Creating ghost cells..\n";
+    for (const auto &tpc : tri_patch_connect_list)
+    {
+
+        Patch p;
+        p.boundary_type = config.get_boundary_type(tpc.patch_name);
+        p.FIRST_FACE = faces.size();
+        p.N_FACES = tpc.triangles.size();
+        patches.push_back(p);
+
+        for (const TriConnect &tc : tpc.triangles)
+        {
+            SortedTriConnect face_ij{tc};
+            Index cell_j_ghost = cells.size();
+            assert(face_to_cells.at(face_ij).second == CELL_NOT_YET_ASSIGNED);
+            face_to_cells.at(face_ij).second = cell_j_ghost; // this won't be used, so strictly unnecessary
+            Index cell_i_domain = face_to_cells.at(face_ij).first;
+            assert(cell_i_domain < cell_j_ghost);
+            assert(cell_j_ghost >= tet_connect.size());
+            faces.emplace_back(cell_i_domain, cell_j_ghost);
+            face_triangles.emplace_back(tri_from_connect(tc));
+            cells.emplace_back(); // Adding ghost cell
+        }
+    }
+    assert(face_triangles.size() == faces.size());
+
+    /*-------------------------------------------------------------------
+        Set some grid metrics in the config object
+    --------------------------------------------------------------------*/
+    Index N_NODES = nodes.size();
+    Index N_INTERIOR_CELLS = tet_connect.size();
+    Index N_TOTAL_CELLS = cells.size();
+    Index N_INTERIOR_FACES = faces.size() - find_N_GHOST_cells();
+    Index N_TOTAL_FACES = faces.size();
+    config.set_grid_metrics(N_NODES, N_INTERIOR_CELLS, N_TOTAL_CELLS, N_INTERIOR_FACES, N_TOTAL_FACES);
+
+    /*--------------------------------------------------------------------
+    Assigning geometrical properties to faces and ghost cells
+    --------------------------------------------------------------------*/
+    cout << "Assign geometrical properties..\n";
+    assign_geometry_properties(config, face_triangles);
+
+    /*--------------------------------------------------------------------
+    Sort faces so that the interior faces appear first with the owner index
+    i allways being less than neigbour index j. The same logic is applied
+    patch-wise to the boundaries
+    --------------------------------------------------------------------*/
+    cout << "Reorder faces..\n";
+    reorder_faces(config);
+
+    /*--------------------------------------------------------------------
+    Reducing allocated memory
+    --------------------------------------------------------------------*/
+    shrink_vectors();
+
+    cout << "Computational grid has been created.\n";
+}
+
 void Grid::assign_geometry_properties(const Config &config, const Vector<Triangle> &face_triangles)
 {
 
@@ -504,7 +531,6 @@ void Grid::assign_geometry_properties(const Config &config, const Vector<Triangl
         assign_face_properties(face, face_triangles.at(ij), cells.at(i).centroid, cells.at(j).centroid);
     }
 
-    assert(max_i == N_INTERIOR_CELLS - 1); // i should always belong to the interior cells
     assert(max_j == N_TOTAL_CELLS - 1);
 
     assert(N_TOTAL_CELLS == cells.size());

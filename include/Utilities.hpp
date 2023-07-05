@@ -199,9 +199,8 @@ namespace geom
 
     struct SortedTriConnect : public TriConnect
     {
-        SortedTriConnect(const TriConnect &tc)
+        SortedTriConnect(const TriConnect &tc) : TriConnect{tc}
         {
-            *this = tc;
             this->sort();
         }
         bool operator<(const SortedTriConnect &rhs) const

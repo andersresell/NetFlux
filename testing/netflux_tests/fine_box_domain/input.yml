@@ -1,6 +1,4 @@
 
-mesh_filename: box_fine.su2
-
 solver: Euler
 
 n_timesteps: 200

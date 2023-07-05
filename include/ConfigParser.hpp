@@ -137,4 +137,6 @@ private:
     }
 
     void read_patches(Config &config);
+
+    void set_mesh_name(Config &config);
 };

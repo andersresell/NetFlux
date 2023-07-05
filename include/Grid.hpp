@@ -37,9 +37,9 @@ namespace geom
         - tet_connect -> tetrahedral elements connectivity
         - tri_patch_connect -> patches of boundary triangles and respective BC types
         */
-        void read_mesh(string mesh_filename);
-        void read_netflux_mesh(string mesh_filename);
-        void read_su2_mesh(string mesh_filename);
+        void read_mesh(const Config &config);
+        void read_netflux_mesh(const Config &config);
+        void read_su2_mesh(const Config &config);
 
         /*Creates computational grid from native mesh*/
         void create_grid(Config &config);
@@ -55,7 +55,7 @@ namespace geom
         // Reorders the (for now interior) faces in an optimal fashion based on the face indices
         void reorder_faces(const Config &config);
 
-        /*Assigns cell centers, boudnary normals, etc*/
+        /*Assigns cell centers, boundary normals, etc*/
         void assign_geometry_properties(const Config &config, const Vector<Triangle> &face_triangles);
 
         /*Find the interior cell of the boundary face with a given connectivity*/

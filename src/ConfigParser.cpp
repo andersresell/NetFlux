@@ -37,13 +37,9 @@ void ConfigParser::parse_config(Config &config)
 
 void ConfigParser::parse_yaml_file_options(Config &config)
 {
-
     config.sim_dir = sim_dir_path;
-    // config.sim_dir = read_optional_option<string>("sim_dir", "./");
-    // if (config.sim_dir.back() != '/')
-    //     config.sim_dir += '/';
 
-    config.mesh_filename = read_required_option<string>("mesh_filename");
+    set_mesh_name(config);
 
     config.main_solver_type = read_required_enum_option<MainSolverType>("solver", main_solver_from_string);
 
@@ -127,4 +123,29 @@ void ConfigParser::read_patches(Config &config)
     {
         throw std::runtime_error("\"patches\" option needs to be included in the config file");
     }
+}
+
+/*Scans the sim-dir and sets the name of a valid mesh if such a file is found*/
+void ConfigParser::set_mesh_name(Config &config)
+{
+    for (const auto &entry : std::filesystem::directory_iterator(config.get_sim_dir()))
+    {
+        if (!std::filesystem::is_regular_file(entry))
+            continue; // Not looking for directories, etc
+
+        string filename = entry.path().filename().string();
+        if (config.valid_mesh_name(filename))
+        {
+            config.mesh_extension = filename.substr(filename.find_last_of(".") + 1);
+            return;
+        }
+    }
+    // Valid mesh file not found, throwing error with instruction
+    string valid_mesh_names;
+    for (const auto &extension : config.valid_mesh_extensions)
+    {
+        valid_mesh_names += string(config.MESH_NAME_NO_EXTENSION) + "." + string(extension) + ",\n";
+    }
+    throw std::runtime_error("No files in the sim-dir has a valid mesh name. Valid mesh names are:\n" + valid_mesh_names +
+                             "Make sure that a file such a name is located in the sim-directory");
 }

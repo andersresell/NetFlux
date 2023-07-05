@@ -13,7 +13,7 @@ protected:
     std::array<T, M * N> data;
 
 public:
-    StaticContainer2D() : data{} {}
+    StaticContainer2D() = default;
 
     template <typename... Args>
     StaticContainer2D(Args... args) : data{static_cast<T>(args)...}
@@ -124,6 +124,7 @@ class StaticContainer1D : public StaticContainer2D<T, M, 1>
 {
 
 public:
+    StaticContainer1D() = default;
     template <typename... Args>
     StaticContainer1D(Args &&...args) : StaticContainer2D<T, M, 1>(std::forward<Args>(args)...) {}
 };

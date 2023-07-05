@@ -7,7 +7,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/NetFlux",
             "args": [
-                "${workspaceFolder}/testing/netflux_tests/small_brick_domain/small_brick_domain.yaml"
+                "${workspaceFolder}/testing/netflux_tests/small_brick_domain"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/src/",
@@ -22,7 +22,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/NetFlux",
             "args": [
-                "${workspaceFolder}/testing/netflux_tests/medium_box_domain/medium_box.yml"
+                "${workspaceFolder}/testing/netflux_tests/medium_box_domain"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/src/",
