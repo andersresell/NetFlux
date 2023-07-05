@@ -5,7 +5,7 @@
             "label": "build debug NetFlux",
             "command": "make",
             "args": [
-                "NetFlux"
+                "debug"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/src/"

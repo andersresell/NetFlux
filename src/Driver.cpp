@@ -19,6 +19,8 @@ Driver::Driver(Config &config) : config{config}
 
 void Driver::solve()
 {
+    config.start_counter();
+
     config.set_timestep(0);
     config.set_time(0.0);
 
@@ -53,4 +55,5 @@ void Driver::solve()
     }
 
     cout << "Solver finished\n";
+    cout << "Elapsed time: " << config.get_elapsed_time() << endl;
 }

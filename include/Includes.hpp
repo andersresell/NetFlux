@@ -55,6 +55,12 @@ constexpr ShortIndex N_DIM{3}; // spatial dimensions
 
 #define DEBUG_LOG_FILE "./debug_log.txt"
 
+using Clock = std::chrono::high_resolution_clock;
+using Time = std::chrono::_V2::system_clock::time_point;
+using Seconds = std::chrono::seconds;
+using Milliseconds = std::chrono::milliseconds;
+using std::chrono::duration_cast;
+
 /*Adding range checking to the [] operator for std::vector in debug mode (NDEBUG not defined)*/
 template <typename T>
 class Vector final : public std::vector<T>

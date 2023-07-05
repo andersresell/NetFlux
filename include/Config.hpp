@@ -64,6 +64,8 @@ class Config
 
     bool check_if_physical{false};
 
+    Time start_time; // Used for measuring time
+
 public:
     /*Marking constructor explicit to not allow for errors of the type:
     calling foo(string), where for instance foo is defined as void foo(const Config &config);
@@ -72,7 +74,13 @@ public:
     Config(const Config &other) = delete;
     Config operator=(const Config &other) = delete;
 
-    Index get_N_NODES() const { return N_NODES; }
+    void start_counter() { start_time = Clock::now(); }
+    string get_elapsed_time() const;
+
+    Index get_N_NODES() const
+    {
+        return N_NODES;
+    }
     Index get_N_TETS() const { return N_TETS; }
     Index get_N_INTERIOR_CELLS() const { return N_INTERIOR_CELLS; }
     Index get_N_TOTAL_CELLS() const { return N_TOTAL_CELLS; }

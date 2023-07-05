@@ -5,7 +5,7 @@
             "name": "runNetFluxBrick",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/NetFlux",
+            "program": "${workspaceFolder}/build_debug/NetFlux",
             "args": [
                 "${workspaceFolder}/testing/netflux_tests/small_brick_domain"
             ],
@@ -20,7 +20,7 @@
             "name": "runNetFluxBoxMedium",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/NetFlux",
+            "program": "${workspaceFolder}/build_debug/NetFlux",
             "args": [
                 "${workspaceFolder}/testing/netflux_tests/medium_box_domain"
             ],
@@ -35,7 +35,7 @@
             "name": "runNetFluxBoxFine",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/NetFlux",
+            "program": "${workspaceFolder}/build_debug/NetFlux",
             "args": [
                 "${workspaceFolder}/testing/netflux_tests/fine_box_domain"
             ],

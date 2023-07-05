@@ -1,17 +1,18 @@
 
+BUILD_DIR_DEBUG = ../build_debug
+BUILD_DIR_RELEASE = ../build_release
+EXE = NetFlux
+EXE_DEBUG = $(BUILD_DIR_DEBUG)/$(EXE)
+EXE_RELEASE = $(BUILD_DIR_RELEASE)/$(EXE)
+
 CXX = g++
-
 INC_DIR = ../include
-BUILD_DIR = ../build
 
-CXX_FLAGS = -g -Wall -Wno-unused-function -fmax-errors=1 -I$(INC_DIR)
-
+CXX_FLAGS_DEBUG = -g -Wall -Wno-unused-function -fmax-errors=1 -I$(INC_DIR)
+CXX_FLAGS_RELEASE = -DNDEBUG -Wall -Wno-unused-function -fmax-errors=1 -I$(INC_DIR) -O3
+ 
 #external libraries
 LDLIBS = -lyaml-cpp
-
-
-_EXE = NetFlux
-EXE = $(BUILD_DIR)/$(_EXE)
 
 #add source files here
 SRC = NetFlux.cpp \
@@ -25,25 +26,54 @@ SRC = NetFlux.cpp \
 	  SolverData.cpp \
 	  Numerics.cpp
 
+OBJ_DEBUG = $(patsubst %.cpp, $(BUILD_DIR_DEBUG)/%.o, $(SRC)) 
+OBJ_RELEASE = $(patsubst %.cpp, $(BUILD_DIR_RELEASE)/%.o, $(SRC)) 
 
 
+all: prep debug 
 
-OBJ = $(patsubst %.cpp, $(BUILD_DIR)/%.o, $(SRC)) #names of src files put in build dir with .o extension
+debug: $(EXE_DEBUG) 
 
-#target for executable
-$(_EXE): $(OBJ)
-	$(CXX) -o $(EXE) $^ $(LDLIBS) $(CXX_FLAGS)
+release: $(EXE_RELEASE) 
 
 
-#target for object files
+$(EXE_DEBUG): $(OBJ_DEBUG)
+	$(CXX) -o $(EXE_DEBUG) $^ $(LDLIBS) $(CXX_FLAGS_DEBUG)
+
+$(EXE_RELEASE): $(OBJ_RELEASE)
+	$(CXX) -o $(EXE_RELEASE) $^ $(LDLIBS) $(CXX_FLAGS_RELEASE)
+
+
 #The -MMD option creates a list of depenendencies, and it's included later
-$(BUILD_DIR)/%.o: %.cpp 
-	$(CXX) -MMD -c -o $@ $< $(CXX_FLAGS)
+$(BUILD_DIR_DEBUG)/%.o: %.cpp 
+	$(CXX) -MMD -c -o $@ $< $(CXX_FLAGS_DEBUG)
+
+$(BUILD_DIR_RELEASE)/%.o: %.cpp 
+	$(CXX) -MMD -c -o $@ $< $(CXX_FLAGS_RELEASE)
 
 
--include $(OBJ:.o=.d)
+-include $(OBJ_DEBUG:.o=.d)
+-include $(OBJ_RELEASE:.o=.d)
 
+
+
+prep:
+	mkdir -p $(BUILD_DIR_DEBUG) $(BUILD_DIR_RELEASE)  
 
 .PHONY: clean
 clean:
-	-rm -f $(BUILD_DIR)/*
+	-rm -f $(BUILD_DIR_DEBUG)/*
+	-rm -f $(BUILD_DIR_RELEASE)/*
+
+
+
+
+
+
+
+
+
+
+
+
+

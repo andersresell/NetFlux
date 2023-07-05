@@ -27,6 +27,6 @@ pressure_fs: 100000.0
 patches:
   - inlet: SlipWall
   - outlet: SlipWall
-  - sidewalls: SlipWall
+  - side_walls: SlipWall
 
 
