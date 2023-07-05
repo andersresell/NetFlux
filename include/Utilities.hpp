@@ -185,7 +185,7 @@ namespace geom
         Index d() const { return data[3]; }
     };
     /*Connectivity of a triangle*/
-    struct TriConnect final : public StaticContainer1D<Index, N_TRI_NODES>
+    struct TriConnect : public StaticContainer1D<Index, N_TRI_NODES>
     {
         TriConnect() = default;
         TriConnect(Index a, Index b, Index c) : StaticContainer1D{a, b, c} {}
@@ -196,6 +196,23 @@ namespace geom
         Index b() const { return data[1]; }
         Index c() const { return data[2]; }
     };
+
+    struct SortedTriConnect : public TriConnect
+    {
+        SortedTriConnect(const TriConnect &tc)
+        {
+            *this = tc;
+            this->sort();
+        }
+        bool operator<(const SortedTriConnect &rhs) const
+        {
+            for (ShortIndex i{0}; i < N_TRI_NODES; i++)
+                if (data[i] != rhs.data[i])
+                    return data[i] < rhs.data[i];
+            return false;
+        }
+    };
+
     /*Holds name and triangles of a boundary patch*/
     struct TriPatchConnect
     {
@@ -203,7 +220,7 @@ namespace geom
         Vector<TriConnect> triangles;
     };
 
-    // returns the node connectivity of face_i from the node connectivity of tetraheder
+    // returns the node connectivity of face_k from the node connectivity of tetraheder
     TriConnect tet_face_connectivity(TetConnect tc, ShortIndex face_k);
 
     /*Astract face geometry class*/

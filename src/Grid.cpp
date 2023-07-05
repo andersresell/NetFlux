@@ -17,6 +17,155 @@ Grid::Grid(Config &config)
     }
 }
 
+void Grid::create_grid(Config &config)
+{
+    cout << "Creating grid from native mesh\n";
+
+    /*--------------------------------------------------------------------
+    Step 1: Create all cells from elements, this is straight forward
+    --------------------------------------------------------------------*/
+
+    cells.reserve(tet_connect.size() + find_N_GHOST_cells());
+    for (Index i{0}; i < tet_connect.size(); i++)
+    {
+        TetConnect tc_i = tet_connect[i];
+        Tetrahedron tet = tet_from_connect(tc_i);
+        cells.emplace_back(tet.calc_volume(), tet.calc_centroid());
+    }
+
+    /*--------------------------------------------------------------------
+    Step 2: Associate the face nodes with its two neighboring cells.
+    --------------------------------------------------------------------*/
+
+    Vector<Index> face_indices;
+    map<SortedTriConnect, pair<Index, long int>> face_to_cells;
+    constexpr int CELL_NOT_YET_ASSIGNED{-1};
+    for (Index cell_index{0}; cell_index < tet_connect.size(); cell_index++)
+    {
+
+        for (ShortIndex k{0}; k < N_TET_FACES; k++)
+        {
+            // Get the sorted node indices of face k
+            SortedTriConnect face_ij{tet_face_connectivity(tet_connect[cell_index], k)};
+
+            assert(face_to_cells.count(face_ij) <= 1);
+            if (face_to_cells.count(face_ij) == 0)
+            {
+                // Discovered a new face
+                face_to_cells.insert({face_ij, {cell_index, CELL_NOT_YET_ASSIGNED}});
+            }
+            else
+            {
+                // Face allready discovered by previous cell
+                face_to_cells.at(face_ij).second = cell_index;
+            }
+        }
+    }
+
+    /*--------------------------------------------------------------------
+    Step 3: Create ghost cells and add these indices to the face map
+    --------------------------------------------------------------------*/
+    cout << "Creating ghost cells..\n";
+    Vector<Triangle> face_triangles;
+    for (const auto &tpc : tri_patch_connect_list)
+    {
+
+        Patch p;
+        p.boundary_type = config.get_boundary_type(tpc.patch_name);
+        p.FIRST_FACE = faces.size();
+        p.N_FACES = tpc.triangles.size();
+        patches.push_back(p);
+
+        for (const TriConnect &tc : tpc.triangles)
+        {
+            SortedTriConnect face_ij{tc};
+            Index j_ghost = cells.size();
+            assert(face_to_cells.at(face_ij).second == CELL_NOT_YET_ASSIGNED);
+            face_to_cells.at(face_ij).second = j_ghost;
+
+            cells.emplace_back(); // Adding ghost cell
+            face_triangles.push_back(tri_from_connect(tc));
+        }
+    }
+
+    /*--------------------------------------------------------------------
+    Step 5: Create the Face objects from the map
+    --------------------------------------------------------------------*/
+
+    faces.reserve(face_to_cells.size());
+    for (const auto &face : face_to_cells)
+    {
+        Index cell_i = face.second.first;
+        Index cell_j = face.second.second;
+        faces.emplace_back(cell_i, cell_j);
+    }
+
+    /*--------------------------------------------------------------------
+    Set some grid metrics in the config object
+    --------------------------------------------------------------------*/
+    Index N_NODES = nodes.size();
+    Index N_INTERIOR_CELLS = tet_connect.size();
+    Index N_TOTAL_CELLS = cells.size();
+    Index N_INTERIOR_FACES = faces.size() - find_N_GHOST_cells();
+    Index N_TOTAL_FACES = faces.size();
+    config.set_grid_metrics(N_NODES, N_INTERIOR_CELLS, N_TOTAL_CELLS, N_INTERIOR_FACES, N_TOTAL_FACES);
+
+    /*--------------------------------------------------------------------
+    Assigning geometrical properties to faces and ghost cells
+    --------------------------------------------------------------------*/
+    cout << "Assign geometrical properties..\n";
+    assign_geometry_properties(config, face_triangles);
+
+    /*--------------------------------------------------------------------
+    Sort faces so that the interior faces appear first with the owner index
+    i allways being less than neigbour index j. The same logic is applied
+    patch-wise to the boundaries
+    --------------------------------------------------------------------*/
+    cout << "Reorder faces..\n";
+    reorder_faces(config);
+
+    /*--------------------------------------------------------------------
+    Reducing allocated memory
+    --------------------------------------------------------------------*/
+    shrink_vectors();
+
+    cout << "Computational grid has been created.\n";
+}
+
+// void Grid::create_grid(Config &config)
+// {
+//     cout << "Creating grid from native mesh\n";
+//     Index N_NODES = nodes.size();
+
+//     cout << "Creating interior..\n";
+//     create_interior();
+//     cout << "Done.\n";
+//     Index N_INTERIOR_CELLS = cells.size();
+//     Index N_INTERIOR_FACES = faces.size();
+
+//     cout << "Creating boundaries..\n";
+//     create_boundaries(config);
+//     cout << "Done.\n";
+
+//     Index N_TOTAL_CELLS = cells.size();
+//     Index N_TOTAL_FACES = faces.size();
+
+//     config.set_grid_metrics(N_NODES, N_INTERIOR_CELLS, N_TOTAL_CELLS, N_INTERIOR_FACES, N_TOTAL_FACES);
+
+//     cout << "Assign geometrical properties..\n";
+//     assign_geometry_properties(config);
+//     cout << "Done.\n";
+
+//     cout << "Reorder faces\n";
+//     reorder_faces(config);
+//     cout << "Done.\n";
+
+//     shrink_vectors();
+//     face_triangles.clear(); // face_triangles are not needed anymore
+
+//     cout << "Computational grid has been created.\n";
+// }
+
 void Grid::print_grid(const Config &config) const
 {
 
@@ -63,40 +212,6 @@ void Grid::print_native_mesh() const
         }
         cout << "\n\n";
     }
-}
-
-void Grid::create_grid(Config &config)
-{
-    cout << "Creating grid from native mesh\n";
-    Index N_NODES = nodes.size();
-
-    cout << "Creating interior..\n";
-    create_interior();
-    cout << "Done.\n";
-    Index N_INTERIOR_CELLS = cells.size();
-    Index N_INTERIOR_FACES = faces.size();
-
-    cout << "Creating boundaries..\n";
-    create_boundaries(config);
-    cout << "Done.\n";
-
-    Index N_TOTAL_CELLS = cells.size();
-    Index N_TOTAL_FACES = faces.size();
-
-    config.set_grid_metrics(N_NODES, N_INTERIOR_CELLS, N_TOTAL_CELLS, N_INTERIOR_FACES, N_TOTAL_FACES);
-
-    cout << "Assign geometrical properties..\n";
-    assign_geometry_properties(config);
-    cout << "Done.\n";
-
-    cout << "Reorder faces\n";
-    reorder_faces(config);
-    cout << "Done.\n";
-
-    shrink_vectors();
-    face_triangles.clear(); // face_triangles are not needed anymore
-
-    cout << "Computational grid has been created.\n";
 }
 
 void Grid::read_mesh(string mesh_filename)
@@ -244,19 +359,11 @@ void Grid::read_su2_mesh(string mesh_filename)
     {
         TetConnect t;
         ist >> element_type >> t.a() >> t.b() >> t.c() >> t.d() >> element_num;
-        // if (i == 0)
-        //     first_element_num = element_num;
         if (element_type != SU2_TET_TYPE)
         {
             throw std::runtime_error("Only tetrahedral volume elements are accepted (element type " +
                                      std::to_string(SU2_TET_TYPE) + "), element type parsed = " + std::to_string(element_type) + "\n");
         }
-        // if (i == N_ELEMENTS - 1)
-        //     if (element_num - first_element_num != N_ELEMENTS - 1)
-        //     {
-        //         throw("Inconsistency between number of elements parsed (" +
-        //               std::to_string(element_num - first_element_num + 1) + ") and NELEM (" + std::to_string(N_ELEMENTS) + "), inspect mesh file\n");
-        //     }
         tet_connect.at(i) = t;
     }
 
@@ -295,89 +402,79 @@ void Grid::read_su2_mesh(string mesh_filename)
                 throw std::runtime_error("Only triangular surface elements are accepted (element type " +
                                          std::to_string(SU2_TRI_TYPE) + "), element type parsed = " + std::to_string(element_type) + "\n");
             }
-            // if (j == 0)
-            //     first_element_num = element_num;
-            // if (j == N_MARKER_ELEMENTS - 1)
-            //     if (element_num - first_element_num != N_MARKER_ELEMENTS - 1)
-            //     {
-            //         throw std::runtime_error("Inconsistency between number of marker elements parsed (" +
-            //                                  std::to_string(element_num - first_element_num + 1) +
-            //                                  ") and MARKER_ELEMS (" + std::to_string(N_MARKER_ELEMENTS) +
-            //                                  ") for patch with MARKER_TAG= '" + p.patch_name + "', inspect mesh file\n");
-            //     }
             p.triangles.at(j) = t;
         }
         tri_patch_connect_list.push_back(p);
     }
 }
 
-void Grid::create_interior()
-{
-    Index N_TETS = tet_connect.size();
-    Index N_INTERIOR_CELLS = N_TETS;
+// void Grid::create_interior()
+// {
+//     Index N_TETS = tet_connect.size();
+//     Index N_INTERIOR_CELLS = N_TETS;
 
-    cells.reserve(N_INTERIOR_CELLS + find_N_GHOST_cells());
-    faces.reserve(2 * cells.size()); // just a placeholder until I find a way to estimate the number of faces in a tet mesh
+//     cells.reserve(N_INTERIOR_CELLS + find_N_GHOST_cells());
+//     faces.reserve(2 * cells.size()); // just a placeholder until I find a way to estimate the number of faces in a tet mesh
 
-    for (Index i = 0; i < N_INTERIOR_CELLS; i++)
-    {
-        cout << "i" << i << endl;
-        TetConnect tc_i = tet_connect[i];
-        Tetrahedron tet = tet_from_connect(tc_i);
+//     for (Index i = 0; i < N_INTERIOR_CELLS; i++)
+//     {
+//         cout << "i" << i << endl;
+//         TetConnect tc_i = tet_connect[i];
+//         Tetrahedron tet = tet_from_connect(tc_i);
 
-        // Adding a new Cell
-        cells.emplace_back(tet.calc_volume(), tet.calc_centroid());
+//         // Adding a new Cell
+//         cells.emplace_back(tet.calc_volume(), tet.calc_centroid());
 
-        for (ShortIndex k{0}; k < N_TET_FACES; k++)
-        {
+//         for (ShortIndex k{0}; k < N_TET_FACES; k++)
+//         {
 
-            TriConnect face_ij = tet_face_connectivity(tet_connect[i], k);
+//             TriConnect face_ij = tet_face_connectivity(tet_connect[i], k);
 
-            std::pair<Index, bool> pair = find_neigbouring_cell(i, face_ij, tet_connect);
-            bool neigbouring_cell_found = pair.second;
+//             std::pair<Index, bool> pair = find_neigbouring_cell(i, face_ij, tet_connect);
+//             bool neigbouring_cell_found = pair.second;
 
-            if (neigbouring_cell_found)
-            {
-                Index j = pair.first;
-                if (!face_ij_created(i, j))
-                {
-                    // Create new face
-                    faces.emplace_back(i, j);
-                    // add_face_to_cell_i(i, j);
-                    Triangle tri = tri_from_connect(face_ij);
-                    face_triangles.push_back(tri);
-                }
-            }
-        }
-    }
-}
+//             if (neigbouring_cell_found)
+//             {
+//                 Index j = pair.first;
+//                 if (!face_ij_created(i, j))
+//                 {
+//                     // Create new face
+//                     faces.emplace_back(i, j);
+//                     // add_face_to_cell_i(i, j);
+//                     Triangle tri = tri_from_connect(face_ij);
+//                     face_triangles.push_back(tri);
+//                 }
+//             }
+//         }
+//     }
+// }
 
-void Grid::create_boundaries(const Config &config)
-{
+// void Grid::create_boundaries(const Config &config)
+// {
 
-    faces.reserve(faces.size() + find_N_GHOST_cells());
+//     faces.reserve(faces.size() + find_N_GHOST_cells());
 
-    for (const auto &tpc : tri_patch_connect_list)
-    {
+//     for (const auto &tpc : tri_patch_connect_list)
+//     {
 
-        Patch p;
-        p.boundary_type = config.get_boundary_type(tpc.patch_name);
-        p.FIRST_FACE = faces.size();
-        p.N_FACES = tpc.triangles.size();
-        patches.push_back(p);
+//         Patch p;
+//         p.boundary_type = config.get_boundary_type(tpc.patch_name);
+//         p.FIRST_FACE = faces.size();
+//         p.N_FACES = tpc.triangles.size();
+//         patches.push_back(p);
 
-        for (const TriConnect &tc : tpc.triangles)
-        {
-            Index i = find_boundary_face_owner(tc);
-            Index j_ghost = cells.size();
-            cells.emplace_back(); // Adding ghost cell
-            faces.emplace_back(i, j_ghost);
-            face_triangles.push_back(tri_from_connect(tc));
-        }
-    }
-}
+//         for (const TriConnect &tc : tpc.triangles)
+//         {
+//             Index i = find_boundary_face_owner(tc);
+//             Index j_ghost = cells.size();
+//             cells.emplace_back(); // Adding ghost cell
+//             faces.emplace_back(i, j_ghost);
+//             face_triangles.push_back(tri_from_connect(tc));
+//         }
+//     }
+// }
 
-void Grid::assign_geometry_properties(const Config &config)
+void Grid::assign_geometry_properties(const Config &config, const Vector<Triangle> &face_triangles)
 {
 
     Index max_i{0}, max_j{0}; // For consistency checking
@@ -413,45 +510,45 @@ void Grid::assign_geometry_properties(const Config &config)
     assert(N_TOTAL_CELLS == cells.size());
 }
 
-Index Grid::find_boundary_face_owner(TriConnect tc)
-{
-    /*Find the interior cell of the boundary face with a given connectivity.
-    It works by comparing the tetrahedral element connectivity to tc. If all {a b c} in tc is contained in {a b c d}
-    of the element, then element i is the correct owner*/
+// Index Grid::find_boundary_face_owner(TriConnect tc)
+// {
+//     /*Find the interior cell of the boundary face with a given connectivity.
+//     It works by comparing the tetrahedral element connectivity to tc. If all {a b c} in tc is contained in {a b c d}
+//     of the element, then element i is the correct owner*/
 
-    TriConnect face_ij;
-    TetConnect tet_i;
-    array<Index, N_TRI_NODES> boundary_compare, ij_compare;
-    bool all_nodes_equal;
+//     TriConnect face_ij;
+//     TetConnect tet_i;
+//     array<Index, N_TRI_NODES> boundary_compare, ij_compare;
+//     bool all_nodes_equal;
 
-    boundary_compare = {tc.a(), tc.b(), tc.c()};
-    std::sort(boundary_compare.begin(), boundary_compare.end());
+//     boundary_compare = {tc.a(), tc.b(), tc.c()};
+//     std::sort(boundary_compare.begin(), boundary_compare.end());
 
-    for (Index i{0}; i < tet_connect.size(); i++)
-    {
-        tet_i = tet_connect.at(i);
+//     for (Index i{0}; i < tet_connect.size(); i++)
+//     {
+//         tet_i = tet_connect.at(i);
 
-        for (ShortIndex k{0}; k < N_TET_FACES; k++)
-        {
+//         for (ShortIndex k{0}; k < N_TET_FACES; k++)
+//         {
 
-            face_ij = tet_face_connectivity(tet_i, k);
-            ij_compare = {face_ij.a(), face_ij.b(), face_ij.c()};
-            std::sort(ij_compare.begin(), ij_compare.end());
+//             face_ij = tet_face_connectivity(tet_i, k);
+//             ij_compare = {face_ij.a(), face_ij.b(), face_ij.c()};
+//             std::sort(ij_compare.begin(), ij_compare.end());
 
-            all_nodes_equal = true;
-            for (ShortIndex l{0}; l < N_TRI_NODES; l++)
-                if (ij_compare.at(l) != boundary_compare.at(l))
-                {
-                    all_nodes_equal = false;
-                    break;
-                }
+//             all_nodes_equal = true;
+//             for (ShortIndex l{0}; l < N_TRI_NODES; l++)
+//                 if (ij_compare.at(l) != boundary_compare.at(l))
+//                 {
+//                     all_nodes_equal = false;
+//                     break;
+//                 }
 
-            if (all_nodes_equal)
-                return i;
-        }
-    }
-    FAIL_MSG("Error, no matching cell was found for the provided boundary face\n");
-}
+//             if (all_nodes_equal)
+//                 return i;
+//         }
+//     }
+//     FAIL_MSG("Error, no matching cell was found for the provided boundary face\n");
+// }
 
 void Grid::reorder_faces(const Config &config)
 {
@@ -470,56 +567,56 @@ void Grid::reorder_faces(const Config &config)
     }
 }
 
-std::pair<Index, bool> Grid::find_neigbouring_cell(Index i,
-                                                   TriConnect face_ij,
-                                                   const Vector<TetConnect> &tet_connect) const
-{
-    /*Finds the neighbouring cell j of face ij of cell i. If no neigbour exist (boundary), it returns false.
-    The function works by looping over all other cells. For each cell it loops over all faces.
-    It then compares the face nodes to the face nodes of face ij (both sorted). If they are equal the cell is found*/
+// std::pair<Index, bool> Grid::find_neigbouring_cell(Index i,
+//                                                    TriConnect face_ij,
+//                                                    const Vector<TetConnect> &tet_connect) const
+// {
+//     /*Finds the neighbouring cell j of face ij of cell i. If no neigbour exist (boundary), it returns false.
+//     The function works by looping over all other cells. For each cell it loops over all faces.
+//     It then compares the face nodes to the face nodes of face ij (both sorted). If they are equal the cell is found*/
 
-    Index N_CELLS = tet_connect.size();
-    array<Index, N_TRI_NODES> i_compare, j_compare;
-    TriConnect face_ji;
-    TetConnect tet_j;
-    bool all_nodes_equal;
+//     Index N_CELLS = tet_connect.size();
+//     array<Index, N_TRI_NODES> i_compare, j_compare;
+//     TriConnect face_ji;
+//     TetConnect tet_j;
+//     bool all_nodes_equal;
 
-    i_compare = {face_ij.a(), face_ij.b(), face_ij.c()};
-    std::sort(i_compare.begin(), i_compare.end());
+//     i_compare = {face_ij.a(), face_ij.b(), face_ij.c()};
+//     std::sort(i_compare.begin(), i_compare.end());
 
-    for (Index j{0}; j < N_CELLS; j++)
-    {
-        if (i == j)
-            continue;
+//     for (Index j{0}; j < N_CELLS; j++)
+//     {
+//         if (i == j)
+//             continue;
 
-        tet_j = tet_connect.at(j);
+//         tet_j = tet_connect.at(j);
 
-        for (ShortIndex k{0}; k < N_TET_FACES; k++)
-        {
-            face_ji = tet_face_connectivity(tet_j, k);
-            j_compare = {face_ji.a(), face_ji.b(), face_ji.c()};
-            std::sort(j_compare.begin(), j_compare.end());
+//         for (ShortIndex k{0}; k < N_TET_FACES; k++)
+//         {
+//             face_ji = tet_face_connectivity(tet_j, k);
+//             j_compare = {face_ji.a(), face_ji.b(), face_ji.c()};
+//             std::sort(j_compare.begin(), j_compare.end());
 
-            all_nodes_equal = true;
-            for (ShortIndex l{0}; l < N_TRI_NODES; l++)
-                if (i_compare.at(l) != j_compare.at(l))
-                    all_nodes_equal = false;
+//             all_nodes_equal = true;
+//             for (ShortIndex l{0}; l < N_TRI_NODES; l++)
+//                 if (i_compare.at(l) != j_compare.at(l))
+//                     all_nodes_equal = false;
 
-            if (all_nodes_equal)
-                return {j, true};
-        }
-    }
-    return {N_CELLS, false};
-}
+//             if (all_nodes_equal)
+//                 return {j, true};
+//         }
+//     }
+//     return {N_CELLS, false};
+// }
 
-bool Grid::face_ij_created(Index i, Index j) const
-{
-    for (const Face &face : faces)
-        if ((face.i == i || face.i == j) && (face.j == i || face.j == j))
-            return true;
+// bool Grid::face_ij_created(Index i, Index j) const
+// {
+//     for (const Face &face : faces)
+//         if ((face.i == i || face.i == j) && (face.j == i || face.j == j))
+//             return true;
 
-    return false;
-}
+//     return false;
+// }
 
 Tetrahedron Grid::tet_from_connect(const TetConnect &tc) const
 {

@@ -12,7 +12,6 @@ namespace geom
         // Native mesh
         Vector<Vec3> nodes;
         Vector<TetConnect> tet_connect;
-        Vector<Triangle> face_triangles; // Only used for geometry computation, cleared afterwards
         Vector<TriPatchConnect> tri_patch_connect_list;
 
         // Computational grid
@@ -48,26 +47,26 @@ namespace geom
         /*------Helper functions for creating grid-------*/
 
         /*Creates interior cells and faces*/
-        void create_interior();
+        // void create_interior();
 
         /*loops over the boundary patches and creates faces and associated ghost cells*/
-        void create_boundaries(const Config &config);
+        // void create_boundaries(const Config &config);
 
         // Reorders the (for now interior) faces in an optimal fashion based on the face indices
         void reorder_faces(const Config &config);
 
         /*Assigns cell centers, boudnary normals, etc*/
-        void assign_geometry_properties(const Config &config);
+        void assign_geometry_properties(const Config &config, const Vector<Triangle> &face_triangles);
 
         /*Find the interior cell of the boundary face with a given connectivity*/
-        Index find_boundary_face_owner(TriConnect tc);
+        // Index find_boundary_face_owner(TriConnect tc);
 
         /*Finds the neighbouring cell j of face ij of cell i. If no neigbour exist (boundary), it returns false*/
         std::pair<Index, bool> find_neigbouring_cell(Index i,
                                                      TriConnect face_ij,
                                                      const Vector<TetConnect> &tet_connect) const;
         /*Checks if face ij has been created yet*/
-        bool face_ij_created(Index i, Index j) const;
+        // bool face_ij_created(Index i, Index j) const;
 
         Tetrahedron tet_from_connect(const TetConnect &tc) const;
         Triangle tri_from_connect(const TriConnect &tc) const;
