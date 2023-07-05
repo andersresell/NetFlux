@@ -72,6 +72,8 @@ void ConfigParser::parse_yaml_file_options(Config &config)
 
     config.CFL = read_required_option<Scalar>("CFL");
 
+    config.write_stride = read_optional_option<size_t>("write_stride", 5);
+
     config.check_if_physical = read_optional_option<bool>("check_physical_validity", false);
 
     read_patches(config);

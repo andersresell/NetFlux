@@ -5,6 +5,8 @@ n_timesteps: 200
 
 CFL: 0.5
 
+write_stride = 10
+
 time_scheme: ExplicitEuler
 
 spatial_order: First

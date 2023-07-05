@@ -50,6 +50,8 @@ class Config
 
     size_t n_timesteps{0};
 
+    size_t write_stride{0};
+
     size_t timestep{0};
 
     Scalar delta_time{0.0};
@@ -141,6 +143,8 @@ public:
 
     Scalar get_CFL() const { return CFL; }
     void set_CFL(Scalar val) { CFL = val; }
+
+    size_t get_write_stride() const { return write_stride; }
 
     bool get_grid_motion() const { return grid_motion; }
     void set_grid_motion(bool val) { grid_motion = val; }
