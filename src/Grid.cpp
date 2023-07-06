@@ -16,88 +16,6 @@ Grid::Grid(Config &config)
     }
 }
 
-// void Grid::create_grid(Config &config)
-// {
-//     cout << "Creating grid from native mesh\n";
-//     Index N_NODES = nodes.size();
-
-//     cout << "Creating interior..\n";
-//     create_interior();
-//     cout << "Done.\n";
-//     Index N_INTERIOR_CELLS = cells.size();
-//     Index N_INTERIOR_FACES = faces.size();
-
-//     cout << "Creating boundaries..\n";
-//     create_boundaries(config);
-//     cout << "Done.\n";
-
-//     Index N_TOTAL_CELLS = cells.size();
-//     Index N_TOTAL_FACES = faces.size();
-
-//     config.set_grid_metrics(N_NODES, N_INTERIOR_CELLS, N_TOTAL_CELLS, N_INTERIOR_FACES, N_TOTAL_FACES);
-
-//     cout << "Assign geometrical properties..\n";
-//     assign_geometry_properties(config);
-//     cout << "Done.\n";
-
-//     cout << "Reorder faces\n";
-//     reorder_faces(config);
-//     cout << "Done.\n";
-
-//     shrink_vectors();
-//     face_triangles.clear(); // face_triangles are not needed anymore
-
-//     cout << "Computational grid has been created.\n";
-// }
-
-void Grid::print_grid(const Config &config) const
-{
-
-    cout << "CELLS:\n";
-    for (Index i{0}; i < cells.size(); i++)
-    {
-        if (i >= config.get_N_INTERIOR_CELLS())
-            cout << "GHOST, ";
-        cout << i << ": " << cells.at(i) << endl;
-    }
-
-    cout << "\n\nFACES:\n";
-    for (Index i{0}; i < faces.size(); i++)
-        cout << i << ": " << faces.at(i) << endl;
-
-    cout << "\n\nPATCHES:\n";
-    for (const auto &patch : patches)
-    {
-        cout << "patch type: " << (int)patch.boundary_type << "\nFIRST FACE: " << patch.FIRST_FACE << "\nN_FACES: " << patch.N_FACES << "\n\n";
-    }
-}
-
-void Grid::print_native_mesh() const
-{
-    cout << "NODES:\n";
-    for (Index i{0}; i < nodes.size(); i++)
-    {
-        cout << i << ": " << horizontal_string_Vec3(nodes.at(i)) << endl;
-    }
-    cout << "\n\nTET CONNECTIVITY:\n";
-    for (Index i{0}; i < tet_connect.size(); i++)
-    {
-        TetConnect t = tet_connect.at(i);
-        cout << i << ": " << t << endl;
-    }
-    cout << "\n\nTRIANGLE PATCH CONNECTIVITY:\n";
-    for (const auto &tpc : tri_patch_connect_list)
-    {
-        cout << "BC type: " << tpc.patch_name << endl;
-        for (Index i{0}; i < tpc.triangles.size(); i++)
-        {
-            TriConnect t = tpc.triangles.at(i);
-            cout << i << ": " << t << endl;
-        }
-        cout << "\n\n";
-    }
-}
-
 void Grid::read_mesh(const Config &config)
 {
     string mesh_filename_path = config.get_mesh_filename_path();
@@ -296,72 +214,6 @@ void Grid::read_su2_mesh(const Config &config)
     }
 }
 
-// void Grid::create_interior()
-// {
-//     Index N_TETS = tet_connect.size();
-//     Index N_INTERIOR_CELLS = N_TETS;
-
-//     cells.reserve(N_INTERIOR_CELLS + find_N_GHOST_cells());
-//     faces.reserve(2 * cells.size()); // just a placeholder until I find a way to estimate the number of faces in a tet mesh
-
-//     for (Index i = 0; i < N_INTERIOR_CELLS; i++)
-//     {
-//         cout << "i" << i << endl;
-//         TetConnect tc_i = tet_connect[i];
-//         Tetrahedron tet = tet_from_connect(tc_i);
-
-//         // Adding a new Cell
-//         cells.emplace_back(tet.calc_volume(), tet.calc_centroid());
-
-//         for (ShortIndex k{0}; k < N_TET_FACES; k++)
-//         {
-
-//             TriConnect face_ij = tet_face_connectivity(tet_connect[i], k);
-
-//             std::pair<Index, bool> pair = find_neigbouring_cell(i, face_ij, tet_connect);
-//             bool neigbouring_cell_found = pair.second;
-
-//             if (neigbouring_cell_found)
-//             {
-//                 Index j = pair.first;
-//                 if (!face_ij_created(i, j))
-//                 {
-//                     // Create new face
-//                     faces.emplace_back(i, j);
-//                     // add_face_to_cell_i(i, j);
-//                     Triangle tri = tri_from_connect(face_ij);
-//                     face_triangles.push_back(tri);
-//                 }
-//             }
-//         }
-//     }
-// }
-
-// void Grid::create_boundaries(const Config &config)
-// {
-
-//     faces.reserve(faces.size() + find_N_GHOST_cells());
-
-//     for (const auto &tpc : tri_patch_connect_list)
-//     {
-
-//         Patch p;
-//         p.boundary_type = config.get_boundary_type(tpc.patch_name);
-//         p.FIRST_FACE = faces.size();
-//         p.N_FACES = tpc.triangles.size();
-//         patches.push_back(p);
-
-//         for (const TriConnect &tc : tpc.triangles)
-//         {
-//             Index i = find_boundary_face_owner(tc);
-//             Index j_ghost = cells.size();
-//             cells.emplace_back(); // Adding ghost cell
-//             faces.emplace_back(i, j_ghost);
-//             face_triangles.push_back(tri_from_connect(tc));
-//         }
-//     }
-// }
-
 void Grid::create_grid(Config &config)
 {
     cout << "Creating grid from native mesh\n";
@@ -399,17 +251,11 @@ void Grid::create_grid(Config &config)
             assert(face_to_cells.count(face_ij) <= 1);
             if (face_to_cells.count(face_ij) == 0)
             {
-                // cerr << "new face i=" << cell_index << ", tc = [" << tc.a() << ", " << tc.b() << ", " << tc.c() << "]"
-                //      << ",sorted tc = [" << face_ij.a() << ", " << face_ij.b() << ", " << face_ij.c() << " ]" << endl;
                 // Discovered a new face
                 face_to_cells.insert({face_ij, {cell_index, CELL_NOT_YET_ASSIGNED}});
             }
             else
             {
-
-                // cerr << "discovered face, i=" << face_to_cells.at(face_ij).first;
-                // cerr << ", j = " << cell_index;
-                // cerr << " ,sorted tc = [" << face_ij.a() << ", " << face_ij.b() << ", " << face_ij.c() << " ]" << endl;
                 // Face allready discovered by previous cell
                 face_to_cells.at(face_ij).second = cell_index;
             }
@@ -510,7 +356,6 @@ void Grid::assign_geometry_properties(const Config &config, const Vector<Triangl
     assert(face_triangles.size() == config.get_N_TOTAL_FACES());
 
     Index N_INTERIOR_CELLS = config.get_N_INTERIOR_CELLS();
-    Index N_TOTAL_CELLS = config.get_N_TOTAL_CELLS();
 
     for (Index ij{0}; ij < config.get_N_TOTAL_FACES(); ij++)
     {
@@ -531,9 +376,8 @@ void Grid::assign_geometry_properties(const Config &config, const Vector<Triangl
         assign_face_properties(face, face_triangles.at(ij), cells.at(i).centroid, cells.at(j).centroid);
     }
 
-    assert(max_j == N_TOTAL_CELLS - 1);
-
-    assert(N_TOTAL_CELLS == cells.size());
+    assert(max_j == config.get_N_TOTAL_CELLS() - 1);
+    assert(config.get_N_TOTAL_CELLS() == cells.size());
 }
 
 // Index Grid::find_boundary_face_owner(TriConnect tc)
@@ -674,4 +518,52 @@ void Grid::shrink_vectors()
     cells.shrink_to_fit();
     faces.shrink_to_fit();
     patches.shrink_to_fit();
+}
+
+void Grid::print_grid(const Config &config) const
+{
+
+    cout << "CELLS:\n";
+    for (Index i{0}; i < cells.size(); i++)
+    {
+        if (i >= config.get_N_INTERIOR_CELLS())
+            cout << "GHOST, ";
+        cout << i << ": " << cells.at(i) << endl;
+    }
+
+    cout << "\n\nFACES:\n";
+    for (Index i{0}; i < faces.size(); i++)
+        cout << i << ": " << faces.at(i) << endl;
+
+    cout << "\n\nPATCHES:\n";
+    for (const auto &patch : patches)
+    {
+        cout << "patch type: " << (int)patch.boundary_type << "\nFIRST FACE: " << patch.FIRST_FACE << "\nN_FACES: " << patch.N_FACES << "\n\n";
+    }
+}
+
+void Grid::print_native_mesh() const
+{
+    cout << "NODES:\n";
+    for (Index i{0}; i < nodes.size(); i++)
+    {
+        cout << i << ": " << horizontal_string_Vec3(nodes.at(i)) << endl;
+    }
+    cout << "\n\nTET CONNECTIVITY:\n";
+    for (Index i{0}; i < tet_connect.size(); i++)
+    {
+        TetConnect t = tet_connect.at(i);
+        cout << i << ": " << t << endl;
+    }
+    cout << "\n\nTRIANGLE PATCH CONNECTIVITY:\n";
+    for (const auto &tpc : tri_patch_connect_list)
+    {
+        cout << "BC type: " << tpc.patch_name << endl;
+        for (Index i{0}; i < tpc.triangles.size(); i++)
+        {
+            TriConnect t = tpc.triangles.at(i);
+            cout << i << ": " << t << endl;
+        }
+        cout << "\n\n";
+    }
 }

@@ -2,6 +2,22 @@
 
 namespace geom
 {
+    /*
+        void Faces::add_face(Index i, Index j, Vec3 S_ij, Vec3 r_im, Vec3 r_jm)
+        {
+            cell_indices.emplace_back(i, j);
+            normal_areas.push_back(S_ij);
+            centroid_to_face_i.push_back(r_im);
+            centroid_to_face_j.push_back(r_jm);
+        }
+
+        void Faces::resize(Index N_FACES)
+        {
+            cell_indices.reserve(N_FACES);
+            normal_areas.reserve(N_FACES);
+            centroid_to_face_i.reserve(N_FACES);
+            centroid_to_face_j.reserve(N_FACES);
+        }*/
 
     TriConnect tet_face_connectivity(TetConnect tc, ShortIndex face_k)
     {

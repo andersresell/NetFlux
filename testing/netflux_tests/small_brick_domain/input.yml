@@ -8,7 +8,7 @@ CFL: 0.5
 
 time_scheme: ExplicitEuler
 
-spatial_order: First
+spatial_order: Second
 
 grad_scheme: GreenGauss
 

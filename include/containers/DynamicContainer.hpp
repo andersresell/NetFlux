@@ -181,6 +181,6 @@ public:
 };
 
 #define for_all(container2D, i, j)           \
-    static_assert(container2D.cols() == 1);  \
+    assert(container2D.cols() == 1);         \
     for (i = 0; i < container2D.size(); i++) \
         for (j = 0; j < container2D.rows(); j++)

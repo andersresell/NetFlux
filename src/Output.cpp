@@ -16,7 +16,8 @@ Output::Output(const geom::Grid &grid, const Vector<unique_ptr<Solver>> &solvers
 
 void Output::write_vtk_ascii(const Config &config, bool write_grid_only)
 {
-    if (config.get_timestep() % config.get_write_stride() == 0)
+    /*Only write output every WRITE_STRIDE times*/
+    if (config.get_timestep() % config.get_write_stride() != 0)
         return;
 
     const string &filename = config.get_unsteady_vtk_filename();

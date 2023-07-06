@@ -1,9 +1,9 @@
 
 solver: Euler
 
-n_timesteps: 1000
+n_timesteps: 3000
 
-CFL: 0.8
+CFL: 2
 
 write_stride: 10
 

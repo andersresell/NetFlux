@@ -130,6 +130,8 @@ void ConfigParser::read_patches(Config &config)
 /*Scans the sim-dir and sets the name of a valid mesh if such a file is found*/
 void ConfigParser::set_mesh_name(Config &config)
 {
+    Vector<string> valid_mesh_files_found;
+
     for (const auto &entry : std::filesystem::directory_iterator(config.get_sim_dir()))
     {
         if (!std::filesystem::is_regular_file(entry))
@@ -138,16 +140,39 @@ void ConfigParser::set_mesh_name(Config &config)
         string filename = entry.path().filename().string();
         if (config.valid_mesh_name(filename))
         {
-            config.mesh_extension = filename.substr(filename.find_last_of(".") + 1);
-            return;
+            valid_mesh_files_found.push_back(filename);
         }
     }
-    // Valid mesh file not found, throwing error with instruction
-    string valid_mesh_names;
-    for (const auto &extension : config.valid_mesh_extensions)
+
+    if (valid_mesh_files_found.size() == 1)
     {
-        valid_mesh_names += string(config.MESH_NAME_NO_EXTENSION) + "." + string(extension) + ",\n";
+        config.mesh_extension = valid_mesh_files_found[0].substr(valid_mesh_files_found[0].find_last_of(".") + 1);
+        return;
     }
-    throw std::runtime_error("No files in the sim-dir has a valid mesh name. Valid mesh names are:\n" + valid_mesh_names +
-                             "Make sure that a file such a name is located in the sim-directory");
+    else if (valid_mesh_files_found.size() > 1)
+    {
+        // More than one valid mesh file found
+        std::stringstream ss;
+        ss << "More than one file with valid mesh name found in sim-directory. These files are:\n";
+        for (auto it = valid_mesh_files_found.begin(); it != valid_mesh_files_found.end(); it++)
+        {
+            ss << *it;
+            if (it < valid_mesh_files_found.end() - 1)
+                ss << ",\n";
+        }
+
+        ss << "\nMake sure only one valid file is present to avoid ambiguity\n";
+        throw std::runtime_error(ss.str());
+    }
+    else
+    {
+        // No valid mesh files found
+        string valid_mesh_names;
+        for (const auto &extension : config.valid_mesh_extensions)
+        {
+            valid_mesh_names += string(config.MESH_NAME_NO_EXTENSION) + "." + string(extension) + ",\n";
+        }
+        throw std::runtime_error("No files in the sim-dir has a valid mesh name. Valid mesh names are:\n" + valid_mesh_names +
+                                 "Make sure that a file such a name is located in the sim-directory");
+    }
 }

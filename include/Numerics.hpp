@@ -177,11 +177,10 @@ namespace Reconstruction
         assert(N_EQS == sol_field.get_N_EQS() && N_EQS == sol_grad.get_N_EQS() && N_EQS == max_field.get_N_EQS() &&
                N_EQS == min_field.get_N_EQS() && N_EQS == limiter.get_N_EQS());
 
-        const Index N_TOTAL_CELLS = config.get_N_TOTAL_CELLS();
         const Index N_INTERIOR_CELLS = config.get_N_INTERIOR_CELLS();
         const Index N_TOTAL_FACES = config.get_N_TOTAL_FACES();
 
-        assert(sol_field.size() == N_TOTAL_CELLS && sol_grad.size() == N_INTERIOR_CELLS && max_field.size() == N_INTERIOR_CELLS &&
+        assert(sol_field.size() == config.get_N_TOTAL_CELLS() && sol_grad.size() == N_INTERIOR_CELLS && max_field.size() == N_INTERIOR_CELLS &&
                min_field.size() == N_INTERIOR_CELLS && limiter.size() == N_INTERIOR_CELLS);
 
         using FieldVec = Eigen::Vector<Scalar, N_EQS>;
@@ -192,7 +191,6 @@ namespace Reconstruction
 
         const auto &faces = grid.get_faces();
 
-        Index i, j;
         FieldVec Delta_2;
         FieldGrad gradient;
 
@@ -201,8 +199,8 @@ namespace Reconstruction
         for (Index ij{0}; ij < N_TOTAL_FACES; ij++)
         {
             const Face &face = faces[ij];
-            i = face.i;
-            j = face.j;
+            Index i = face.i;
+            Index j = face.j;
 
             const FieldGradMap gradient_i = sol_grad.get_variable<FieldGrad>(i);
             Delta_2 = gradient_i * face.r_im;
@@ -239,6 +237,17 @@ namespace Reconstruction
                 }
             }
         }
+
+#ifndef NDEBUG
+        /*Checking that the values lay between 0 and 1*/
+        constexpr Scalar TOL = 1e-8;
+        Index i, j;
+        for_all(limiter, i, j)
+        {
+            assert(num_is_valid(limiter(i, j)));
+            assert(limiter(i, j) > -TOL && limiter(i, j) < 1.0 + TOL);
+        }
+#endif
     }
 
     /*Used in calculation of limiters*/
@@ -249,12 +258,11 @@ namespace Reconstruction
                                  VecField &max_field,
                                  VecField &min_field)
     {
-        const Index N_TOTAL_FACES = config.get_N_TOTAL_FACES();
-        const Index N_TOTAL_CELLS = config.get_N_TOTAL_CELLS();
-        const Index N_INTERIOR_CELLS = config.get_N_INTERIOR_CELLS();
 
+        const Index N_TOTAL_FACES = config.get_N_TOTAL_FACES();
+        const Index N_INTERIOR_CELLS = config.get_N_INTERIOR_CELLS();
         assert(N_EQS == sol_field.get_N_EQS() && N_EQS == max_field.get_N_EQS() && N_EQS == min_field.get_N_EQS());
-        assert(sol_field.size() == N_TOTAL_CELLS && max_field.size() == N_INTERIOR_CELLS && min_field.size() == N_INTERIOR_CELLS);
+        assert(sol_field.size() == config.get_N_TOTAL_CELLS() && max_field.size() == N_INTERIOR_CELLS && min_field.size() == N_INTERIOR_CELLS);
 
         /*Setting the max and min fields to either a very large or a very small value*/
         max_field = -DBL_MAX;

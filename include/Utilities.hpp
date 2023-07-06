@@ -124,6 +124,49 @@ namespace standard_air
 
 namespace geom
 {
+    /*MAYBE IMPLEMENT THIS LATER TO IMRPOVE EFFICIENCY!*/
+
+    /*A strucuture of arrays (AOS) containing the faces and their required properties*/
+    /*class Faces
+    {
+        struct CellIndices
+        {
+            Index i, j;
+            bool operator<(const Face &rhs) const
+            {
+                if (i != rhs.i)
+                    return i < rhs.i;
+
+                assert(j != rhs.j); // This would imply that cell indices are identical
+
+                return j < rhs.j;
+            }
+        };
+
+        Vector<CellIndices> cell_indices;
+        Vector<Vec3> normal_areas;
+        Vector<Vec3> centroid_to_face_i;
+        Vector<Vec3> centroid_to_face_j;
+
+    public:
+        void resize(Index N_FACES);
+
+        Index get_cell_i(Index face_index) const { return cell_indices[face_index].i; }
+        Index get_cell_j(Index face_index) const { return cell_indices[face_index].i; }
+        const Vec3 &get_normal_area(Index face_index) const { return normal_areas[face_index]; }
+        const Vec3 &get_centroid_to_face_i(Index face_index) const { return centroid_to_face_i[face_index]; }
+        const Vec3 &get_centroid_to_face_j(Index face_index) const { return centroid_to_face_j[face_index]; }
+
+        void add_face(Index i, Index j, Vec3 S_ij, Vec3 r_im, Vec3 r_jm);
+
+        /*Sort the faces with repsect to i and j, i having first priority
+        void sort_faces(Index first_face, Index last_face)
+        {
+            CellIndices ci;
+            Vect
+            std::sort(cell_indices.begin() + first_face, cell_indices.begin() + last_face);
+        }
+    };*/
 
     struct Face
     {
@@ -143,7 +186,7 @@ namespace geom
             if (i != rhs.i)
                 return i < rhs.i;
 
-            assert(j != rhs.j); // This means cell indices are identical
+            assert(j != rhs.j); // This would imply that cell indices are identical
 
             return j < rhs.j;
         }

@@ -85,11 +85,10 @@ void Solver::explicit_euler(const Config &config)
     const Scalar dt = config.get_delta_time();
     VecField &U = solver_data->get_solution();
     VecField &R = solver_data->get_flux_balance();
-    const ShortIndex N_EQS = solver_data->get_N_EQS();
     const auto &cells = grid.get_cells();
     Index i, j;
 
-    assert(U.get_N_EQS() == N_EQS && R.get_N_EQS() == N_EQS);
+    assert(U.get_N_EQS() == solver_data->get_N_EQS() && R.get_N_EQS() == solver_data->get_N_EQS());
     assert(U.size() == config.get_N_INTERIOR_CELLS() && R.size() == config.get_N_INTERIOR_CELLS());
 
     /*--------------------------------------------------------------------
@@ -107,11 +106,10 @@ void Solver::TVD_RK3(const Config &config)
     VecField &U = solver_data->get_solution();
     VecField &U_old = solver_data->get_solution_old();
     VecField &R = solver_data->get_flux_balance();
-    const ShortIndex N_EQS = solver_data->get_N_EQS();
     const auto &cells = grid.get_cells();
     Index i, j;
 
-    assert(U.get_N_EQS() == N_EQS && U_old.get_N_EQS() == N_EQS && R.get_N_EQS() == N_EQS);
+    assert(U.get_N_EQS() == solver_data->get_N_EQS() && U_old.get_N_EQS() == solver_data->get_N_EQS() && R.get_N_EQS() == solver_data->get_N_EQS());
     assert(U.size() == config.get_N_INTERIOR_CELLS() && U_old.size() == config.get_N_INTERIOR_CELLS());
     assert(R.size() == config.get_N_INTERIOR_CELLS());
 
@@ -194,6 +192,7 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
 
     /*Then boundaries. Here ghost cells has to be assigned based on the boundary conditions.
     This is handled patch-wise*/
+    Index i_domain, j_ghost;
 
     for (Index i_patch{0}; i_patch < patches.size(); i_patch++)
     {
@@ -204,12 +203,12 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
         for (Index ij{patch.FIRST_FACE}; ij < patch.FIRST_FACE + patch.N_FACES; ij++)
         {
 
-            i = faces[ij].i;
-            j = faces[ij].j;
+            i_domain = faces[ij].i;
+            j_ghost = faces[ij].j;
             const Vec3 &S_ij = faces[ij].S_ij;
             const Vec3 &r_im = faces[ij].r_im;
 
-            calc_reconstructed_value(i, V_L, r_im, spatial_order);
+            calc_reconstructed_value(i_domain, V_L, r_im, spatial_order);
 
             boundary_condition->calc_ghost_val(V_L, V_R, S_ij);
 
@@ -220,7 +219,7 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
 
             assert(validity_checker->valid_boundary_flux(Flux_inv.data(), patch.boundary_type));
 
-            flux_balance.get_variable<EulerVec>(i) -= Flux_inv;
+            flux_balance.get_variable<EulerVec>(i_domain) -= Flux_inv;
         }
     }
 }
@@ -297,7 +296,7 @@ void EulerSolver::set_constant_ghost_values(const Config &config)
     const auto &patches = grid.get_patches();
     const auto &faces = grid.get_faces();
     VecField &primvars = solver_data->get_primvars();
-    Index i, j;
+    Index i_domain, j_ghost;
 
     // for (const auto &patch : patches)
     for (Index i_patch{0}; i_patch < patches.size(); i_patch++)
@@ -307,19 +306,19 @@ void EulerSolver::set_constant_ghost_values(const Config &config)
 
         for (Index ij{patch.FIRST_FACE}; ij < patch.FIRST_FACE + patch.N_FACES; ij++)
         {
-            i = faces[ij].i;
-            j = faces[ij].j;
-            assert(i < config.get_N_INTERIOR_CELLS() && j >= config.get_N_INTERIOR_CELLS());
+            i_domain = faces[ij].i;
+            j_ghost = faces[ij].j;
+            assert(i_domain < config.get_N_INTERIOR_CELLS() && j_ghost >= config.get_N_INTERIOR_CELLS());
 
             const Vec3 &S_ij = faces[ij].S_ij;
             // primvars.map_to_variable<EulerVec>(j) =
             //     BoundaryCondition::calc_ghost_val<BC_type, EulerVec>(primvars.map_to_variable<EulerVec>(i), S_ij);
 
             // Test if this works
-            EulerVecMap V_i = primvars.get_variable<EulerVec>(i);
-            EulerVecMap V_j = primvars.get_variable<EulerVec>(j);
+            EulerVecMap V_i_domain = primvars.get_variable<EulerVec>(i_domain);
+            EulerVecMap V_j_ghost = primvars.get_variable<EulerVec>(j_ghost);
 
-            boundary_condition->calc_ghost_val(V_i, V_j, S_ij);
+            boundary_condition->calc_ghost_val(V_i_domain, V_j_ghost, S_ij);
         }
     }
 }
@@ -335,7 +334,7 @@ void EulerSolver::evaluate_gradient(const Config &config)
         Gradient::calc_green_gauss_gradient<N_EQS_EULER>(config, grid, primvars, primvars_grad);
         break;
     default:
-        FAIL_MSG("Selected gradient scheme not implemented\n");
+        assert(false); // no others are yet implemented
     }
 }
 
