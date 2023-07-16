@@ -227,7 +227,8 @@ void Grid::create_grid(Config &config)
     {
         TetConnect tc_i = tet_connect[i];
         Tetrahedron tet = tet_from_connect(tc_i);
-        cells.emplace_back(tet.calc_volume(), tet.calc_centroid());
+        cells.cell_volumes.emplace_back(tet.calc_volume());
+        cells.centroids.emplace_back(tet.calc_centroid());
     }
 
     /*--------------------------------------------------------------------
@@ -263,6 +264,7 @@ void Grid::create_grid(Config &config)
     }
     Vector<Triangle> face_triangles;
     face_triangles.reserve(face_to_cells.size());
+    faces.resize(face_to_cells.size());
 
     /*--------------------------------------------------------------------
     Step 3: Adding internal faces to the map. (Boundary faces are added
@@ -271,7 +273,6 @@ void Grid::create_grid(Config &config)
     as faces, to get the correct ordering.
     --------------------------------------------------------------------*/
 
-    faces.reserve(face_to_cells.size());
     for (const auto &face : face_to_cells)
     {
         Index cell_i = face.second.first;
@@ -279,7 +280,7 @@ void Grid::create_grid(Config &config)
         if (cell_j != CELL_NOT_YET_ASSIGNED)
         { // Only add internal faces
             assert(cell_i < cell_j);
-            faces.emplace_back(cell_i, cell_j);
+            faces.cell_indices.emplace_back(cell_i, cell_j);
             face_triangles.emplace_back(tri_from_connect(face.first));
         }
     }
@@ -308,9 +309,10 @@ void Grid::create_grid(Config &config)
             Index cell_i_domain = face_to_cells.at(face_ij).first;
             assert(cell_i_domain < cell_j_ghost);
             assert(cell_j_ghost >= tet_connect.size());
-            faces.emplace_back(cell_i_domain, cell_j_ghost);
+            faces.cell_indices.emplace_back(cell_i_domain, cell_j_ghost);
+
             face_triangles.emplace_back(tri_from_connect(tc));
-            cells.emplace_back(); // Adding ghost cell
+            cells.add_empty(); // Adding ghost cell
         }
     }
     assert(face_triangles.size() == faces.size());
@@ -326,18 +328,18 @@ void Grid::create_grid(Config &config)
     config.set_grid_metrics(N_NODES, N_INTERIOR_CELLS, N_TOTAL_CELLS, N_INTERIOR_FACES, N_TOTAL_FACES);
 
     /*--------------------------------------------------------------------
-    Assigning geometrical properties to faces and ghost cells
-    --------------------------------------------------------------------*/
-    cout << "Assign geometrical properties..\n";
-    assign_geometry_properties(config, face_triangles);
-
-    /*--------------------------------------------------------------------
     Sort faces so that the interior faces appear first with the owner index
     i allways being less than neigbour index j. The same logic is applied
     patch-wise to the boundaries
     --------------------------------------------------------------------*/
     cout << "Reorder faces..\n";
     reorder_faces(config);
+
+    /*--------------------------------------------------------------------
+    Assigning geometrical properties to faces and ghost cells
+    --------------------------------------------------------------------*/
+    cout << "Assign geometrical properties..\n";
+    assign_geometry_properties(config, face_triangles);
 
     /*--------------------------------------------------------------------
     Reducing allocated memory
@@ -359,9 +361,8 @@ void Grid::assign_geometry_properties(const Config &config, const Vector<Triangl
 
     for (Index ij{0}; ij < config.get_N_TOTAL_FACES(); ij++)
     {
-        Face &face = faces.at(ij);
-        Index i = face.i;
-        Index j = face.j;
+        Index i = faces.get_cell_i(ij);
+        Index j = faces.get_cell_j(ij);
         max_i = std::max(max_i, i);
         max_j = std::max(max_j, j);
 
@@ -369,13 +370,19 @@ void Grid::assign_geometry_properties(const Config &config, const Vector<Triangl
 
         if (j >= N_INTERIOR_CELLS)
         {
-            cells.at(j).centroid = calc_ghost_centroid(cells.at(i).centroid, face_triangles.at(ij));
-            cells.at(j).cell_volume = 0;
+            cells.cell_volumes[j] = 0.0;
+            cells.centroids[j] = calc_ghost_centroid(cells.centroids[i], face_triangles[ij]);
         }
 
-        assign_face_properties(face, face_triangles.at(ij), cells.at(i).centroid, cells.at(j).centroid);
+        assign_face_properties(faces.normal_areas[ij],
+                               faces.centroid_to_face_i[ij],
+                               faces.centroid_to_face_j[ij],
+                               face_triangles[ij],
+                               cells.centroids[i],
+                               cells.centroids[j]);
     }
 
+    assert(max_i == config.get_N_INTERIOR_CELLS() - 1);
     assert(max_j == config.get_N_TOTAL_CELLS() - 1);
     assert(config.get_N_TOTAL_CELLS() == cells.size());
 }
@@ -429,11 +436,11 @@ void Grid::reorder_faces(const Config &config)
     The comparison operator < for Face is defined for this purpose.
     The interior and each boundary patch is sorted separately.*/
     Index N_INTERIOR_FACES = config.get_N_INTERIOR_FACES();
-    std::sort(faces.begin(), faces.begin() + N_INTERIOR_FACES);
+    std::sort(faces.cell_indices.begin(), faces.cell_indices.begin() + N_INTERIOR_FACES);
 
     for (Patch &patch : patches)
     {
-        std::sort(faces.begin() + patch.FIRST_FACE, faces.begin() + patch.FIRST_FACE + patch.N_FACES);
+        std::sort(faces.cell_indices.begin() + patch.FIRST_FACE, faces.cell_indices.begin() + patch.FIRST_FACE + patch.N_FACES);
     }
 }
 
@@ -515,8 +522,11 @@ void Grid::shrink_vectors()
         tpc.triangles.shrink_to_fit();
 
     tri_patch_connect_list.shrink_to_fit();
-    cells.shrink_to_fit();
-    faces.shrink_to_fit();
+    cells.cell_volumes.shrink_to_fit();
+    cells.centroids.shrink_to_fit();
+    faces.cell_indices.shrink_to_fit();
+    faces.centroid_to_face_i.shrink_to_fit();
+    faces.centroid_to_face_j.shrink_to_fit();
     patches.shrink_to_fit();
 }
 

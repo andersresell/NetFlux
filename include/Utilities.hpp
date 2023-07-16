@@ -124,15 +124,15 @@ namespace standard_air
 
 namespace geom
 {
-    /*MAYBE IMPLEMENT THIS LATER TO IMRPOVE EFFICIENCY!*/
-
-    /*A strucuture of arrays (AOS) containing the faces and their required properties*/
-    /*class Faces
+    /*A structure of arrays (SoA) containing the faces and their required properties*/
+    class Faces
     {
-        struct CellIndices
+        friend class Grid;
+
+        struct CellPair
         {
             Index i, j;
-            bool operator<(const Face &rhs) const
+            bool operator<(CellPair rhs) const
             {
                 if (i != rhs.i)
                     return i < rhs.i;
@@ -143,67 +143,52 @@ namespace geom
             }
         };
 
-        Vector<CellIndices> cell_indices;
+        Vector<CellPair> cell_indices;
         Vector<Vec3> normal_areas;
         Vector<Vec3> centroid_to_face_i;
         Vector<Vec3> centroid_to_face_j;
 
+        void resize(Index size);
+
     public:
-        void resize(Index N_FACES);
+        Index size() const { return cell_indices.size(); }
 
         Index get_cell_i(Index face_index) const { return cell_indices[face_index].i; }
         Index get_cell_j(Index face_index) const { return cell_indices[face_index].i; }
         const Vec3 &get_normal_area(Index face_index) const { return normal_areas[face_index]; }
         const Vec3 &get_centroid_to_face_i(Index face_index) const { return centroid_to_face_i[face_index]; }
         const Vec3 &get_centroid_to_face_j(Index face_index) const { return centroid_to_face_j[face_index]; }
-
-        void add_face(Index i, Index j, Vec3 S_ij, Vec3 r_im, Vec3 r_jm);
-
-        /*Sort the faces with repsect to i and j, i having first priority
-        void sort_faces(Index first_face, Index last_face)
-        {
-            CellIndices ci;
-            Vect
-            std::sort(cell_indices.begin() + first_face, cell_indices.begin() + last_face);
-        }
-    };*/
-
-    struct Face
-    {
-        Face(Index i, Index j, Vec3 S_ij, Vec3 r_im, Vec3 r_jm) : S_ij{S_ij}, i{i}, j{j}, r_im{r_im}, r_jm{r_jm} {}
-        Face(Index i, Index j) : i{i}, j{j} {}
-        Vec3 S_ij;       // Area normal vector from cell i to j
-        Index i, j;      // Indices of cell i and j
-        Vec3 r_im, r_jm; // vectors from each cell center to the face centroid
-        friend std::ostream &operator<<(std::ostream &os, const Face &f)
-        {
-            os << "(i,j) = (" << f.i << "," << f.j << "), S_ij: " + horizontal_string_Vec3(f.S_ij) + ", r_im: " + horizontal_string_Vec3(f.r_im) + ", r_jm: " + horizontal_string_Vec3(f.r_jm) << endl;
-            return os;
-        }
-
-        bool operator<(const Face &rhs) const
-        {
-            if (i != rhs.i)
-                return i < rhs.i;
-
-            assert(j != rhs.j); // This would imply that cell indices are identical
-
-            return j < rhs.j;
-        }
     };
 
-    struct Cell
+    /*A structure of arrays (SoA) containing the cells and their required properties*/
+    class Cells
     {
-        Cell() = default;
-        Cell(Scalar cell_volume, Vec3 centroid) : cell_volume{cell_volume}, centroid{centroid} {}
-        Scalar cell_volume;
-        Vec3 centroid;
-        friend std::ostream &operator<<(std::ostream &os, const Cell &c)
-        {
-            os << "vol = " << c.cell_volume << ", centroid = " + horizontal_string_Vec3(c.centroid) << endl;
-            return os;
-        }
+        friend class Grid;
+
+        Vector<Scalar> cell_volumes;
+        Vector<Vec3> centroids;
+
+        void reserve(Index size);
+        void add_empty();
+
+    public:
+        Index size() const { return cell_volumes.size(); }
+        Scalar get_cell_volume(Index cell_index) const { return cell_volumes[cell_index]; }
+        const Vec3 &get_centroid(Index cell_index) const { return centroids[cell_index]; }
     };
+
+    // struct Cell
+    // {
+    //     Cell() = default;
+    //     Cell(Scalar cell_volume, Vec3 centroid) : cell_volume{cell_volume}, centroid{centroid} {}
+    //     Scalar cell_volume;
+    //     Vec3 centroid;
+    //     friend std::ostream &operator<<(std::ostream &os, const Cell &c)
+    //     {
+    //         os << "vol = " << c.cell_volume << ", centroid = " + horizontal_string_Vec3(c.centroid) << endl;
+    //         return os;
+    //     }
+    // };
 
     struct Patch
     {
@@ -296,7 +281,12 @@ namespace geom
         Vec3 calc_centroid() const final;
     };
 
-    void assign_face_properties(Face &face, const Facegeom &face_geom, const Vec3 &cell_center_i, const Vec3 &cell_center_j);
+    void assign_face_properties(Vec3 &normal_area,
+                                Vec3 &centroid_to_face_i,
+                                Vec3 &centroid_to_face_j,
+                                const Facegeom &face_geom,
+                                const Vec3 &cell_center_i,
+                                const Vec3 &cell_center_j);
 
     Vec3 calc_ghost_centroid(Vec3 centroid_i, const Facegeom &boundary_face);
 }

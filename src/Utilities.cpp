@@ -2,22 +2,26 @@
 
 namespace geom
 {
-    /*
-        void Faces::add_face(Index i, Index j, Vec3 S_ij, Vec3 r_im, Vec3 r_jm)
-        {
-            cell_indices.emplace_back(i, j);
-            normal_areas.push_back(S_ij);
-            centroid_to_face_i.push_back(r_im);
-            centroid_to_face_j.push_back(r_jm);
-        }
 
-        void Faces::resize(Index N_FACES)
-        {
-            cell_indices.reserve(N_FACES);
-            normal_areas.reserve(N_FACES);
-            centroid_to_face_i.reserve(N_FACES);
-            centroid_to_face_j.reserve(N_FACES);
-        }*/
+    void Faces::resize(Index size)
+    {
+        cell_indices.resize(size);
+        normal_areas.resize(size);
+        centroid_to_face_i.resize(size);
+        centroid_to_face_j.resize(size);
+    }
+
+    void Cells::reserve(Index size)
+    {
+        cell_volumes.reserve(size);
+        centroids.reserve(size);
+    }
+
+    void Cells::add_empty()
+    {
+        cell_volumes.emplace_back();
+        centroids.emplace_back();
+    }
 
     TriConnect tet_face_connectivity(TetConnect tc, ShortIndex face_k)
     {
@@ -65,13 +69,12 @@ namespace geom
         return 0.25 * (nodes[0] + nodes[1] + nodes[2] + nodes[3]); // 1/4(a + b + c + d)
     }
 
-    Face create_face_from_geom(Index i, Index j, const Facegeom &face_geom, Vec3 cell_center_i, Vec3 cell_center_j)
-    {
-        Vec3 face_centroid = face_geom.calc_centroid();
-        return {i, j, face_geom.calc_area_normal(), face_centroid - cell_center_i, face_centroid - cell_center_j};
-    }
-
-    void assign_face_properties(Face &face, const Facegeom &face_geom, const Vec3 &cell_center_i, const Vec3 &cell_center_j)
+    void assign_face_properties(Vec3 &normal_area,
+                                Vec3 &centroid_to_face_i,
+                                Vec3 &centroid_to_face_j,
+                                const Facegeom &face_geom,
+                                const Vec3 &cell_center_i,
+                                const Vec3 &cell_center_j)
     {
         Vec3 S_ij = face_geom.calc_area_normal();
 
@@ -79,11 +82,12 @@ namespace geom
         assert(normal_dot_product != 0); // Just banning this for now, altough it is possibly possible with a high skewness, but valid mesh
         if (normal_dot_product < 0)
             S_ij *= -1; // Flipping normal if it's not pointing from i to j
-        face.S_ij = S_ij;
+        normal_area = S_ij;
         Vec3 face_centroid = face_geom.calc_centroid();
-        face.r_im = cell_center_i - face_centroid;
-        face.r_jm = cell_center_j - face_centroid;
+        centroid_to_face_i = face_centroid - cell_center_i;
+        centroid_to_face_j = face_centroid - cell_center_j;
     }
+
     Vec3 calc_ghost_centroid(Vec3 centroid_i, const Facegeom &boundary_face)
     {
         // distance from cell i to face V_i/ij = centroid_face - centroid_i
