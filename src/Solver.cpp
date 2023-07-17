@@ -220,7 +220,7 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
             // cout << "V_L " << V_L << endl;
             // cout << "V_R " << V_R << endl;
 
-            numerical_flux_func(U_L, U_R, S_ij, Flux_inv);
+                        numerical_flux_func(U_L, U_R, S_ij, Flux_inv);
 
             assert(validity_checker->valid_boundary_flux(Flux_inv.data(), patch.boundary_type));
 
