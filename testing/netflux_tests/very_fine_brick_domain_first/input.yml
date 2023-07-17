@@ -1,0 +1,33 @@
+
+solver: Euler
+
+n_timesteps: 500
+
+CFL: 0.9
+
+write_stride: 5
+
+time_scheme: TVD_RK3
+
+spatial_order: First
+
+grad_scheme: GreenGauss
+
+inviscid_flux_scheme: Rusanov
+
+limiter: Barth
+
+initial_cond: Freestream
+
+check_physical_validity: true
+ 
+density_fs: 1.2
+velocity_fs: [600, 0, 0]
+pressure_fs: 100000.0
+
+
+patches:
+  - all_walls: SlipWall
+
+
+
