@@ -2,6 +2,7 @@
 #include <cassert>
 #include <limits>
 using namespace std;
+#include "../../include/Includes.hpp"
 
 #include <iostream>
 #include <vector>
@@ -19,9 +20,13 @@ struct MyType
 
 int main()
 {
+    Vec3 v;
+    Eigen::Map<Vec3> v_map = Eigen::Map<Vec3>(v.data());
+
     std::vector<MyType> guidingVector = {{4}, {2}, {1}, {3}};
     std::vector<int> otherVector1 = {40, 20, 10, 30};
     std::vector<char> otherVector2 = {'D', 'B', 'A', 'C'};
+    string halla = "halla123";
 
     // Create an index vector to store the original indices
     std::vector<size_t> indices(guidingVector.size());

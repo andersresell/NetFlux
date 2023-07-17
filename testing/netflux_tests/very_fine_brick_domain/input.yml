@@ -1,15 +1,15 @@
 
 solver: Euler
 
-n_timesteps: 100
+n_timesteps: 500
 
-CFL: 0.5
+CFL: 0.9
 
-write_stride: 1
+write_stride: 5
 
-time_scheme: ExplicitEuler
+time_scheme: TVD_RK3
 
-spatial_order: First
+spatial_order: Second
 
 grad_scheme: GreenGauss
 

@@ -99,8 +99,6 @@ namespace Gradient
         const Faces &faces = grid.get_faces();
         const Cells &cells = grid.get_cells();
 
-        assert(false); // Remove the above when it's ensured that private access of Faces and Cells is not possible.
-
         const Index N_FACES = config.get_N_TOTAL_FACES();
         const Index N_CELLS = config.get_N_INTERIOR_CELLS();
 
@@ -134,33 +132,15 @@ namespace Reconstruction
 {
     using namespace geom;
 
-    // template<ShortIndex N_EQS>
-    // inline void calc_limited_reconstruction(
-    //                                const FlowVec<N_EQS>& V_c,
-    //                                const FlowGrad<N_EQS>& V_c_grad,
-    //                                const FlowVec<N_EQS>& limiter_c,
-    //                                const Vec3& r_cf,
-    //                                FlowVec<N_EQS>& V_f
-    //                                ){
-
-    //     for (ShortIndex k{0}; k<N_EQS; k++){
-    //         Scalar Delta_V{0};
-    //         for (ShortIndex iDim{0}; iDim<N_DIM; iDim++)
-    //             Delta_V += V_c_grad(k, iDim) * r_cf[iDim];
-
-    //         V_f[k] = V_c[k] + limiter_c[k] * Delta_V[k];
-    //     }
-    // }
     template <typename VecMapType, typename GradMapType, typename VecType>
     inline void calc_limited_reconstruction(
-        const VecMapType &V_c,
-        const GradMapType &V_c_grad,
-        const VecMapType &limiter_c,
-        const Vec3 &r_cf,
-        VecType &V_f)
+        const VecMapType &V_center,
+        const GradMapType &V_center_grad,
+        const VecMapType &limiter_center,
+        const Vec3 &r_center2face,
+        VecType &V_face)
     {
-        // perhaps some static assersions here
-        V_f = limiter_c.cwiseProduct(V_c_grad * r_cf); // not finished
+        V_face = V_center + limiter_center.cwiseProduct(V_center_grad * r_center2face);
     }
 
     /*Implementing the Barth limiter procedure in Blazek*/
@@ -187,12 +167,13 @@ namespace Reconstruction
         using FieldGrad = Eigen::Matrix<Scalar, N_EQS, N_DIM>;
         using FieldGradMap = Eigen::Map<FieldGrad>;
 
-        constexpr Scalar EPS = std::numeric_limits<Scalar>::epsilon();
+        constexpr Scalar EPS = 1e-10; // std::numeric_limits<Scalar>::epsilon();
 
         const Faces &faces = grid.get_faces();
 
         FieldVec Delta_2;
         FieldGrad gradient;
+        Scalar face_contribution;
 
         limiter = DBL_MAX;
 
@@ -206,17 +187,24 @@ namespace Reconstruction
             const FieldGradMap gradient_i = sol_grad.get_variable<FieldGrad>(i);
             Delta_2 = gradient_i * r_im;
 
+            // cout << "EPS " << EPS << endl;
             for (ShortIndex k{0}; k < N_EQS; k++)
             {
                 // to avoid division by zero
                 Delta_2[k] = sign(Delta_2[k]) * (abs(Delta_2[k]) + EPS);
+                // cout << "D2[k] " << Delta_2[k] << endl;
+                // cout << "grad_i " << gradient_i(k, 0) << ", " << gradient_i(k, 1) << ", " << gradient_i(k, 2) << endl;
 
                 if (Delta_2[k] > 0.0)
-                    limiter(i, k) = min(limiter(i, k), min(1.0, (max_field(i, k) - sol_field(i, k)) / Delta_2[k]));
+                    face_contribution = min(1.0, (max_field(i, k) - sol_field(i, k)) / Delta_2[k]);
                 else if (Delta_2[k] < 0.0)
-                    limiter(i, k) = min(limiter(i, k), min(1.0, (min_field(i, k) - sol_field(i, k)) / Delta_2[k]));
+                    face_contribution = min(1.0, (min_field(i, k) - sol_field(i, k)) / Delta_2[k]);
                 else
-                    limiter(i, k) = min(limiter(i, k), 1.0);
+                    face_contribution = 1.0;
+                // cout << "face contribution " << face_contribution << endl;
+
+                limiter(i, k) = min(limiter(i, k), face_contribution);
+                assert(limiter(i, k) >= 0.0 && limiter(i, k) <= 1.0);
             }
 
             if (j < N_INTERIOR_CELLS)
@@ -230,11 +218,14 @@ namespace Reconstruction
                     Delta_2[k] = sign(Delta_2[k]) * (abs(Delta_2[k]) + EPS);
 
                     if (Delta_2[k] > 0.0)
-                        limiter(j, k) = min(limiter(j, k), min(1.0, (max_field(j, k) - sol_field(j, k)) / Delta_2[k]));
+                        face_contribution = min(1.0, (max_field(j, k) - sol_field(j, k)) / Delta_2[k]);
                     else if (Delta_2[k] < 0.0)
-                        limiter(j, k) = min(limiter(j, k), min(1.0, (min_field(j, k) - sol_field(j, k)) / Delta_2[k]));
+                        face_contribution = min(1.0, (min_field(j, k) - sol_field(j, k)) / Delta_2[k]);
                     else
-                        limiter(j, k) = min(limiter(j, k), 1.0);
+                        face_contribution = 1.0;
+
+                    limiter(j, k) = min(limiter(j, k), face_contribution);
+                    assert(limiter(j, k) >= 0.0 && limiter(j, k) <= 1.0);
                 }
             }
         }
@@ -245,6 +236,8 @@ namespace Reconstruction
         Index i, j;
         for_all(limiter, i, j)
         {
+            // cout << "L " << limiter(i, j) << endl;
+
             assert(num_is_valid(limiter(i, j)));
             assert(limiter(i, j) > -TOL && limiter(i, j) < 1.0 + TOL);
         }
@@ -271,28 +264,24 @@ namespace Reconstruction
 
         const auto &faces = grid.get_faces();
 
-        Index i, j;
-
-        /*the formulas to be computed are
+        /*the formulas to be computed are (Taken from Blazek)
         U_max = max(U_i, max_j(U_j)) and U_min = min(U_i, min_j(U_j))
         Looping over all edges instead of cells due to efficiency*/
 
         for (Index ij{0}; ij < N_TOTAL_FACES; ij++)
         {
-            i = faces.get_cell_i(ij);
-            j = faces.get_cell_j(ij);
+            Index i = faces.get_cell_i(ij);
+            Index j = faces.get_cell_j(ij);
 
             for (ShortIndex k{0}; k < N_EQS; k++)
             {
-                max_field(i, k) = std::max(max_field(i, k), sol_field(i, k));
-                max_field(i, k) = std::max(max_field(i, k), sol_field(j, k));
+                max_field(i, k) = max(max_field(i, k), max(sol_field(i, k), sol_field(j, k)));
                 if (j < N_INTERIOR_CELLS) // Only for interior cells
-                    max_field(j, k) = std::max(max_field(j, k), sol_field(i, k));
+                    max_field(j, k) = max(max_field(j, k), max(sol_field(i, k), sol_field(j, k)));
 
-                min_field(i, k) = std::min(min_field(i, k), sol_field(i, k));
-                min_field(i, k) = std::min(min_field(i, k), sol_field(j, k));
+                min_field(i, k) = min(min_field(i, k), min(sol_field(i, k), sol_field(j, k)));
                 if (j < N_INTERIOR_CELLS) // Only for interior cells
-                    min_field(j, k) = std::min(min_field(j, k), sol_field(i, k));
+                    min_field(j, k) = min(min_field(j, k), min(sol_field(i, k), sol_field(j, k)));
             }
         }
     }

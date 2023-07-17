@@ -95,6 +95,14 @@ inline void EulerSolver::calc_reconstructed_value(Index i,
         const EulerVecMap limiter_i = primvars_limiter.get_variable<EulerVec>(i);
 
         Reconstruction::calc_limited_reconstruction(V_i, V_i_grad, limiter_i, r_im, V_L);
+
+        // cout << "V_i " << V_i << endl;
+        // cout << "limiter " << limiter_i << endl;
+        // cout << "r_im " << r_im << endl;
+        // cout << "V_i_grad " << V_i_grad << endl
+        //      << endl;
+
+        // cout << "V_L " << V_L << endl;
     }
     else
     { // Spatial order == First

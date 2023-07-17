@@ -11,11 +11,12 @@ private:
     const geom::Grid &grid;
     const Vector<unique_ptr<Solver>> &solvers;
 
-    void write_vtk_ascii_grid(const Config &config, string filename);
+    void write_vtk_ascii_grid(const Config &config, const string &filename);
 
 public:
     Output(const geom::Grid &grid, const Vector<unique_ptr<Solver>> &solvers, const Config &config);
-    void write_vtk_ascii(const Config &config, bool write_grid_only = false);
+    void write_vtk_ascii(const Config &config);
+    void write_vtk_ascii_debug(const Config &config, const string &filename);
 };
 
 struct EulerOutput

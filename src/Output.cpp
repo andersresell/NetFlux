@@ -14,7 +14,7 @@ Output::Output(const geom::Grid &grid, const Vector<unique_ptr<Solver>> &solvers
         throw std::runtime_error("Couldn't create output directory: " + output_dir);
 }
 
-void Output::write_vtk_ascii(const Config &config, bool write_grid_only)
+void Output::write_vtk_ascii(const Config &config)
 {
     /*Only write output every WRITE_STRIDE times*/
     if (config.get_timestep() % config.get_write_stride() != 0)
@@ -23,29 +23,29 @@ void Output::write_vtk_ascii(const Config &config, bool write_grid_only)
     const string &filename = config.get_unsteady_vtk_filename();
 
     write_vtk_ascii_grid(config, filename);
-    if (!write_grid_only)
+
+    for (const auto &solver : solvers)
     {
 
-        for (const auto &solver : solvers)
+        const VecField &consvars = solver->get_solver_data().get_solution();
+
+        switch (solver->get_solver_type())
         {
-
-            const VecField &consvars = solver->get_solver_data().get_solution();
-
-            switch (solver->get_solver_type())
-            {
-            case SolverType::Euler:
-            {
-                EulerOutput::write_vtk_ascii_cell_data(config, filename, consvars);
-                break;
-            }
-            default:
-                assert(false); // illegal solver type
-            }
+        case SolverType::Euler:
+        {
+            EulerOutput::write_vtk_ascii_cell_data(config, filename, consvars);
+            break;
+        }
+        default:
+            assert(false); // illegal solver type
         }
     }
+
+    if (config.write_vtk_debug())
+        write_vtk_ascii_debug(config, filename);
 }
 
-void Output::write_vtk_ascii_grid(const Config &config, string filename)
+void Output::write_vtk_ascii_grid(const Config &config, const string &filename)
 {
     std::ofstream ost{filename};
     FAIL_IF_MSG(!ost, "Couldn't open file " + filename);
@@ -75,13 +75,48 @@ void Output::write_vtk_ascii_grid(const Config &config, string filename)
         ost << VTK_TET_TYPE << "\n";
 }
 
+/*Writing various fields such as limiters or gradients*/
+void Output::write_vtk_ascii_debug(const Config &config, const string &filename)
+{
+    std::ofstream ost{filename, std::ios::app};
+    if (!ost)
+        throw std::runtime_error("Couldn't open file " + filename);
+
+    assert(solvers.size() == 1); // edit if changed
+    const auto &solver_data = solvers[0]->get_solver_data();
+
+    const auto &limiter = solver_data.get_primvars_limiter();
+    const auto &gradient = solver_data.get_primvars_gradient();
+    assert(gradient.get_N_EQS() == limiter.get_N_EQS());
+    const ShortIndex N_EQS = limiter.get_N_EQS();
+    assert(gradient.size() == limiter.size());
+    assert(gradient.cols() == N_DIM);
+    const Index N_INTERIOR_CELLS = limiter.size();
+
+    for (ShortIndex k{0}; k < N_EQS; k++)
+    {
+        ost << "\nSCALARS limiter_EQ" + std::to_string(k) + " " + string(Scalar_name) + " 1\n"
+            << "LOOKUP_TABLE default\n";
+        for (Index i{0}; i < N_INTERIOR_CELLS; i++)
+            ost << limiter(i, k) << "\n";
+    }
+
+    for (ShortIndex k{0}; k < N_EQS; k++)
+    {
+        ost << "\nVECTORS gradient_EQ" + std::to_string(k) + " " + string(Scalar_name) + "\n";
+        for (Index i{0}; i < N_INTERIOR_CELLS; i++)
+            ost << gradient(i, k, 0) << " " << gradient(i, k, 1) << " " << gradient(i, k, 2) << "\n";
+    }
+}
+
 void EulerOutput::write_vtk_ascii_cell_data(const Config &config, const string &filename, const VecField &consvars)
 {
-
     assert(consvars.get_N_EQS() == N_EQS_EULER);
 
     std::ofstream ost{filename, std::ios::app};
-    FAIL_IF_MSG(!ost, "Couldn't open file " + filename);
+
+    if (!ost)
+        throw std::runtime_error("Couldn't open file " + filename);
 
     const Index N_INTERIOR_CELLS = config.get_N_INTERIOR_CELLS();
 

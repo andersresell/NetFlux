@@ -68,7 +68,7 @@ void ValidityChecker::check_flux_balance_validity(const Config &config, const Ve
 
     if (invalid_cells > 0)
     {
-        throw std::runtime_error(std::to_string(invalid_cells) + " cells with unphysical" +
+        throw std::runtime_error(std::to_string(invalid_cells) + " cells with unphysical " +
                                  "values detected in the flux_balance field of the " +
                                  get_solver_name() + " solver");
     }

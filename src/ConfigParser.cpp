@@ -74,7 +74,9 @@ void ConfigParser::parse_yaml_file_options(Config &config)
 
     config.write_stride = read_optional_option<size_t>("write_stride", 5);
 
-    config.check_if_physical = read_optional_option<bool>("check_physical_validity", false);
+    config.check_physical_validity_ = read_optional_option<bool>("check_physical_validity", false);
+
+    config.write_vtk_debug_ = read_optional_option<bool>("write_vtk_debug", false);
 
     read_patches(config);
 }

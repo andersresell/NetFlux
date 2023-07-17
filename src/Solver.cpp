@@ -114,7 +114,7 @@ void Solver::TVD_RK3(const Config &config)
     assert(R.size() == config.get_N_INTERIOR_CELLS());
 
     /*--------------------------------------------------------------------
-    U_1 = U_n + dt /Omega * R(U_n)
+    U_1 = U_n + dt / Omega * R(U_n)
     U_2 = 3/4 * U_n + 1/4 *U_1 + 1/4 * dt / Omega * R(U_1)
     U_n+1 = 1/3 * U_n + 2/3 * U_2 + 2/3 * dt / Omega * R(U_2)
     --------------------------------------------------------------------*/
@@ -193,7 +193,6 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
 
     /*Then boundaries. Here ghost cells has to be assigned based on the boundary conditions.
     This is handled patch-wise*/
-    Index i_domain;
 
     for (Index i_patch{0}; i_patch < patches.size(); i_patch++)
     {
@@ -204,7 +203,7 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
         for (Index ij{patch.FIRST_FACE}; ij < patch.FIRST_FACE + patch.N_FACES; ij++)
         {
 
-            i_domain = faces.get_cell_i(ij);
+            Index i_domain = faces.get_cell_i(ij);
             const Vec3 &S_ij = faces.get_normal_area(ij);
             const Vec3 &r_im = faces.get_centroid_to_face_i(ij);
 
@@ -214,6 +213,12 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
 
             EulerEqs::prim_to_cons(V_L, U_L);
             EulerEqs::prim_to_cons(V_R, U_R);
+
+            // cout << "V_i " << solver_data->get_primvars().get_variable<EulerVec>(i_domain) << endl;
+            // cout << "V_grad_i " << solver_data->get_primvars_gradient().get_variable<EulerGrad>(i_domain) << endl;
+            // cout << "limiter_i " << solver_data->get_primvars_limiter().get_variable<EulerVec>(i_domain) << endl;
+            // cout << "V_L " << V_L << endl;
+            // cout << "V_R " << V_R << endl;
 
             numerical_flux_func(U_L, U_R, S_ij, Flux_inv);
 
