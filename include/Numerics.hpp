@@ -96,8 +96,10 @@ namespace Gradient
         using FieldVec = Eigen::Vector<Scalar, N_EQS>;
         using FieldGrad = Eigen::Matrix<Scalar, N_EQS, N_DIM>;
 
-        const auto &faces = grid.get_faces();
-        const auto &cells = grid.get_cells();
+        const Faces &faces = grid.get_faces();
+        const Cells &cells = grid.get_cells();
+
+        assert(false); // Remove the above when it's ensured that private access of Faces and Cells is not possible.
 
         const Index N_FACES = config.get_N_TOTAL_FACES();
         const Index N_CELLS = config.get_N_INTERIOR_CELLS();
@@ -111,21 +113,19 @@ namespace Gradient
 
         for (Index ij{0}; ij < N_FACES; ij++)
         {
-            const Face &face = faces[ij];
-            i = face.i;
-            j = face.j;
-
-            const Cell &cell_i = cells[i];
-            const Cell &cell_j = cells[j];
+            i = faces.get_cell_i(ij);
+            j = faces.get_cell_j(ij);
+            const Vec3 &S_ij = faces.get_normal_area(ij);
 
             // Simple average for now, might improve later with distance weighting and orthogonal correctors later
             U_face = 0.5 * (vec_field.get_variable<FieldVec>(i) + vec_field.get_variable<FieldVec>(j));
 
-            tmp = U_face * face.S_ij.transpose(); // DOES THIS MAKE SENSE?? (ij)
+            tmp = U_face * S_ij.transpose(); // DOES THIS MAKE SENSE?? (ij)
 
-            grad_field.get_variable<FieldGrad>(i) += tmp / cell_i.cell_volume;
+            grad_field.get_variable<FieldGrad>(i) += tmp / cells.get_cell_volume(i);
+
             if (j < N_CELLS) // only calculate gradient for interior cells?
-                grad_field.get_variable<FieldGrad>(j) -= tmp / cell_j.cell_volume;
+                grad_field.get_variable<FieldGrad>(j) -= tmp / cells.get_cell_volume(j);
         }
     }
 }
@@ -189,7 +189,7 @@ namespace Reconstruction
 
         constexpr Scalar EPS = std::numeric_limits<Scalar>::epsilon();
 
-        const auto &faces = grid.get_faces();
+        const Faces &faces = grid.get_faces();
 
         FieldVec Delta_2;
         FieldGrad gradient;
@@ -198,12 +198,13 @@ namespace Reconstruction
 
         for (Index ij{0}; ij < N_TOTAL_FACES; ij++)
         {
-            const Face &face = faces[ij];
-            Index i = face.i;
-            Index j = face.j;
+            Index i = faces.get_cell_i(ij);
+            Index j = faces.get_cell_j(ij);
+            const Vec3 &r_im = faces.get_centroid_to_face_i(ij);
+            const Vec3 &r_jm = faces.get_centroid_to_face_j(ij);
 
             const FieldGradMap gradient_i = sol_grad.get_variable<FieldGrad>(i);
-            Delta_2 = gradient_i * face.r_im;
+            Delta_2 = gradient_i * r_im;
 
             for (ShortIndex k{0}; k < N_EQS; k++)
             {
@@ -221,7 +222,7 @@ namespace Reconstruction
             if (j < N_INTERIOR_CELLS)
             {
                 const FieldGradMap &gradient_j = sol_grad.get_variable<FieldGrad>(j);
-                Delta_2 = gradient_j * face.r_jm;
+                Delta_2 = gradient_j * r_jm;
 
                 for (ShortIndex k{0}; k < N_EQS; k++)
                 {
@@ -278,9 +279,8 @@ namespace Reconstruction
 
         for (Index ij{0}; ij < N_TOTAL_FACES; ij++)
         {
-            const Face &face = faces[ij];
-            i = face.i;
-            j = face.j;
+            i = faces.get_cell_i(ij);
+            j = faces.get_cell_j(ij);
 
             for (ShortIndex k{0}; k < N_EQS; k++)
             {

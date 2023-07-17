@@ -3,12 +3,39 @@
 namespace geom
 {
 
-    void Faces::resize(Index size)
+    void Faces::reserve(Index size)
     {
-        cell_indices.resize(size);
-        normal_areas.resize(size);
-        centroid_to_face_i.resize(size);
-        centroid_to_face_j.resize(size);
+        cell_indices.reserve(size);
+        normal_areas.reserve(size);
+        centroid_to_face_i.reserve(size);
+        centroid_to_face_j.reserve(size);
+    }
+
+    void Faces::resize_geometry_properties()
+    {
+        normal_areas.resize(cell_indices.size());
+        centroid_to_face_i.resize(cell_indices.size());
+        centroid_to_face_j.resize(cell_indices.size());
+    }
+
+    /*Sorting all the Vectors from indices begin to end based on the cell_indices*/
+    void Faces::sort(Index begin, Index end)
+    {
+        assert(begin < end && end <= cell_indices.size());
+
+        Vector<Index> indices(end - begin);
+        for (Index i{begin}; i < end; i++)
+            indices[i - begin] = i;
+
+        std::sort(indices.begin(), indices.end(), [this](Index a, Index b)
+                  { return cell_indices[a] < cell_indices[b]; });
+        for (Index i{begin}; i < end; i++)
+        {
+            std::swap(cell_indices[i], cell_indices[indices[i - begin]]);
+            std::swap(normal_areas[i], normal_areas[indices[i - begin]]);
+            std::swap(centroid_to_face_i[i], centroid_to_face_i[indices[i - begin]]);
+            std::swap(centroid_to_face_j[i], centroid_to_face_j[indices[i - begin]]);
+        }
     }
 
     void Cells::reserve(Index size)

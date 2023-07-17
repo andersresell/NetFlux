@@ -23,7 +23,7 @@ namespace geom
     public:
         Grid(Config &config);
 
-        void print_grid(const Config &config) const;
+        // void print_grid(const Config &config) const;
         void print_native_mesh() const;
 
         const Vector<Vec3> &get_nodes() const { return nodes; }

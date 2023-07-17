@@ -124,6 +124,8 @@ namespace standard_air
 
 namespace geom
 {
+    class Grid;
+
     /*A structure of arrays (SoA) containing the faces and their required properties*/
     class Faces
     {
@@ -131,6 +133,8 @@ namespace geom
 
         struct CellPair
         {
+            CellPair(Index i, Index j) : i{i}, j{j} {} // For some reason I had to define the constructor to make emplace_back work
+
             Index i, j;
             bool operator<(CellPair rhs) const
             {
@@ -148,13 +152,15 @@ namespace geom
         Vector<Vec3> centroid_to_face_i;
         Vector<Vec3> centroid_to_face_j;
 
-        void resize(Index size);
+        void reserve(Index size);
+        void resize_geometry_properties();
+        void sort(Index first, Index last);
 
     public:
         Index size() const { return cell_indices.size(); }
 
         Index get_cell_i(Index face_index) const { return cell_indices[face_index].i; }
-        Index get_cell_j(Index face_index) const { return cell_indices[face_index].i; }
+        Index get_cell_j(Index face_index) const { return cell_indices[face_index].j; }
         const Vec3 &get_normal_area(Index face_index) const { return normal_areas[face_index]; }
         const Vec3 &get_centroid_to_face_i(Index face_index) const { return centroid_to_face_i[face_index]; }
         const Vec3 &get_centroid_to_face_j(Index face_index) const { return centroid_to_face_j[face_index]; }
@@ -164,7 +170,6 @@ namespace geom
     class Cells
     {
         friend class Grid;
-
         Vector<Scalar> cell_volumes;
         Vector<Vec3> centroids;
 

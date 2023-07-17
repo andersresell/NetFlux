@@ -1,13 +1,13 @@
 
 solver: Euler
 
-n_timesteps: 3000
+n_timesteps: 100
 
-CFL: 2
+CFL: 0.5
 
-write_stride: 10
+write_stride: 1
 
-time_scheme: TVD_RK3
+time_scheme: ExplicitEuler
 
 spatial_order: First
 

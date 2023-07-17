@@ -86,7 +86,7 @@ void Solver::explicit_euler(const Config &config)
     VecField &U = solver_data->get_solution();
     VecField &R = solver_data->get_flux_balance();
     const auto &cells = grid.get_cells();
-    Index i, j;
+    Index i, n_eq;
 
     assert(U.get_N_EQS() == solver_data->get_N_EQS() && R.get_N_EQS() == solver_data->get_N_EQS());
     assert(U.size() == config.get_N_INTERIOR_CELLS() && R.size() == config.get_N_INTERIOR_CELLS());
@@ -96,8 +96,8 @@ void Solver::explicit_euler(const Config &config)
     --------------------------------------------------------------------*/
 
     evaluate_flux_balance(config, U);
-    for_all(U, i, j)
-        U(i, j) += dt / cells[i].cell_volume * R(i, j);
+    for_all(U, i, n_eq)
+        U(i, n_eq) += dt / cells.get_cell_volume(i) * R(i, n_eq);
 }
 
 void Solver::TVD_RK3(const Config &config)
@@ -107,7 +107,7 @@ void Solver::TVD_RK3(const Config &config)
     VecField &U_old = solver_data->get_solution_old();
     VecField &R = solver_data->get_flux_balance();
     const auto &cells = grid.get_cells();
-    Index i, j;
+    Index i, n_eq;
 
     assert(U.get_N_EQS() == solver_data->get_N_EQS() && U_old.get_N_EQS() == solver_data->get_N_EQS() && R.get_N_EQS() == solver_data->get_N_EQS());
     assert(U.size() == config.get_N_INTERIOR_CELLS() && U_old.size() == config.get_N_INTERIOR_CELLS());
@@ -120,16 +120,16 @@ void Solver::TVD_RK3(const Config &config)
     --------------------------------------------------------------------*/
 
     evaluate_flux_balance(config, U);
-    for_all(U, i, j)
-        U(i, j) += dt / cells[i].cell_volume * R(i, j);
+    for_all(U, i, n_eq)
+        U(i, n_eq) += dt / cells.get_cell_volume(i) * R(i, n_eq);
 
     evaluate_flux_balance(config, U);
-    for_all(U, i, j)
-        U(i, j) = 3.0 / 4.0 * U_old(i, j) + 1.0 / 4.0 * U(i, j) + 1.0 / 4.0 * dt / cells[i].cell_volume * R(i, j);
+    for_all(U, i, n_eq)
+        U(i, n_eq) = 3.0 / 4.0 * U_old(i, n_eq) + 1.0 / 4.0 * U(i, n_eq) + 1.0 / 4.0 * dt / cells.get_cell_volume(i) * R(i, n_eq);
 
     evaluate_flux_balance(config, U);
-    for_all(U, i, j)
-        U(i, j) = 1.0 / 3.0 * U_old(i, j) + 2.0 / 3.0 * U(i, j) + 2.0 / 3.0 * dt / cells[i].cell_volume * R(i, j);
+    for_all(U, i, n_eq)
+        U(i, n_eq) = 1.0 / 3.0 * U_old(i, n_eq) + 2.0 / 3.0 * U(i, n_eq) + 2.0 / 3.0 * dt / cells.get_cell_volume(i) * R(i, n_eq);
 }
 
 EulerSolver::EulerSolver(const Config &config, const geom::Grid &grid) : Solver(grid, config)
@@ -169,11 +169,12 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
     /*First interior cells*/
     for (Index ij{0}; ij < N_INTERIOR_FACES; ij++)
     {
-        i = faces[ij].i;
-        j = faces[ij].j;
-        const Vec3 &S_ij = faces[ij].S_ij;
-        const Vec3 &r_im = faces[ij].r_im;
-        const Vec3 &r_jm = faces[ij].r_jm;
+
+        i = faces.get_cell_i(ij);
+        j = faces.get_cell_j(ij);
+        const Vec3 &S_ij = faces.get_normal_area(ij);
+        const Vec3 &r_im = faces.get_centroid_to_face_i(ij);
+        const Vec3 &r_jm = faces.get_centroid_to_face_j(ij);
 
         calc_reconstructed_value(i, V_L, r_im, spatial_order);
         calc_reconstructed_value(j, V_R, r_jm, spatial_order);
@@ -192,7 +193,7 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
 
     /*Then boundaries. Here ghost cells has to be assigned based on the boundary conditions.
     This is handled patch-wise*/
-    Index i_domain, j_ghost;
+    Index i_domain;
 
     for (Index i_patch{0}; i_patch < patches.size(); i_patch++)
     {
@@ -203,10 +204,9 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
         for (Index ij{patch.FIRST_FACE}; ij < patch.FIRST_FACE + patch.N_FACES; ij++)
         {
 
-            i_domain = faces[ij].i;
-            j_ghost = faces[ij].j;
-            const Vec3 &S_ij = faces[ij].S_ij;
-            const Vec3 &r_im = faces[ij].r_im;
+            i_domain = faces.get_cell_i(ij);
+            const Vec3 &S_ij = faces.get_normal_area(ij);
+            const Vec3 &r_im = faces.get_centroid_to_face_i(ij);
 
             calc_reconstructed_value(i_domain, V_L, r_im, spatial_order);
 
@@ -251,7 +251,7 @@ void EulerSolver::calc_timestep(Config &config)
         const EulerVecMap V = primvars.get_variable<EulerVec>(i);
         c = EulerEqs::sound_speed_primitive(V);
 
-        volume = cells[i].cell_volume;
+        volume = cells.get_cell_volume(i);
 
         spec_rad_x = (abs(V[1]) + c) * Delta_S[i].x();
         spec_rad_y = (abs(V[2]) + c) * Delta_S[i].y();
@@ -281,10 +281,11 @@ void EulerSolver::calc_Delta_S(const Config &config)
 
     for (Index ij{0}; ij < config.get_N_INTERIOR_FACES(); ij++)
     {
-        i = faces[ij].i;
-        j = faces[ij].j;
+        i = faces.get_cell_i(ij);
+        j = faces.get_cell_j(ij);
+        const Vec3 &S_ij = faces.get_normal_area(ij);
 
-        tmp = 0.5 * faces[ij].S_ij.cwiseAbs();
+        tmp = 0.5 * S_ij.cwiseAbs();
 
         Delta_S[i] += tmp;
         Delta_S[j] += tmp;
@@ -306,11 +307,11 @@ void EulerSolver::set_constant_ghost_values(const Config &config)
 
         for (Index ij{patch.FIRST_FACE}; ij < patch.FIRST_FACE + patch.N_FACES; ij++)
         {
-            i_domain = faces[ij].i;
-            j_ghost = faces[ij].j;
+            i_domain = faces.get_cell_i(ij);
+            j_ghost = faces.get_cell_j(ij);
             assert(i_domain < config.get_N_INTERIOR_CELLS() && j_ghost >= config.get_N_INTERIOR_CELLS());
 
-            const Vec3 &S_ij = faces[ij].S_ij;
+            const Vec3 &S_ij = faces.get_normal_area(ij);
             // primvars.map_to_variable<EulerVec>(j) =
             //     BoundaryCondition::calc_ghost_val<BC_type, EulerVec>(primvars.map_to_variable<EulerVec>(i), S_ij);
 
