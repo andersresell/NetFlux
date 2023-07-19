@@ -7,7 +7,7 @@ CFL: 0.5
 
 write_stride: 1
 
-time_scheme: ExplicitEuler
+time_scheme: TVD_RK3
 
 spatial_order: Second
 

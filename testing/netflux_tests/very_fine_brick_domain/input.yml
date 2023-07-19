@@ -16,7 +16,6 @@ grad_scheme: GreenGauss
 inviscid_flux_scheme: Rusanov
 
 limiter: Barth
-
 initial_cond: Freestream
 
 check_physical_validity: true

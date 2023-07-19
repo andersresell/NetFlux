@@ -52,9 +52,8 @@ void ConfigParser::parse_yaml_file_options(Config &config)
     if (config.spatial_order == SpatialOrder::Second)
     {
         config.limiter = read_required_enum_option<Limiter>("limiter", limiter_from_string);
+        config.grad_scheme = read_required_enum_option<GradientScheme>("grad_scheme", gradient_scheme_from_string);
     }
-
-    config.grad_scheme = read_optional_enum_option<GradientScheme>("grad_scheme", gradient_scheme_from_string, GradientScheme::GreenGauss);
 
     config.initial_cond_option = read_required_enum_option<InitialConditionOption>("initial_cond", initial_condition_option_from_string);
 

@@ -169,7 +169,6 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
     /*First interior cells*/
     for (Index ij{0}; ij < N_INTERIOR_FACES; ij++)
     {
-
         i = faces.get_cell_i(ij);
         j = faces.get_cell_j(ij);
         const Vec3 &S_ij = faces.get_normal_area(ij);
@@ -220,7 +219,7 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
             // cout << "V_L " << V_L << endl;
             // cout << "V_R " << V_R << endl;
 
-                        numerical_flux_func(U_L, U_R, S_ij, Flux_inv);
+            numerical_flux_func(U_L, U_R, S_ij, Flux_inv);
 
             assert(validity_checker->valid_boundary_flux(Flux_inv.data(), patch.boundary_type));
 
@@ -346,7 +345,7 @@ void EulerSolver::evaluate_gradient(const Config &config)
 
 void EulerSolver::evaluate_limiter(const Config &config)
 {
-
+    assert(config.get_limiter() != Limiter::NONE);
     const VecField &primvars = solver_data->get_primvars();
     const GradField &primvars_grad = solver_data->get_primvars_gradient();
     VecField &primvars_limiter = solver_data->get_primvars_limiter();

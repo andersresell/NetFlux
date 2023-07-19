@@ -11,11 +11,7 @@ time_scheme: TVD_RK3
 
 spatial_order: First
 
-grad_scheme: GreenGauss
-
 inviscid_flux_scheme: Rusanov
-
-limiter: Barth
 
 initial_cond: Freestream
 

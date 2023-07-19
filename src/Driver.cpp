@@ -2,6 +2,9 @@
 
 Driver::Driver(Config &config) : config{config}
 {
+    cout << "\n///////////////////////////////////\n"
+         << "////////  ->| NetFlux |->  ////////\n"
+         << "///////////////////////////////////\n\n";
 
     grid = std::make_unique<geom::Grid>(config);
 

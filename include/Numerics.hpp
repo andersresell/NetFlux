@@ -140,6 +140,7 @@ namespace Reconstruction
         const Vec3 &r_center2face,
         VecType &V_face)
     {
+
         V_face = V_center + limiter_center.cwiseProduct(V_center_grad * r_center2face);
     }
 
@@ -167,7 +168,7 @@ namespace Reconstruction
         using FieldGrad = Eigen::Matrix<Scalar, N_EQS, N_DIM>;
         using FieldGradMap = Eigen::Map<FieldGrad>;
 
-        constexpr Scalar EPS = 1e-10; // std::numeric_limits<Scalar>::epsilon();
+        constexpr Scalar EPS = std::numeric_limits<Scalar>::epsilon();
 
         const Faces &faces = grid.get_faces();
 
@@ -183,17 +184,12 @@ namespace Reconstruction
             Index j = faces.get_cell_j(ij);
             const Vec3 &r_im = faces.get_centroid_to_face_i(ij);
             const Vec3 &r_jm = faces.get_centroid_to_face_j(ij);
-
             const FieldGradMap gradient_i = sol_grad.get_variable<FieldGrad>(i);
             Delta_2 = gradient_i * r_im;
 
-            // cout << "EPS " << EPS << endl;
             for (ShortIndex k{0}; k < N_EQS; k++)
             {
-                // to avoid division by zero
                 Delta_2[k] = sign(Delta_2[k]) * (abs(Delta_2[k]) + EPS);
-                // cout << "D2[k] " << Delta_2[k] << endl;
-                // cout << "grad_i " << gradient_i(k, 0) << ", " << gradient_i(k, 1) << ", " << gradient_i(k, 2) << endl;
 
                 if (Delta_2[k] > 0.0)
                     face_contribution = min(1.0, (max_field(i, k) - sol_field(i, k)) / Delta_2[k]);
@@ -201,7 +197,11 @@ namespace Reconstruction
                     face_contribution = min(1.0, (min_field(i, k) - sol_field(i, k)) / Delta_2[k]);
                 else
                     face_contribution = 1.0;
-                // cout << "face contribution " << face_contribution << endl;
+
+                // Branchless version
+                // face_contribution = (Delta_2[k] > 0.0) * min(1.0, (max_field(i, k) - sol_field(i, k)) / Delta_2[k]) +
+                //                     (Delta_2[k] < 0.0) * min(1.0, (min_field(i, k) - sol_field(i, k)) / Delta_2[k]) +
+                //                     (Delta_2[k] < 0.0) * 1.0;
 
                 limiter(i, k) = min(limiter(i, k), face_contribution);
                 assert(limiter(i, k) >= 0.0 && limiter(i, k) <= 1.0);
@@ -223,6 +223,11 @@ namespace Reconstruction
                         face_contribution = min(1.0, (min_field(j, k) - sol_field(j, k)) / Delta_2[k]);
                     else
                         face_contribution = 1.0;
+
+                    // Branchless version
+                    // face_contribution = (Delta_2[k] > 0.0) * min(1.0, (max_field(j, k) - sol_field(j, k)) / Delta_2[k]) +
+                    //                     (Delta_2[k] < 0.0) * min(1.0, (min_field(j, k) - sol_field(j, k)) / Delta_2[k]) +
+                    //                     (Delta_2[k] == 0.0) * 1.0;
 
                     limiter(j, k) = min(limiter(j, k), face_contribution);
                     assert(limiter(j, k) >= 0.0 && limiter(j, k) <= 1.0);

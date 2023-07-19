@@ -10,10 +10,14 @@ SolverData::SolverData(const Config &config, ShortIndex n_eqs)
     primvars = make_unique<VecField>(N_TOTAL_CELLS, n_eqs);
     flux_balance = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs);
 
-    primvars_gradient = make_unique<GradField>(N_INTERIOR_CELLS, n_eqs);
-    primvars_limiter = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs);
-    primvars_max = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs); //?correct size
-    primvars_min = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs); //?correct size
+    if (config.get_spatial_order() == SpatialOrder::Second)
+    {
+        primvars_gradient = make_unique<GradField>(N_INTERIOR_CELLS, n_eqs);
+        primvars_limiter = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs);
+        *primvars_limiter = 1.0;
+        primvars_max = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs); //?correct size
+        primvars_min = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs); //?correct size
+    }
 }
 
 EulerSolverData::EulerSolverData(const Config &config) : SolverData(config, N_EQS_EULER)
