@@ -119,4 +119,10 @@ namespace geometry
         Index FIRST_FACE;
     };
 
+    void set_cell_properties(Index cell_index,
+                             ElementType type,
+                             const Index *element,
+                             const Vector<Vec3> &nodes,
+                             Vector<Scalar> &cell_volumes,
+                             Vector<Vec3> &centroids);
 };

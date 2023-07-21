@@ -32,8 +32,8 @@ namespace geometry
     enum class ElementType
     {
         Tri,
-        Quad,
         Tet,
+        Quad,
         Hex
     };
 
@@ -41,11 +41,18 @@ namespace geometry
                                                                {ElementType::Quad, 4},
                                                                {ElementType::Tet, 4},
                                                                {ElementType::Hex, 8}};
-    struct Elements
+    const map<ElementType, bool> is_volume_element = {{ElementType::Tri, false},
+                                                      {ElementType::Tet, true},
+                                                      {ElementType::Quad, false},
+                                                      {ElementType::Hex, true}};
+    class Elements
     {
         Vector<Index> n_ptr;
         Vector<Index> n_ind;
         Vector<ElementType> element_types;
+
+    public:
+        Index size() const { return n_ptr.size() - 1; }
 
         const Index *get_element_nodes(Index i) const
         {
@@ -58,6 +65,8 @@ namespace geometry
             return element_types[i];
         }
     };
+
+    // Vec3 calc_element_centroid(ElementType type, const Index *element, const Vector<Vec3> &nodes);
 
     /*Connectivity of a tetrahedron*/
     struct TetConnect final : public StaticContainer1D<Index, N_TET_NODES>
