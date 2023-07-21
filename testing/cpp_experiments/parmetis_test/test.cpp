@@ -26,7 +26,7 @@ int main()
     idx_t objval{-1};
 
     idx_t *epart = new idx_t[num_elements];
-    idx_t *npart = new idx_t[num_nodes];
+    idx_t *npart = nullptr; // = new idx_t[num_nodes];
 
     int ret_val = METIS_PartMeshDual(&num_elements, &num_nodes, eptr, eind,
                                      NULL, NULL, &ncommon, &num_parts, NULL, options,

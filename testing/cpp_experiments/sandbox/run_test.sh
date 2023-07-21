@@ -2,12 +2,12 @@
 
 clear
 
-FLAGS="-O2 -Wall -DNDEBUG" 
-#FLAGS="-g -Wall -std=c++20"
-#FLAGS="-g -Wall"
+FLAGS="-g -Wall -std=c++20  -I/usr/include/x86_64-linux-gnu/openmpi -L/usr/lib/x86_64-linux-gnu/openmpi/lib/ -lmpi -lyaml-cpp"
 
-g++ -o test test.cpp -lyaml-cpp $FLAGS
+
+g++ -o test test.cpp $FLAGS
 build_status=$?
 if [ $build_status == 0 ]; then
-    ./test
+    mpirun -n 2 ./test
+    rm test
 fi

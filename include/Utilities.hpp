@@ -8,18 +8,6 @@ constexpr ShortIndex N_TET_FACES{4};
 
 constexpr ShortIndex N_EQS_EULER{N_DIM + 2};
 
-namespace primvars_index
-{
-    static constexpr ShortIndex Density{0};
-    static ShortIndex Velocity(ShortIndex i)
-    {
-        assert(i < N_DIM);
-        return i + 1;
-    }
-    static constexpr ShortIndex Pressure{4};
-
-}
-
 // --------------------------------------------------------------------
 // Some enums that specify solver behaviour and corresponding string -> enum maps for some
 // --------------------------------------------------------------------
@@ -295,3 +283,16 @@ namespace geom
 
     Vec3 calc_ghost_centroid(Vec3 centroid_i, const Facegeom &boundary_face);
 }
+
+class Timer
+{
+    using Clock = std::chrono::high_resolution_clock;
+    using Time = std::chrono::_V2::system_clock::time_point;
+    using Milliseconds = std::chrono::milliseconds;
+
+    Time start_time; // Used for measuring time
+
+public:
+    void start_counter() { start_time = Clock::now(); }
+    string get_elapsed_time() const;
+};

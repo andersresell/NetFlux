@@ -5,7 +5,7 @@ EXE = NetFlux
 EXE_DEBUG = $(BUILD_DIR_DEBUG)/$(EXE)
 EXE_RELEASE = $(BUILD_DIR_RELEASE)/$(EXE)
 
-CXX = g++
+CXX = mpic++ #MPI compiler wrapper (automatically includes headers and libraries)
 INC_DIR = ../include
 
 CXX_FLAGS_DEBUG = -g -Wall -Wno-unused-function -fmax-errors=1 -I$(INC_DIR)
@@ -24,7 +24,9 @@ SRC = NetFlux.cpp \
 	  Output.cpp \
 	  Driver.cpp \
 	  SolverData.cpp \
-	  Numerics.cpp
+	  Numerics.cpp \
+	  parallelization/MPI.cpp \
+	  parallelization/Decomposition.cpp
 
 OBJ_DEBUG = $(patsubst %.cpp, $(BUILD_DIR_DEBUG)/%.o, $(SRC)) 
 OBJ_RELEASE = $(patsubst %.cpp, $(BUILD_DIR_RELEASE)/%.o, $(SRC)) 

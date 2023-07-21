@@ -77,7 +77,7 @@ public:
     void calc_ghost_val(const EulerVecMap &V_domain, EulerVecMap &V_ghost, const Vec3 &S_ij) final;
 };
 
-namespace Gradient
+namespace gradient
 {
     using namespace geom;
 
@@ -128,9 +128,9 @@ namespace Gradient
     }
 }
 
-namespace Reconstruction
+namespace reconstruction
 {
-    using namespace geom;
+    using namespace geometry;
 
     template <typename VecMapType, typename GradMapType, typename VecType>
     inline void calc_limited_reconstruction(

@@ -16,6 +16,7 @@
 #include <cfloat>
 #include <type_traits>
 #include <filesystem>
+#include <mpi.h>
 
 using std::array;
 using std::cerr;
@@ -54,12 +55,6 @@ constexpr ShortIndex N_DIM{3}; // spatial dimensions
 #define assert_msg(EXP, MSG) ({if (!EXP) {std::cerr << MSG << "\n"; assert(false);} })
 
 #define DEBUG_LOG_FILE "./debug_log.txt"
-
-using Clock = std::chrono::high_resolution_clock;
-using Time = std::chrono::_V2::system_clock::time_point;
-using Seconds = std::chrono::seconds;
-using Milliseconds = std::chrono::milliseconds;
-using std::chrono::duration_cast;
 
 /*Adding range checking to the [] operator for std::vector in debug mode (NDEBUG not defined)*/
 template <typename T>

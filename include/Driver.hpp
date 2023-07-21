@@ -1,24 +1,25 @@
 #pragma once
 
-#include "Grid.hpp"
+#include "geometry/PrimalGrid.hpp"
+#include "geometry/FV_Grid.hpp"
 #include "Output.hpp"
 #include "Solver.hpp"
 
+class Driver
+{
 
-class Driver{
-    Config& config;
-    
-    unique_ptr<geom::Grid> grid;
+    Config &config;
+
+    unique_ptr<geometry::PrimalGrid> primal_grid;
+
+    unique_ptr<geometry::FV_Grid> FV_grid;
 
     Vector<unique_ptr<Solver>> solvers;
 
     unique_ptr<Output> output;
 
 public:
-    Driver(Config& config);
+    Driver(Config &config);
 
     void solve();
-
-
 };
-

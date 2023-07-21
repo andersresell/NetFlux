@@ -11,14 +11,8 @@ namespace geom
     {
 
         // Native mesh
-        Vector<Vec3> nodes;
-        Vector<TetConnect> tet_connect;
-        Vector<TriPatchConnect> tri_patch_connect_list;
 
         // Computational grid
-        Cells cells;
-        Faces faces;
-        Vector<Patch> patches;
 
     public:
         Grid(Config &config);

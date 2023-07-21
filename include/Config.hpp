@@ -68,7 +68,7 @@ class Config
 
     bool write_vtk_debug_{false};
 
-    Time start_time; // Used for measuring time
+    Timer timer;
 
 public:
     /*Marking constructor explicit to not allow for errors of the type:
@@ -78,8 +78,8 @@ public:
     Config(const Config &other) = delete;
     Config operator=(const Config &other) = delete;
 
-    void start_counter() { start_time = Clock::now(); }
-    string get_elapsed_time() const;
+    void start_counter() { timer.start_counter(); }
+    string get_elapsed_time() const { return timer.get_elapsed_time(); };
 
     Index get_N_NODES() const
     {
@@ -159,7 +159,7 @@ public:
 
     const Scalar *get_primvars_inf() const { return primvars_inf; }
 
-    void set_primvars_inf(ShortIndex i_var, Scalar val)
+    void set_primvars_inf(Index i_var, Scalar val)
     {
         assert(i_var < N_EQS_EULER);
         primvars_inf[i_var] = val;

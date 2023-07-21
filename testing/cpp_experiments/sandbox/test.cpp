@@ -2,36 +2,28 @@
 #include <cassert>
 #include <limits>
 using namespace std;
-#include "../../include/Includes.hpp"
+
+#include "../../../include/SolverData.hpp"
+#include "../../../include/containers/DynamicContainer.hpp"
+
 #include "test.hpp"
 
-#include <iostream>
-#include <vector>
-#include <algorithm>
-
-struct MyType
-{
-    int value;
-    // Add comparison operator for sorting
-    bool operator<(const MyType &other) const
-    {
-        return value < other.value;
-    }
-};
-
-struct S
+int main(int argc, char *argv[])
 {
 
-    ShortIndex c;
-    bool a, b, d;
-};
+    // Initialize MPI
+    MPI_Init(&argc, &argv);
 
-int main()
-{
-    cout << "sz Index " << sizeof(Index) << endl;
-    cout << "sz CellPair " << sizeof(Faces::CellPair) << endl;
-    cout << "sz ShortIndex " << sizeof(ShortIndex) << endl;
-    cout << "sz size_t " << sizeof(size_t) << endl;
-    cout << "sz S " << sizeof(S) << endl;
-    cout << "sz Vec3 " << sizeof(Vec3) << endl;
+    // Get the rank and size of the MPI communicator
+    int rank, size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    // Print "Hello, World!" along with the rank of the process
+    std::cout << "Hello, World! I am process " << rank << " out of " << size << " processes." << std::endl;
+
+    // Finalize MPI
+    MPI_Finalize();
+
+    return 0;
 }

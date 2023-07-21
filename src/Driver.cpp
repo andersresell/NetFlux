@@ -57,6 +57,6 @@ void Driver::solve()
         }
     }
 
-    cout << "Solver finished\n";
-    cout << "Elapsed time: " << config.get_elapsed_time() << endl;
+    cout << "Solver finished\n"
+         << "Elapsed time: " << config.get_elapsed_time() << endl;
 }
