@@ -15,17 +15,20 @@ namespace geometry
             throw std::runtime_error("Error creating grid:\n" + string(e.what()));
         }
     }
-
-    void FV_Grid::create_face_structure(Config &config, const PrimalGrid &primal_grid)
+    /*Creates the finite volume face-based graph structure (each face stores indices
+    to it's two neigbour cells). Additionally it saves the element nodes of each face.*/
+    void FV_Grid::create_face_structure(Config &config, PrimalGrid &primal_grid)
     {
 
-        const Elements &elements = primal_grid.get_elements();
+        const Elements &volume_elements = primal_grid.get_volume_elements();
+        Elements &face_elements = primal_grid.get_face_elements();
+        const Vector<ElementPatch> &element_patches = primal_grid.get_element_patches();
 
         /*--------------------------------------------------------------------
         Step 1: Create all cells from elements.
         --------------------------------------------------------------------*/
 
-        cells.resize(elements.size() + find_N_GHOST_cells());
+        cells.resize(volume_elements.size() + find_N_GHOST_cells());
 
         /*--------------------------------------------------------------------
         Step 2: Associate the face nodes with its two neighboring cells.
@@ -34,44 +37,41 @@ namespace geometry
         map<SortedFaceElement, pair<Index, long int>> faces_to_cells;
         constexpr int CELL_NOT_YET_ASSIGNED{-1};
 
-        for (Index cell_index{0}; cell_index < elements.size(); cell_index++)
+        for (Index cell_index{0}; cell_index < volume_elements.size(); cell_index++)
         {
-
-            for (ShortIndex k{0}; k < N_TET_FACES; k++)
+            ElementType volume_element_type = volume_elements.get_element_type(cell_index);
+            assert(is_volume_element.at(volume_element_type));
+            for (ShortIndex k{0}; k < num_nodes_in_element.at(volume_element_type); k++)
             {
-                TriConnect tc{tet_face_connectivity(tet_connect[cell_index], k)};
-
-                // Get the sorted node indices of face k
-                SortedTriConnect face_ij{tc};
-                assert(face_to_cells.count(face_ij) <= 1);
-                if (face_to_cells.count(face_ij) == 0)
+                FaceElement face_element = get_face_element_k_of_volume_element(volume_element_type,
+                                                                                volume_elements.get_element_nodes(cell_index),
+                                                                                k);
+                SortedFaceElement sorted_face_element{face_element};
+                assert(faces_to_cells.count(sorted_face_element) <= 1);
+                if (faces_to_cells.count(sorted_face_element) == 0)
                 {
                     // Discovered a new face
-                    face_to_cells.emplace(face_ij, pair{cell_index, CELL_NOT_YET_ASSIGNED});
+                    faces_to_cells.emplace(sorted_face_element, pair{cell_index, CELL_NOT_YET_ASSIGNED});
                 }
                 else
                 {
-
-                    assert(face_to_cells.at(face_ij).second == CELL_NOT_YET_ASSIGNED);
-
+                    assert(faces_to_cells.at(sorted_face_element).second == CELL_NOT_YET_ASSIGNED);
                     // Face allready discovered by previous cell
-                    face_to_cells.at(face_ij).second = cell_index;
+                    faces_to_cells.at(sorted_face_element).second = cell_index;
                 }
             }
         }
-
-        Vector<Triangle> face_triangles;
-        face_triangles.reserve(face_to_cells.size());
-        faces.reserve(face_to_cells.size());
+        face_elements.reserve(faces_to_cells.size(), MAX_NODES_FACE_ELEMENT);
+        faces.reserve(faces_to_cells.size());
 
         /*--------------------------------------------------------------------
         Step 3: Adding internal faces to the map. (Boundary faces are added
-        later, this is to get the correct grouping of patches). Face triangles
+        later, this is to get the correct grouping of patches). Face elements
         (used for calculating geometry properties) are created simultaneously
         as faces, to get the correct ordering.
         --------------------------------------------------------------------*/
 
-        for (const auto &face : face_to_cells)
+        for (const auto &face : faces_to_cells)
         {
             Index cell_i = face.second.first;
             long int cell_j = face.second.second;
@@ -79,23 +79,23 @@ namespace geometry
             { // Only add internal faces
                 assert(cell_i < cell_j);
                 faces.cell_indices.emplace_back(cell_i, static_cast<Index>(cell_j));
-                face_triangles.emplace_back(tri_from_connect(face.first));
+                face_elements.add_element(face.first.e_type, face.first.sorted_nodes.data());
             }
         }
-        assert(face_triangles.size() == faces.size());
+        assert(face_elements.size() == faces.size());
 
         /*--------------------------------------------------------------------
         Step 4: Create the faces at the boundaries and ghost cells.
         Also add the face triangles at the boundaries.
         --------------------------------------------------------------------*/
         cout << "Creating ghost cells..\n";
-        for (const auto &tpc : tri_patch_connect_list)
+        for (const auto &element_patch : element_patches)
         {
 
             Patch p;
-            p.boundary_type = config.get_boundary_type(tpc.patch_name);
+            p.boundary_type = config.get_boundary_type(element_patch.patch_name);
             p.FIRST_FACE = faces.size();
-            p.N_FACES = tpc.triangles.size();
+            p.N_FACES = element_patch.surface_elements.size();
             patches.push_back(p);
 
             for (const TriConnect &tc : tpc.triangles)

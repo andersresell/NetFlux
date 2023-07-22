@@ -241,7 +241,7 @@ namespace geom
     };
 
     // returns the node connectivity of face_k from the node connectivity of tetraheder
-    TriConnect tet_face_connectivity(TetConnect tc, ShortIndex face_k);
+    // TriConnect tet_face_connectivity(TetConnect tc, ShortIndex face_k);
 
     /*Astract face geometry class*/
     struct Facegeom

@@ -201,6 +201,124 @@ namespace geometry
         }
     }
 
+    void Elements::reserve(Index n_elements, ShortIndex max_nodes_per_element)
+    {
+        n_ptr.reserve(n_elements + 1);
+        n_ind.reserve(n_elements * max_nodes_per_element); // This will give some redundency if multiple element types are present in the mesh
+        element_types.reserve(n_elements);
+    }
+    void Elements::shrink_to_fit()
+    {
+        n_ptr.shrink_to_fit();
+        n_ind.shrink_to_fit();
+        element_types.shrink_to_fit();
+    }
+
+    inline FaceElement get_face_element_k_of_volume_element(ElementType volume_element_type,
+                                                            const Index *volume_element,
+                                                            ShortIndex face_k)
+    {
+        assert(volume_element_type == ElementType::Tetrahedron || volume_element_type == ElementType::Hexahedron);
+        assert(is_volume_element.at(volume_element_type));
+        assert(face_k <= num_nodes_in_element.at(volume_element_type));
+
+        ElementType face_element_type;
+        std::array<Index, MAX_NODES_FACE_ELEMENT> face_element;
+
+        if (volume_element_type == ElementType::Tetrahedron)
+            get_face_element_k_of_tetrahedron(volume_element_type, volume_element, face_k, face_element_type, face_element);
+        else if (volume_element_type == ElementType::Hexahedron)
+            get_face_element_k_of_hexahedron(volume_element_type, volume_element, face_k, face_element_type, face_element);
+        return FaceElement{face_element_type, face_element.data()};
+    }
+
+    inline void get_face_element_k_of_tetrahedron(ElementType volume_element_type,
+                                                  const Index *ve,
+                                                  ShortIndex face_k,
+                                                  ElementType &face_element_type,
+                                                  array<Index, MAX_NODES_FACE_ELEMENT> &fe)
+    {
+        face_element_type = ElementType::Triangle;
+        if (face_k == 0)
+        {
+            fe[0] = ve[0];
+            fe[1] = ve[1];
+            fe[2] = ve[2];
+        }
+        else if (face_k == 1)
+        {
+            fe[0] = ve[0];
+            fe[1] = ve[1];
+            fe[2] = ve[3];
+        }
+        else if (face_k == 2)
+        {
+            fe[0] = ve[0];
+            fe[1] = ve[2];
+            fe[2] = ve[3];
+        }
+        else if (face_k == 3)
+        {
+            fe[0] = ve[1];
+            fe[1] = ve[2];
+            fe[2] = ve[3];
+        }
+        /*When time: Check for possible branching in assembly output and consider branchless implementation (example below).
+        (I suspect the compiler optimizes this away here)*/
+        // fe[0] = ve[0]*(face_k==0) + ve[0]*(face_k==1) + ve[0]*(face_k==2)+ ve[3]*(face_k==3);
+    }
+
+    inline void get_face_element_k_of_hexahedron(ElementType volume_element_type,
+                                                 const Index *ve,
+                                                 ShortIndex face_k,
+                                                 ElementType &face_element_type,
+                                                 array<Index, MAX_NODES_FACE_ELEMENT> &fe)
+    {
+        face_element_type = ElementType::Quadrilateral;
+        if (face_k == 0)
+        {
+            fe[0] = ve[0];
+            fe[1] = ve[1];
+            fe[2] = ve[2];
+            fe[3] = ve[3];
+        }
+        else if (face_k == 1)
+        {
+            fe[0] = ve[4];
+            fe[1] = ve[5];
+            fe[2] = ve[6];
+            fe[3] = ve[7];
+        }
+        else if (face_k == 2)
+        {
+            fe[0] = ve[0];
+            fe[1] = ve[1];
+            fe[2] = ve[5];
+            fe[3] = ve[4];
+        }
+        else if (face_k == 3)
+        {
+            fe[0] = ve[3];
+            fe[1] = ve[2];
+            fe[2] = ve[6];
+            fe[3] = ve[7];
+        }
+        else if (face_k == 4)
+        {
+            fe[0] = ve[3];
+            fe[1] = ve[0];
+            fe[2] = ve[4];
+            fe[3] = ve[7];
+        }
+        else if (face_k == 5)
+        {
+            fe[0] = ve[1];
+            fe[1] = ve[2];
+            fe[2] = ve[6];
+            fe[3] = ve[5];
+        }
+    }
+
     inline void element_calc_volume(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, double &volume)
     {
         assert(is_volume_element.at(e_type));

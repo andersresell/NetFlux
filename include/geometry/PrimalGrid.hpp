@@ -12,10 +12,12 @@ namespace geometry
     --------------------------------------------------------------------*/
     class PrimalGrid
     {
+        // friend class FV_Grid;
 
         Vector<Vec3> nodes;
-        Elements elements;
-        Vector<PatchElements> patches;
+        Elements volume_elements;
+        Elements face_elements;
+        Vector<ElementPatch> element_patches;
 
         void read_mesh(const Config &config);
         void read_netflux_mesh(const Config &config);
@@ -23,7 +25,10 @@ namespace geometry
 
     public:
         const Vector<Vec3> &get_nodes() const { return nodes; }
-        const Elements &get_elements() const { return elements; }
+        const Elements &get_volume_elements() const { return volume_elements; }
+        const Elements &get_face_elements() const { return face_elements; }
+        const Vector<ElementPatch> &get_element_patches() const { return element_patches; }
+        Elements &get_face_elements() { return face_elements; }
     };
 
     /*Connectivities of elements laid out on the compressed row storage format (CRS) as METIS uses.
@@ -47,6 +52,10 @@ namespace geometry
 
     constexpr ShortIndex N_NODES_QUAD{4};
 
+    /*This constant stores num nodes for the face element with the most amount
+    of nodes (quadrilateral for now)*/
+    static constexpr ShortIndex MAX_NODES_FACE_ELEMENT{N_NODES_QUAD};
+
     const map<ElementType, ShortIndex> num_nodes_in_element = {{ElementType::Triangle, N_NODES_TRI},
                                                                {ElementType::Quadrilateral, N_NODES_QUAD},
                                                                {ElementType::Tetrahedron, N_NODES_TET},
@@ -58,12 +67,23 @@ namespace geometry
     class Elements
     {
     protected:
-        Vector<Index> n_ptr;
+        Vector<Index> n_ptr = {0};
         Vector<Index> n_ind;
         Vector<ElementType> element_types;
 
     public:
+        Elements() { assert(n_ptr.size() == 1); }
+
         Index size() const { return n_ptr.size() - 1; }
+
+        void add_element(ElementType e_type, const Index *element)
+        {
+            ShortIndex n_nodes = num_nodes_in_element.at(e_type);
+            n_ptr.emplace_back(n_ptr.back() + n_nodes);
+            for (ShortIndex i{0}; i < n_nodes; i++)
+                n_ind.emplace_back(element[i]);
+            element_types.emplace_back(e_type);
+        }
 
         const Index *get_element_nodes(Index i) const
         {
@@ -75,64 +95,85 @@ namespace geometry
         {
             return element_types[i];
         }
+
+        void reserve(Index n_elements, ShortIndex max_nodes_per_element);
+        void shrink_to_fit();
     };
 
     // Vec3 calc_element_centroid(ElementType type, const Index *element, const Vector<Vec3> &nodes);
 
-    /*Connectivity of a tetrahedron*/
-    struct TetConnect final : public StaticContainer1D<Index, N_TET_NODES>
-    {
-        TetConnect() = default;
-        TetConnect(Index a, Index b, Index c, Index d) : StaticContainer1D{a, b, c, d} {}
-        Index &a() { return data[0]; }
-        Index &b() { return data[1]; }
-        Index &c() { return data[2]; }
-        Index &d() { return data[3]; }
-        Index a() const { return data[0]; }
-        Index b() const { return data[1]; }
-        Index c() const { return data[2]; }
-        Index d() const { return data[3]; }
-    };
-    /*Connectivity of a triangle*/
-    struct TriConnect : public StaticContainer1D<Index, N_TRI_NODES>
-    {
-        TriConnect() = default;
-        TriConnect(Index a, Index b, Index c) : StaticContainer1D{a, b, c} {}
-        Index &a() { return data[0]; }
-        Index &b() { return data[1]; }
-        Index &c() { return data[2]; }
-        Index a() const { return data[0]; }
-        Index b() const { return data[1]; }
-        Index c() const { return data[2]; }
-    };
+    // /*Connectivity of a tetrahedron*/
+    // struct TetConnect final : public StaticContainer1D<Index, N_TET_NODES>
+    // {
+    //     TetConnect() = default;
+    //     TetConnect(Index a, Index b, Index c, Index d) : StaticContainer1D{a, b, c, d} {}
+    //     Index &a() { return data[0]; }
+    //     Index &b() { return data[1]; }
+    //     Index &c() { return data[2]; }
+    //     Index &d() { return data[3]; }
+    //     Index a() const { return data[0]; }
+    //     Index b() const { return data[1]; }
+    //     Index c() const { return data[2]; }
+    //     Index d() const { return data[3]; }
+    // };
+    // /*Connectivity of a triangle*/
+    // struct TriConnect : public StaticContainer1D<Index, N_TRI_NODES>
+    // {
+    //     TriConnect() = default;
+    //     TriConnect(Index a, Index b, Index c) : StaticContainer1D{a, b, c} {}
+    //     Index &a() { return data[0]; }
+    //     Index &b() { return data[1]; }
+    //     Index &c() { return data[2]; }
+    //     Index a() const { return data[0]; }
+    //     Index b() const { return data[1]; }
+    //     Index c() const { return data[2]; }
+    // };
 
-    struct SortedTriConnect : public TriConnect
-    {
-        SortedTriConnect(const TriConnect &tc) : TriConnect{tc}
-        {
-            this->sort();
-        }
-        bool operator<(const SortedTriConnect &rhs) const
-        {
-            for (ShortIndex i{0}; i < N_TRI_NODES; i++)
-                if (data[i] != rhs.data[i])
-                    return data[i] < rhs.data[i];
-            return false;
-        }
-    };
+    // struct SortedTriConnect : public TriConnect
+    // {
+    //     SortedTriConnect(const TriConnect &tc) : TriConnect{tc}
+    //     {
+    //         this->sort();
+    //     }
+    //     bool operator<(const SortedTriConnect &rhs) const
+    //     {
+    //         for (ShortIndex i{0}; i < N_TRI_NODES; i++)
+    //             if (data[i] != rhs.data[i])
+    //                 return data[i] < rhs.data[i];
+    //         return false;
+    //     }
+    // };
 
-    struct SortedFaceElement
+    struct FaceElement
     {
-        /*Using a static array with a fixed size equal to the surface element type with
-        the most amount of nodes, to avoid heap allocation. Modify when necessary*/
-        static constexpr ShortIndex MAX_NODES_FACE_ELEMENT{N_NODES_QUAD};
         std::array<Index, MAX_NODES_FACE_ELEMENT> sorted_nodes;
-        ShortIndex n_nodes;
-        SortedFaceElement(ElementType e_type, const Index *element)
-            : n_nodes{num_nodes_in_element.at(e_type)}
+        const ShortIndex n_nodes;
+        const ElementType e_type;
+        FaceElement(ElementType e_type, const Index *element) : n_nodes{num_nodes_in_element.at(e_type)}, e_type{e_type}
         {
             assert(is_volume_element.at(e_type));
             std::copy(element, element + n_nodes, sorted_nodes);
+        }
+    };
+
+    inline FaceElement get_face_element_k_of_volume_element(ElementType volume_element_type,
+                                                            const Index *volume_element,
+                                                            ShortIndex face_k);
+    inline void get_face_element_k_of_tetrahedron(ElementType volume_element_type,
+                                                  const Index *ve,
+                                                  ShortIndex face_k,
+                                                  ElementType &face_element_type,
+                                                  array<Index, MAX_NODES_FACE_ELEMENT> &fe);
+    inline void get_face_element_k_of_hexahedron(ElementType volume_element_type,
+                                                 const Index *ve,
+                                                 ShortIndex face_k,
+                                                 ElementType &face_element_type,
+                                                 array<Index, MAX_NODES_FACE_ELEMENT> &fe);
+
+    struct SortedFaceElement : public FaceElement
+    {
+        SortedFaceElement(const FaceElement &rhs) : FaceElement(rhs)
+        {
             std::sort(sorted_nodes.begin(), sorted_nodes.begin() + n_nodes);
         }
 
@@ -151,7 +192,7 @@ namespace geometry
     };
 
     /*Holds name and triangles of a boundary patch*/
-    struct PatchElements
+    struct ElementPatch
     {
         string patch_name;
         Elements surface_elements;

@@ -29,7 +29,7 @@ namespace geometry
 
     private:
         /*Creates computational grid from native mesh*/
-        void create_face_structure(Config &config, const PrimalGrid &primal_grid);
+        void create_face_structure(Config &config, PrimalGrid &primal_grid);
 
         /*------Helper functions for creating grid-------*/
 
