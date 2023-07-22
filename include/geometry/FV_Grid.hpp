@@ -29,7 +29,7 @@ namespace geometry
 
     private:
         /*Creates computational grid from native mesh*/
-        void create_grid(Config &config, const PrimalGrid &primal_grid);
+        void create_face_structure(Config &config, const PrimalGrid &primal_grid);
 
         /*------Helper functions for creating grid-------*/
 
@@ -37,7 +37,10 @@ namespace geometry
         void reorder_faces(const Config &config);
 
         /*Assigns cell centers, boundary normals, etc*/
-        void assign_geometry_properties(const Config &config, const Vector<Triangle> &face_triangles);
+        void assign_geometry_properties(const Config &config,
+                                        const Elements &elements,
+                                        const Vector<Vec3> &nodes,
+                                        const Vector<Triangle> &face_triangles);
 
         /*Finds the neighbouring cell j of face ij of cell i. If no neigbour exist (boundary), it returns false*/
         std::pair<Index, bool> find_neigbouring_cell(Index i,
@@ -102,7 +105,7 @@ namespace geometry
         Vector<Scalar> cell_volumes;
         Vector<Vec3> centroids;
 
-        void reserve(Index size);
+        void resize(Index size);
         void add_empty();
 
     public:

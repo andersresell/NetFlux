@@ -31,22 +31,33 @@ namespace geometry
 
     enum class ElementType
     {
-        Tri,
-        Tet,
-        Quad,
-        Hex
+        Triangle,
+        Tetrahedron,
+        Quadrilateral,
+        Hexahedron
     };
 
-    const map<ElementType, ShortIndex> num_nodes_in_element = {{ElementType::Tri, 3},
-                                                               {ElementType::Quad, 4},
-                                                               {ElementType::Tet, 4},
-                                                               {ElementType::Hex, 8}};
-    const map<ElementType, bool> is_volume_element = {{ElementType::Tri, false},
-                                                      {ElementType::Tet, true},
-                                                      {ElementType::Quad, false},
-                                                      {ElementType::Hex, true}};
+    constexpr ShortIndex N_NODES_TET{4};
+    constexpr ShortIndex N_FACES_TET{4};
+
+    constexpr ShortIndex N_NODES_TRI{3};
+
+    constexpr ShortIndex N_NODES_HEX{8};
+    constexpr ShortIndex N_FACES_HEX{6};
+
+    constexpr ShortIndex N_NODES_QUAD{4};
+
+    const map<ElementType, ShortIndex> num_nodes_in_element = {{ElementType::Triangle, N_NODES_TRI},
+                                                               {ElementType::Quadrilateral, N_NODES_QUAD},
+                                                               {ElementType::Tetrahedron, N_NODES_TET},
+                                                               {ElementType::Hexahedron, N_NODES_HEX}};
+    const map<ElementType, bool> is_volume_element = {{ElementType::Triangle, false},
+                                                      {ElementType::Tetrahedron, true},
+                                                      {ElementType::Quadrilateral, false},
+                                                      {ElementType::Hexahedron, true}};
     class Elements
     {
+    protected:
         Vector<Index> n_ptr;
         Vector<Index> n_ind;
         Vector<ElementType> element_types;
@@ -110,6 +121,35 @@ namespace geometry
         }
     };
 
+    struct SortedFaceElement
+    {
+        /*Using a static array with a fixed size equal to the surface element type with
+        the most amount of nodes, to avoid heap allocation. Modify when necessary*/
+        static constexpr ShortIndex MAX_NODES_FACE_ELEMENT{N_NODES_QUAD};
+        std::array<Index, MAX_NODES_FACE_ELEMENT> sorted_nodes;
+        ShortIndex n_nodes;
+        SortedFaceElement(ElementType e_type, const Index *element)
+            : n_nodes{num_nodes_in_element.at(e_type)}
+        {
+            assert(is_volume_element.at(e_type));
+            std::copy(element, element + n_nodes, sorted_nodes);
+            std::sort(sorted_nodes.begin(), sorted_nodes.begin() + n_nodes);
+        }
+
+        bool operator<(const SortedFaceElement &other) const
+        {
+            if (n_nodes == other.n_nodes)
+            {
+                for (ShortIndex i{0}; i < n_nodes; i++)
+                    if (sorted_nodes[i] != other.sorted_nodes[i])
+                        return sorted_nodes[i] < other.sorted_nodes[i];
+                return false;
+            }
+            else
+                return n_nodes < other.n_nodes;
+        }
+    };
+
     /*Holds name and triangles of a boundary patch*/
     struct PatchElements
     {
@@ -118,46 +158,72 @@ namespace geometry
     };
 
     // returns the node connectivity of face_k from the node connectivity of tetraheder
-    TriConnect tet_face_connectivity(TetConnect tc, ShortIndex face_k);
+    // TriConnect tet_face_connectivity(TetConnect tc, ShortIndex face_k);
 
-    /*Astract face geometry class*/
-    struct Facegeom
-    {
-        Vector<Vec3> nodes;
-        Facegeom(){};
-        virtual Vec3 calc_area_normal() const = 0;
-        virtual Vec3 calc_centroid() const = 0;
-    };
+    /*--------------------------------------------------------------------
+    Function to calculate geometry properties of various elements
+    --------------------------------------------------------------------*/
+    inline void element_calc_volume(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Scalar &volume);
+    inline void element_calc_centroid(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &centroid);
+    inline void element_calc_face_normal(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &S_ij);
 
-    struct Triangle final : Facegeom
-    {
-        Triangle(Vec3 a, Vec3 b, Vec3 c) : Facegeom() { nodes = {a, b, c}; }
-        Vec3 calc_area_normal() const final;
-        Vec3 calc_centroid() const final;
-    };
+    inline void tetrahedron_calc_volume(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Scalar &volume);
+    inline void tetrahedron_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &centroid);
 
-    /*Abstract volume geometry class*/
-    struct Polyhedra
-    {
-        Vector<Vec3> nodes;
-        virtual Scalar calc_volume() const = 0;
-        virtual Vec3 calc_centroid() const = 0;
-    };
+    inline void triangle_calc_face_normal(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, Vec3 &S_ij);
+    inline void triangle_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, Vec3 &centroid);
 
-    struct Tetrahedron final : Polyhedra
-    {
-        Tetrahedron(Vec3 a, Vec3 b, Vec3 c, Vec3 d) : Polyhedra() { nodes = {a, b, c, d}; }
-        Scalar calc_volume() const final;
-        Vec3 calc_centroid() const final;
-    };
+    inline void hexahedron_calc_volume(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
+                                       const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7, Scalar &volume);
+    inline void hexahedron_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
+                                         const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7, Vec3 &centroid);
 
-    void assign_face_properties(Vec3 &normal_area,
-                                Vec3 &centroid_to_face_i,
-                                Vec3 &centroid_to_face_j,
-                                const Facegeom &face_geom,
-                                const Vec3 &cell_center_i,
-                                const Vec3 &cell_center_j);
+    inline void quadrilateral_calc_face_normal(const Vec3 &a, const Vec3 &b, const Vec3 &c, const Vec3 &d, Vec3 &S_ij);
+    inline void quadrilateral_calc_centroid(const Vec3 &a, const Vec3 &b, const Vec3 &c, const Vec3 &d, Vec3 &centroid);
 
-    Vec3 calc_ghost_centroid(Vec3 centroid_i, const Facegeom &boundary_face);
+    // /*Astract face geometry class*/
+    // struct Facegeom
+    // {
+    //     Vector<Vec3> nodes;
+    //     Facegeom(){};
+    //     virtual Vec3 calc_area_normal() const = 0;
+    //     virtual Vec3 calc_centroid() const = 0;
+    // };
 
+    // struct Triangle final : Facegeom
+    // {
+    //     Triangle(Vec3 a, Vec3 b, Vec3 c) : Facegeom() { nodes = {a, b, c}; }
+    //     Vec3 calc_area_normal() const final;
+    //     Vec3 calc_centroid() const final;
+    // };
+
+    // /*Abstract volume geometry class*/
+    // struct Polyhedra
+    // {
+    //     Vector<Vec3> nodes;
+    //     virtual Scalar calc_volume() const = 0;
+    //     virtual Vec3 calc_centroid() const = 0;
+    // };
+
+    // struct Tetrahedron final : Polyhedra
+    // {
+    //     Tetrahedron(Vec3 a, Vec3 b, Vec3 c, Vec3 d) : Polyhedra() { nodes = {a, b, c, d}; }
+    //     Scalar calc_volume() const final;
+    //     Vec3 calc_centroid() const final;
+    // };
+
+    inline void assign_face_properties(ElementType e_type,
+                                       const Index *element,
+                                       const Vector<Vec3> &nodes,
+                                       const Vec3 &cell_center_i,
+                                       const Vec3 &cell_center_j,
+                                       Vec3 &S_ij,
+                                       Vec3 &centroid_to_face_i,
+                                       Vec3 &centroid_to_face_j);
+
+    inline void calc_ghost_centroid(ElementType e_type,
+                                    const Index *surface_element,
+                                    const Vector<Vec3> &nodes,
+                                    const Vec3 &centroid_i,
+                                    Vec3 &centroid_ghost);
 }

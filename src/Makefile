@@ -9,7 +9,7 @@ CXX = mpic++ #MPI compiler wrapper (automatically includes headers and libraries
 INC_DIR = ../include
 
 CXX_FLAGS_DEBUG = -g -Wall -Wno-unused-function -fmax-errors=1 -I$(INC_DIR)
-CXX_FLAGS_RELEASE = -DNDEBUG -Wall -Wno-unused-function -fmax-errors=1 -I$(INC_DIR) -O3
+CXX_FLAGS_RELEASE = -DNDEBUG -Wall -Wno-unused-function -fmax-errors=1 -I$(INC_DIR) -O3 -flto
  
 #external libraries
 LDLIBS = -lyaml-cpp

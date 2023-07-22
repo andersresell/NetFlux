@@ -201,4 +201,113 @@ namespace geometry
         }
     }
 
+    inline void element_calc_volume(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, double &volume)
+    {
+        assert(is_volume_element.at(e_type));
+        if (e_type == ElementType::Tetrahedron)
+            tetrahedron_calc_volume(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]], volume);
+        else if (e_type == ElementType::Hexahedron)
+            hexahedron_calc_volume(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]],
+                                   nodes[element[4]], nodes[element[5]], nodes[element[6]], nodes[element[7]], volume);
+        assert(false); // Invalid element type
+    }
+    inline void element_calc_centroid(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &centroid)
+    {
+        if (e_type == ElementType::Tetrahedron)
+            tetrahedron_calc_centroid(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]], centroid);
+        else if (e_type == ElementType::Triangle)
+            triangle_calc_centroid(nodes[element[0]], nodes[element[1]], nodes[element[2]], centroid);
+        else if (e_type == ElementType::Hexahedron)
+            hexahedron_calc_centroid(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]],
+                                     nodes[element[4]], nodes[element[5]], nodes[element[6]], nodes[element[7]], centroid);
+        else if (e_type == ElementType::Quadrilateral)
+            quadrilateral_calc_centroid(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]], centroid);
+        assert(false); // Invalid element type
+    }
+    inline void element_calc_face_normal(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &S_ij)
+    {
+        if (e_type == ElementType::Triangle)
+            triangle_calc_face_normal(nodes[element[0]], nodes[element[1]], nodes[element[2]], S_ij);
+        else if (e_type == ElementType::Quadrilateral)
+            quadrilateral_calc_face_normal(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]], S_ij);
+        assert(false); // Invalid element type
+    }
+
+    inline void tetrahedron_calc_volume(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Scalar &volume)
+    {
+        Vec3 ab = n1 - n0;
+        Vec3 ac = n2 - n0;
+        Vec3 ad = n3 - n0;
+        volume = -ab.cross(ac).dot(ad) / 6;
+        assert(volume > 0);
+    }
+    inline void tetrahedron_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &centroid)
+    {
+        centroid = 1.0 / 4 * (n0 + n1 + n2 + n3);
+    }
+
+    inline void triangle_calc_face_normal(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, Vec3 &S_ij)
+    {
+        /*Using that the cross product of two vectors is the area of a parallelogram (with correct normal),
+        so the half is the area of a triangle*/
+        Vec3 ab = n1 - n0;
+        Vec3 ac = n2 - n0;
+        S_ij = 0.5 * ab.cross(ac);
+    }
+    inline void triangle_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, Vec3 &centroid)
+    {
+        centroid = (n0 + n1 + n2) / 3;
+    }
+
+    inline void hexahedron_calc_volume(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
+                                       const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7, Scalar &volume)
+    {
+        assert(false);
+    }
+    inline void hexahedron_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
+                                         const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7, Vec3 &centroid)
+    {
+        assert(false);
+    }
+
+    inline void quadrilateral_calc_face_normal(const Vec3 &a, const Vec3 &b, const Vec3 &c, const Vec3 &d, Vec3 &S_ij)
+    {
+        assert(false);
+    }
+    inline void quadrilateral_calc_centroid(const Vec3 &a, const Vec3 &b, const Vec3 &c, const Vec3 &d, Vec3 &centroid)
+    {
+        assert(false);
+    }
+
+    inline void assign_face_properties(ElementType e_type,
+                                       const Index *element,
+                                       const Vector<Vec3> &nodes,
+                                       const Vec3 &cell_center_i,
+                                       const Vec3 &cell_center_j,
+                                       Vec3 &S_ij,
+                                       Vec3 &centroid_to_face_i,
+                                       Vec3 &centroid_to_face_j)
+    {
+        element_calc_face_normal(e_type, element, nodes, S_ij);
+        Scalar normal_dot_product = S_ij.dot(cell_center_j - cell_center_i);
+        assert(normal_dot_product != 0); // Just banning this for now, altough it is possibly possible with a high skewness, but valid mesh
+        if (normal_dot_product < 0)
+            S_ij *= -1; // Flipping normal if it's not pointing from i to j
+        Vec3 face_centroid;
+        element_calc_centroid(e_type, element, nodes, face_centroid);
+        centroid_to_face_i = face_centroid - cell_center_i;
+        centroid_to_face_j = face_centroid - cell_center_j;
+    }
+
+    inline void calc_ghost_centroid(ElementType e_type,
+                                    const Index *surface_element,
+                                    const Vector<Vec3> &nodes,
+                                    const Vec3 &centroid_i,
+                                    Vec3 &centroid_ghost)
+    {
+        assert(is_volume_element.at(e_type));
+        Vec3 centroid_face;
+        element_calc_centroid(e_type, surface_element, nodes, centroid_face);
+        centroid_ghost = 2 * centroid_face - centroid_i;
+    }
 }

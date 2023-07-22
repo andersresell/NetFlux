@@ -16,35 +16,25 @@ namespace geometry
         }
     }
 
-    void FV_Grid::create_grid(Config &config, const PrimalGrid &primal_grid)
+    void FV_Grid::create_face_structure(Config &config, const PrimalGrid &primal_grid)
     {
-        cout << "Creating grid from native mesh\n";
 
         const Elements &elements = primal_grid.get_elements();
-        const Vector<Vec3> &nodes = primal_grid.get_nodes();
 
         /*--------------------------------------------------------------------
-        Step 1: Create all cells from elements, this is straight forward
+        Step 1: Create all cells from elements.
         --------------------------------------------------------------------*/
 
-        cells.reserve(elements.size() + find_N_GHOST_cells());
-
-        for (Index i{0}; i < elements.size(); i++)
-        {
-            const Index *element = elements.get_element_nodes(i);
-            ElementType type = elements.get_element_type(i);
-            set_cell_properties(i, type, element, nodes, cells.cell_volumes, cells.centroids);
-        }
+        cells.resize(elements.size() + find_N_GHOST_cells());
 
         /*--------------------------------------------------------------------
         Step 2: Associate the face nodes with its two neighboring cells.
         --------------------------------------------------------------------*/
 
-        map<SortedTriConnect, pair<Index, long int>> tri_faces_to_cells;
-        map<SortedQuadConnect, pair<Index, long int>> quad_faces_to_cells;
+        map<SortedFaceElement, pair<Index, long int>> faces_to_cells;
         constexpr int CELL_NOT_YET_ASSIGNED{-1};
 
-        for (Index cell_index{0}; cell_index < tet_connect.size(); cell_index++)
+        for (Index cell_index{0}; cell_index < elements.size(); cell_index++)
         {
 
             for (ShortIndex k{0}; k < N_TET_FACES; k++)
@@ -157,7 +147,7 @@ namespace geometry
         cout << "Computational grid has been created.\n";
     }
 
-    void FV_Grid::assign_geometry_properties(const Config &config, const Vector<Triangle> &face_triangles)
+    void FV_Grid::assign_geometry_properties(const Config &config, const Elements &elements, const Vector<Vec3> &nodes, const Vector<Triangle> &face_triangles)
     {
         faces.resize_geometry_properties();
 
@@ -167,6 +157,13 @@ namespace geometry
         assert(face_triangles.size() == config.get_N_TOTAL_FACES());
 
         Index N_INTERIOR_CELLS = config.get_N_INTERIOR_CELLS();
+
+        for (Index i{0}; i < elements.size(); i++)
+        {
+            const Index *element = elements.get_element_nodes(i);
+            ElementType type = elements.get_element_type(i);
+            set_cell_properties(i, type, element, nodes, cells.cell_volumes, cells.centroids);
+        }
 
         for (Index ij{0}; ij < config.get_N_TOTAL_FACES(); ij++)
         {
@@ -212,6 +209,53 @@ namespace geometry
         {
             faces.sort(patch.FIRST_FACE, patch.FIRST_FACE + patch.N_FACES);
         }
+    }
+
+    void Faces::reserve(Index size)
+    {
+        cell_indices.reserve(size);
+        normal_areas.reserve(size);
+        centroid_to_face_i.reserve(size);
+        centroid_to_face_j.reserve(size);
+    }
+
+    void Faces::resize_geometry_properties()
+    {
+        normal_areas.resize(cell_indices.size());
+        centroid_to_face_i.resize(cell_indices.size());
+        centroid_to_face_j.resize(cell_indices.size());
+    }
+
+    /*Sorting all the Vectors from indices begin to end based on the cell_indices*/
+    void Faces::sort(Index begin, Index end)
+    {
+        assert(begin < end && end <= cell_indices.size());
+
+        Vector<Index> indices(end - begin);
+        for (Index i{begin}; i < end; i++)
+            indices[i - begin] = i;
+
+        std::sort(indices.begin(), indices.end(), [this](Index a, Index b)
+                  { return cell_indices[a] < cell_indices[b]; });
+        for (Index i{begin}; i < end; i++)
+        {
+            std::swap(cell_indices[i], cell_indices[indices[i - begin]]);
+            std::swap(normal_areas[i], normal_areas[indices[i - begin]]);
+            std::swap(centroid_to_face_i[i], centroid_to_face_i[indices[i - begin]]);
+            std::swap(centroid_to_face_j[i], centroid_to_face_j[indices[i - begin]]);
+        }
+    }
+
+    void Cells::resize(Index size)
+    {
+        cell_volumes.resize(size);
+        centroids.resize(size);
+    }
+
+    void Cells::add_empty()
+    {
+        cell_volumes.emplace_back();
+        centroids.emplace_back();
     }
 
     Tetrahedron FV_Grid::tet_from_connect(const TetConnect &tc) const
