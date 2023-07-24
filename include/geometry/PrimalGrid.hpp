@@ -12,12 +12,13 @@ namespace geometry
     --------------------------------------------------------------------*/
     class PrimalGrid
     {
-        // friend class FV_Grid;
-
+        friend class FV_Grid;
+        /*These are read from the input mesh*/
         Vector<Vec3> nodes;
         Elements volume_elements;
-        Elements face_elements;
         Vector<ElementPatch> element_patches;
+
+        Elements face_elements; /*Storing elements of all faces*/
 
         void read_mesh(const Config &config);
         void read_netflux_mesh(const Config &config);
@@ -146,13 +147,13 @@ namespace geometry
 
     struct FaceElement
     {
-        std::array<Index, MAX_NODES_FACE_ELEMENT> sorted_nodes;
+        std::array<Index, MAX_NODES_FACE_ELEMENT> nodes;
         const ShortIndex n_nodes;
         const ElementType e_type;
         FaceElement(ElementType e_type, const Index *element) : n_nodes{num_nodes_in_element.at(e_type)}, e_type{e_type}
         {
             assert(is_volume_element.at(e_type));
-            std::copy(element, element + n_nodes, sorted_nodes);
+            std::copy(element, element + n_nodes, nodes);
         }
     };
 
@@ -174,7 +175,7 @@ namespace geometry
     {
         SortedFaceElement(const FaceElement &rhs) : FaceElement(rhs)
         {
-            std::sort(sorted_nodes.begin(), sorted_nodes.begin() + n_nodes);
+            std::sort(nodes.begin(), nodes.begin() + n_nodes);
         }
 
         bool operator<(const SortedFaceElement &other) const
@@ -182,8 +183,8 @@ namespace geometry
             if (n_nodes == other.n_nodes)
             {
                 for (ShortIndex i{0}; i < n_nodes; i++)
-                    if (sorted_nodes[i] != other.sorted_nodes[i])
-                        return sorted_nodes[i] < other.sorted_nodes[i];
+                    if (nodes[i] != other.nodes[i])
+                        return nodes[i] < other.nodes[i];
                 return false;
             }
             else
@@ -204,6 +205,7 @@ namespace geometry
     /*--------------------------------------------------------------------
     Function to calculate geometry properties of various elements
     --------------------------------------------------------------------*/
+
     inline void element_calc_volume(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Scalar &volume);
     inline void element_calc_centroid(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &centroid);
     inline void element_calc_face_normal(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &S_ij);
@@ -219,8 +221,14 @@ namespace geometry
     inline void hexahedron_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
                                          const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7, Vec3 &centroid);
 
-    inline void quadrilateral_calc_face_normal(const Vec3 &a, const Vec3 &b, const Vec3 &c, const Vec3 &d, Vec3 &S_ij);
-    inline void quadrilateral_calc_centroid(const Vec3 &a, const Vec3 &b, const Vec3 &c, const Vec3 &d, Vec3 &centroid);
+    inline void hexahedron_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
+                                                    const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7,
+                                                    Scalar &volume, Vec3 &centroid);
+    inline void pyramid_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, const Vec3 &n4,
+                                                 Scalar &volume, Vec3 &centroid);
+
+    inline void quadrilateral_calc_face_normal(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &S_ij);
+    inline void quadrilateral_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &centroid);
 
     // /*Astract face geometry class*/
     // struct Facegeom
@@ -253,18 +261,4 @@ namespace geometry
     //     Vec3 calc_centroid() const final;
     // };
 
-    inline void assign_face_properties(ElementType e_type,
-                                       const Index *element,
-                                       const Vector<Vec3> &nodes,
-                                       const Vec3 &cell_center_i,
-                                       const Vec3 &cell_center_j,
-                                       Vec3 &S_ij,
-                                       Vec3 &centroid_to_face_i,
-                                       Vec3 &centroid_to_face_j);
-
-    inline void calc_ghost_centroid(ElementType e_type,
-                                    const Index *surface_element,
-                                    const Vector<Vec3> &nodes,
-                                    const Vec3 &centroid_i,
-                                    Vec3 &centroid_ghost);
 }

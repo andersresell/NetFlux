@@ -18,7 +18,7 @@ namespace geometry
         Vector<Patch> patches;
 
     public:
-        FV_Grid(Config &config, const PrimalGrid &primal_grid);
+        FV_Grid(Config &config, PrimalGrid &primal_grid);
 
         // void print_grid(const Config &config) const;
         void print_native_mesh() const;
@@ -31,31 +31,16 @@ namespace geometry
         /*Creates computational grid from native mesh*/
         void create_face_structure(Config &config, PrimalGrid &primal_grid);
 
-        /*------Helper functions for creating grid-------*/
+        /*Assigns various geometrical properties to cells and faces based on the primal grid*/
+        void assign_geometry_properties(const Config &config, const PrimalGrid &primal_grid);
+
+        /*------Helper functions for creating face structure-------*/
 
         // Reorders the (for now interior) faces in an optimal fashion based on the face indices
         void reorder_faces(const Config &config);
 
-        /*Assigns cell centers, boundary normals, etc*/
-        void assign_geometry_properties(const Config &config,
-                                        const Elements &elements,
-                                        const Vector<Vec3> &nodes,
-                                        const Vector<Triangle> &face_triangles);
-
-        /*Finds the neighbouring cell j of face ij of cell i. If no neigbour exist (boundary), it returns false*/
-        std::pair<Index, bool> find_neigbouring_cell(Index i,
-                                                     TriConnect face_ij,
-                                                     const Vector<TetConnect> &tet_connect) const;
-
-        Tetrahedron tet_from_connect(const TetConnect &tc) const;
-        Triangle tri_from_connect(const TriConnect &tc) const;
-
         /*Used to find the number of ghost cells before this value is set in Config object*/
-        Index find_N_GHOST_cells();
-
-        /*Calling shrink_to_fit on the different members after grid construction to reduce allocated memory.
-        (This function is probably redundant, since most vector sizes are set and not grown dynamically)*/
-        void shrink_vectors();
+        Index find_N_GHOST_cells(const Vector<ElementPatch> &element_patches);
     };
 
     /*A structure of arrays (SoA) containing the faces and their required properties*/
@@ -80,7 +65,7 @@ namespace geometry
         };
 
         Vector<CellPair> cell_indices;
-        Vector<Vec3> normal_areas;
+        Vector<Vec3> face_normals;
         Vector<Vec3> centroid_to_face_i;
         Vector<Vec3> centroid_to_face_j;
 
@@ -93,7 +78,7 @@ namespace geometry
 
         Index get_cell_i(Index face_index) const { return cell_indices[face_index].i; }
         Index get_cell_j(Index face_index) const { return cell_indices[face_index].j; }
-        const Vec3 &get_normal_area(Index face_index) const { return normal_areas[face_index]; }
+        const Vec3 &get_face_normal(Index face_index) const { return face_normals[face_index]; }
         const Vec3 &get_centroid_to_face_i(Index face_index) const { return centroid_to_face_i[face_index]; }
         const Vec3 &get_centroid_to_face_j(Index face_index) const { return centroid_to_face_j[face_index]; }
     };
@@ -102,15 +87,14 @@ namespace geometry
     class Cells
     {
         friend class FV_Grid;
-        Vector<Scalar> cell_volumes;
+        Vector<Scalar> volumes;
         Vector<Vec3> centroids;
 
         void resize(Index size);
-        void add_empty();
 
     public:
-        Index size() const { return cell_volumes.size(); }
-        Scalar get_cell_volume(Index cell_index) const { return cell_volumes[cell_index]; }
+        Index size() const { return volumes.size(); }
+        Scalar get_cell_volume(Index cell_index) const { return volumes[cell_index]; }
         const Vec3 &get_centroid(Index cell_index) const { return centroids[cell_index]; }
     };
 
@@ -122,10 +106,25 @@ namespace geometry
         Index FIRST_FACE;
     };
 
-    void set_cell_properties(Index cell_index,
-                             ElementType type,
-                             const Index *element,
-                             const Vector<Vec3> &nodes,
-                             Vector<Scalar> &cell_volumes,
-                             Vector<Vec3> &centroids);
+    // void inline set_cell_properties(Index cell_index,
+    //                                 ElementType type,
+    //                                 const Index *element,
+    //                                 const Vector<Vec3> &nodes,
+    //                                 Vector<Scalar> &cell_volumes,
+    //                                 Vector<Vec3> &centroids);
+
+    inline void assign_face_properties(ElementType e_type,
+                                       const Index *element,
+                                       const Vector<Vec3> &nodes,
+                                       const Vec3 &cell_center_i,
+                                       const Vec3 &cell_center_j,
+                                       Vec3 &S_ij,
+                                       Vec3 &centroid_to_face_i,
+                                       Vec3 &centroid_to_face_j);
+
+    inline void calc_ghost_centroid(ElementType e_type,
+                                    const Index *surface_element,
+                                    const Vector<Vec3> &nodes,
+                                    const Vec3 &centroid_i,
+                                    Vec3 &centroid_ghost);
 };

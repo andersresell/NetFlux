@@ -377,55 +377,86 @@ namespace geometry
         centroid = (n0 + n1 + n2) / 3;
     }
 
-    inline void hexahedron_calc_volume(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
-                                       const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7, Scalar &volume)
+    // inline void hexahedron_calc_volume(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
+    //                                    const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7, Scalar &volume)
+    // {
+    //     assert(false);
+    // }
+    // inline void hexahedron_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
+    //                                      const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7, Vec3 &centroid)
+    // {
+    //     /*Composing the hexahedron into 6 pyramids and summing up each individual volume (Following Moukalled book)*/
+
+    //     Vec3 CG = (n0 + n1 + n2 + n3 + n4 + n5 + n6 + n7) / 8; // Geometric centre
+
+    inline void hexahedron_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
+                                                    const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7,
+                                                    Scalar &volume, Vec3 &centroid)
     {
-        assert(false);
-    }
-    inline void hexahedron_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
-                                         const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7, Vec3 &centroid)
-    {
-        assert(false);
+        /*Composing the hexahedron into 6 pyramids and summing up each individual volume (Following Moukalled book)*/
+
+        volume = 0;
+        centroid = {0, 0, 0};
+        Vec3 centroid_geometric = (n0 + n1 + n2 + n3 + n4 + n5 + n6 + n7) / 8; // Geometric centre of quad
+
+        Scalar volume_pyramid;
+        Vec3 centroid_pyramid;
+        pyramid_calc_geometry_properties(n0, n1, n2, n3, centroid_geometric, volume_pyramid, centroid_pyramid);
+        volume += volume_pyramid;
+        centroid += volume_pyramid * centroid_pyramid;
+        pyramid_calc_geometry_properties(n4, n5, n6, n7, centroid_geometric, volume_pyramid, centroid_pyramid);
+        volume += volume_pyramid;
+        centroid += volume_pyramid * centroid_pyramid;
+        pyramid_calc_geometry_properties(n3, n0, n4, n7, centroid_geometric, volume_pyramid, centroid_pyramid);
+        volume += volume_pyramid;
+        centroid += volume_pyramid * centroid_pyramid;
+        pyramid_calc_geometry_properties(n1, n2, n6, n5, centroid_geometric, volume_pyramid, centroid_pyramid);
+        volume += volume_pyramid;
+        centroid += volume_pyramid * centroid_pyramid;
+        pyramid_calc_geometry_properties(n0, n1, n5, n4, centroid_geometric, volume_pyramid, centroid_pyramid);
+        volume += volume_pyramid;
+        centroid += volume_pyramid * centroid_pyramid;
+        pyramid_calc_geometry_properties(n2, n3, n7, n6, centroid_geometric, volume_pyramid, centroid_pyramid);
+        volume += volume_pyramid;
+        centroid += volume_pyramid * centroid_pyramid;
+        centroid /= volume;
     }
 
-    inline void quadrilateral_calc_face_normal(const Vec3 &a, const Vec3 &b, const Vec3 &c, const Vec3 &d, Vec3 &S_ij)
+    inline void pyramid_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, const Vec3 &n4,
+                                                 Scalar &volume, Vec3 &centroid)
     {
-        assert(false);
-    }
-    inline void quadrilateral_calc_centroid(const Vec3 &a, const Vec3 &b, const Vec3 &c, const Vec3 &d, Vec3 &centroid)
-    {
-        assert(false);
+        Vec3 centroid_base;
+        quadrilateral_calc_centroid(n0, n1, n2, n3, centroid_base);
+        Vec3 distance_top_to_centroid_base = centroid_base - n4;
+        Vec3 S_base;
+        quadrilateral_calc_face_normal(n0, n1, n2, n3, S_base);
+
+        centroid = 0.75 * centroid_base + 0.25 * n4;
+        volume = distance_top_to_centroid_base.dot(S_base) / 3;
+        assert(volume > 0);
     }
 
-    inline void assign_face_properties(ElementType e_type,
-                                       const Index *element,
-                                       const Vector<Vec3> &nodes,
-                                       const Vec3 &cell_center_i,
-                                       const Vec3 &cell_center_j,
-                                       Vec3 &S_ij,
-                                       Vec3 &centroid_to_face_i,
-                                       Vec3 &centroid_to_face_j)
+    inline void quadrilateral_calc_face_normal(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &S_ij)
     {
-        element_calc_face_normal(e_type, element, nodes, S_ij);
-        Scalar normal_dot_product = S_ij.dot(cell_center_j - cell_center_i);
-        assert(normal_dot_product != 0); // Just banning this for now, altough it is possibly possible with a high skewness, but valid mesh
-        if (normal_dot_product < 0)
-            S_ij *= -1; // Flipping normal if it's not pointing from i to j
-        Vec3 face_centroid;
-        element_calc_centroid(e_type, element, nodes, face_centroid);
-        centroid_to_face_i = face_centroid - cell_center_i;
-        centroid_to_face_j = face_centroid - cell_center_j;
+        Vec3 S_tri_a, S_tri_b;
+        triangle_calc_face_normal(n0, n1, n2, S_tri_a);
+        triangle_calc_face_normal(n0, n1, n3, S_tri_b);
+        S_ij = 0.5 * (S_tri_a + S_tri_b);
     }
 
-    inline void calc_ghost_centroid(ElementType e_type,
-                                    const Index *surface_element,
-                                    const Vector<Vec3> &nodes,
-                                    const Vec3 &centroid_i,
-                                    Vec3 &centroid_ghost)
+    inline void quadrilateral_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &centroid)
     {
-        assert(is_volume_element.at(e_type));
-        Vec3 centroid_face;
-        element_calc_centroid(e_type, surface_element, nodes, centroid_face);
-        centroid_ghost = 2 * centroid_face - centroid_i;
+        Vec3 S_ij_tri_a, S_ij_tri_b;
+        triangle_calc_face_normal(n0, n1, n2, S_ij_tri_a);
+        triangle_calc_face_normal(n0, n2, n3, S_ij_tri_b);
+
+        Vec3 centroid_geometric_tri_a, centroid_geometric_tri_b;
+        triangle_calc_centroid(n0, n1, n2, centroid_geometric_tri_a);
+        triangle_calc_centroid(n0, n2, n3, centroid_geometric_tri_b);
+
+        Scalar S_tri_a = S_ij_tri_a.norm();
+        Scalar S_tri_b = S_ij_tri_b.norm();
+        Scalar S_quad = S_tri_a + S_tri_b;
+        centroid = (S_tri_a * centroid_geometric_tri_a + S_tri_b * centroid_geometric_tri_b) / S_quad;
     }
 }
