@@ -8,7 +8,7 @@ namespace geometry
         try
         {
             create_face_structure(config, primal_grid);
-            assign_geometry_properties(config, primal_grid);
+            calc_geometry_properties(config, primal_grid);
         }
         catch (const std::exception &e)
         {
@@ -94,10 +94,10 @@ namespace geometry
             Patch p;
             p.boundary_type = config.get_boundary_type(element_patch.patch_name);
             p.FIRST_FACE = faces.size();
-            p.N_FACES = element_patch.surface_elements.size();
+            p.N_FACES = element_patch.boundary_elements.size();
             patches.push_back(p);
 
-            const Elements &surface_elements = element_patch.surface_elements;
+            const Elements &surface_elements = element_patch.boundary_elements;
             for (Index ij{0}; ij < surface_elements.size(); ij++)
             {
                 ElementType e_type = surface_elements.get_element_type(ij);
@@ -148,7 +148,7 @@ namespace geometry
         cout << "Computational grid has been created.\n";
     }
 
-    void FV_Grid::assign_geometry_properties(const Config &config, const PrimalGrid &primal_grid)
+    void FV_Grid::calc_geometry_properties(const Config &config, const PrimalGrid &primal_grid)
     {
         cout << "Assigning geometrical properties to cells and faces\n";
 
@@ -164,12 +164,10 @@ namespace geometry
 
         /*Calculate properties for the cells*/
         for (Index i{0}; i < N_INTERIOR_CELLS; i++)
-        {
-            ElementType e_type = volume_elements.get_element_type(i);
-            const Index *element = volume_elements.get_element_nodes(i);
-            element_calc_volume(e_type, element, nodes, cells.volumes[i]);
-            element_calc_centroid(e_type, element, nodes, cells.centroids[i]);
-        }
+            volume_element_calc_geometry_properties(volume_elements.get_element_type(i),
+                                                    volume_elements.get_element_nodes(i),
+                                                    nodes, cells.volumes[i],
+                                                    cells.centroids[i]);
 
         faces.resize_geometry_properties();
 
@@ -191,14 +189,14 @@ namespace geometry
                                     cells.centroids[i],
                                     cells.centroids[j]);
             }
-            assign_face_properties(face_elements.get_element_type(ij),
-                                   face_elements.get_element_nodes(ij),
-                                   nodes,
-                                   cells.centroids[i],
-                                   cells.centroids[j],
-                                   faces.face_normals[ij],
-                                   faces.centroid_to_face_i[ij],
-                                   faces.centroid_to_face_j[ij]);
+            calc_face_properties(face_elements.get_element_type(ij),
+                                 face_elements.get_element_nodes(ij),
+                                 nodes,
+                                 cells.centroids[i],
+                                 cells.centroids[j],
+                                 faces.face_normals[ij],
+                                 faces.centroid_to_face_i[ij],
+                                 faces.centroid_to_face_j[ij]);
         }
         assert(max_j == config.get_N_TOTAL_CELLS() - 1);
         /*Remember to never make an assertion like this: max_i == config.get_N_INTERIOR_CELLS() - 1.
@@ -320,35 +318,35 @@ namespace geometry
     //     }
     // }
 
-    inline void assign_face_properties(ElementType e_type,
-                                       const Index *element,
-                                       const Vector<Vec3> &nodes,
-                                       const Vec3 &cell_center_i,
-                                       const Vec3 &cell_center_j,
-                                       Vec3 &S_ij,
-                                       Vec3 &centroid_to_face_i,
-                                       Vec3 &centroid_to_face_j)
+    inline void FV_Grid::calc_face_properties(ElementType e_type,
+                                              const Index *element,
+                                              const Vector<Vec3> &nodes,
+                                              const Vec3 &cell_center_i,
+                                              const Vec3 &cell_center_j,
+                                              Vec3 &S_ij,
+                                              Vec3 &centroid_to_face_i,
+                                              Vec3 &centroid_to_face_j)
     {
-        element_calc_face_normal(e_type, element, nodes, S_ij);
+        face_element_calc_face_normal(e_type, element, nodes, S_ij);
         Scalar normal_dot_product = S_ij.dot(cell_center_j - cell_center_i);
         assert(normal_dot_product != 0); // Just banning this for now, altough it is possibly possible with a high skewness, but valid mesh
         if (normal_dot_product < 0)
             S_ij *= -1; // Flipping normal if it's not pointing from i to j
         Vec3 face_centroid;
-        element_calc_centroid(e_type, element, nodes, face_centroid);
+        face_element_calc_centroid(e_type, element, nodes, face_centroid);
         centroid_to_face_i = face_centroid - cell_center_i;
         centroid_to_face_j = face_centroid - cell_center_j;
     }
 
-    inline void calc_ghost_centroid(ElementType e_type,
-                                    const Index *surface_element,
-                                    const Vector<Vec3> &nodes,
-                                    const Vec3 &centroid_i,
-                                    Vec3 &centroid_ghost)
+    inline void FV_Grid::calc_ghost_centroid(ElementType face_e_type,
+                                             const Index *surface_element,
+                                             const Vector<Vec3> &nodes,
+                                             const Vec3 &centroid_i,
+                                             Vec3 &centroid_ghost)
     {
-        assert(is_volume_element.at(e_type));
+        assert(!is_volume_element.at(face_e_type));
         Vec3 centroid_face;
-        element_calc_centroid(e_type, surface_element, nodes, centroid_face);
+        face_element_calc_centroid(face_e_type, surface_element, nodes, centroid_face);
         centroid_ghost = 2 * centroid_face - centroid_i;
     }
 

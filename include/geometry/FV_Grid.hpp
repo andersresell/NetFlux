@@ -12,7 +12,6 @@ namespace geometry
     --------------------------------------------------------------------*/
     class FV_Grid
     {
-
         Cells cells;
         Faces faces;
         Vector<Patch> patches;
@@ -31,8 +30,8 @@ namespace geometry
         /*Creates computational grid from native mesh*/
         void create_face_structure(Config &config, PrimalGrid &primal_grid);
 
-        /*Assigns various geometrical properties to cells and faces based on the primal grid*/
-        void assign_geometry_properties(const Config &config, const PrimalGrid &primal_grid);
+        /*Calculates various geometrical properties to cells and faces based on the primal grid*/
+        void calc_geometry_properties(const Config &config, const PrimalGrid &primal_grid);
 
         /*------Helper functions for creating face structure-------*/
 
@@ -41,6 +40,21 @@ namespace geometry
 
         /*Used to find the number of ghost cells before this value is set in Config object*/
         Index find_N_GHOST_cells(const Vector<ElementPatch> &element_patches);
+
+        void calc_face_properties(ElementType e_type,
+                                  const Index *element,
+                                  const Vector<Vec3> &nodes,
+                                  const Vec3 &cell_center_i,
+                                  const Vec3 &cell_center_j,
+                                  Vec3 &S_ij,
+                                  Vec3 &centroid_to_face_i,
+                                  Vec3 &centroid_to_face_j);
+
+        void calc_ghost_centroid(ElementType face_e_type,
+                                 const Index *surface_element,
+                                 const Vector<Vec3> &nodes,
+                                 const Vec3 &centroid_i,
+                                 Vec3 &centroid_ghost);
     };
 
     /*A structure of arrays (SoA) containing the faces and their required properties*/
@@ -106,25 +120,4 @@ namespace geometry
         Index FIRST_FACE;
     };
 
-    // void inline set_cell_properties(Index cell_index,
-    //                                 ElementType type,
-    //                                 const Index *element,
-    //                                 const Vector<Vec3> &nodes,
-    //                                 Vector<Scalar> &cell_volumes,
-    //                                 Vector<Vec3> &centroids);
-
-    inline void assign_face_properties(ElementType e_type,
-                                       const Index *element,
-                                       const Vector<Vec3> &nodes,
-                                       const Vec3 &cell_center_i,
-                                       const Vec3 &cell_center_j,
-                                       Vec3 &S_ij,
-                                       Vec3 &centroid_to_face_i,
-                                       Vec3 &centroid_to_face_j);
-
-    inline void calc_ghost_centroid(ElementType e_type,
-                                    const Index *surface_element,
-                                    const Vector<Vec3> &nodes,
-                                    const Vec3 &centroid_i,
-                                    Vec3 &centroid_ghost);
 };

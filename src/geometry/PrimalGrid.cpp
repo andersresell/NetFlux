@@ -28,92 +28,98 @@ namespace geometry
         else
             assert(false);
 
+        assert(nodes.capacity() == nodes.size());
+        volume_elements.shrink_to_fit();
+        for (auto &element_patch : element_patches)
+            element_patch.surface_elements.shrink_to_fit();
+        assert(element_patches.capacity() == element_patches.size());
+
         cout << "Native mesh has been read\n";
     }
 
     void PrimalGrid::read_netflux_mesh(const Config &config)
     {
-        assert(false); // Fix error handling
-        string mesh_filename = config.get_mesh_filename_path();
-        std::ifstream ist{mesh_filename};
-        std::stringstream ss;
+        assert(false); // Not updatet
+        // string mesh_filename = config.get_mesh_filename_path();
+        // std::ifstream ist{mesh_filename};
+        // std::stringstream ss;
 
-        if (!ist)
-            throw std::runtime_error("Couldn't open the mesh file: " + mesh_filename);
+        // if (!ist)
+        //     throw std::runtime_error("Couldn't open the mesh file: " + mesh_filename);
 
-        string line, tmp;
-        Index N_NODES, N_ELEMENTS;
+        // string line, tmp;
+        // Index N_NODES, N_ELEMENTS;
 
-        // READ N_NODES
-        ist >> tmp >> N_NODES;
-        // FAIL_IF(tmp != "N_NODES");
+        // // READ N_NODES
+        // ist >> tmp >> N_NODES;
+        // // FAIL_IF(tmp != "N_NODES");
 
-        // READ N_ELEMENTS
-        ist >> tmp;
-        ist >> N_ELEMENTS;
-        // FAIL_IF(tmp != "N_ELEMENTS");
+        // // READ N_ELEMENTS
+        // ist >> tmp;
+        // ist >> N_ELEMENTS;
+        // // FAIL_IF(tmp != "N_ELEMENTS");
 
-        nodes.resize(N_NODES);
-        while (getline(ist, line))
-        {
-            if (line.size() != 0)
-            {
-                // FAIL_IF(line != "#nodes");
-                break;
-            }
-        }
-        // reading nodes
-        for (Index i{0}; i < N_NODES; i++)
-        {
-            Vec3 node;
-            ist >> node.x() >> node.y() >> node.z();
-            nodes.at(i) = node;
-        }
+        // nodes.resize(N_NODES);
+        // while (getline(ist, line))
+        // {
+        //     if (line.size() != 0)
+        //     {
+        //         // FAIL_IF(line != "#nodes");
+        //         break;
+        //     }
+        // }
+        // // reading nodes
+        // for (Index i{0}; i < N_NODES; i++)
+        // {
+        //     Vec3 node;
+        //     ist >> node.x() >> node.y() >> node.z();
+        //     nodes.at(i) = node;
+        // }
 
-        tet_connect.resize(N_ELEMENTS);
-        while (getline(ist, line))
-        {
-            if (line.size() != 0)
-            {
-                // FAIL_IF(line != "#tetrahedra");
-                break;
-            }
-        }
-        // reading elements (assuming only tetrahedra for now)
-        for (Index i{0}; i < N_ELEMENTS; i++)
-        {
-            TetConnect t;
-            ist >> t.a() >> t.b() >> t.c() >> t.d();
-            tet_connect.at(i) = t;
-        }
+        // tet_connect.resize(N_ELEMENTS);
+        // while (getline(ist, line))
+        // {
+        //     if (line.size() != 0)
+        //     {
+        //         // FAIL_IF(line != "#tetrahedra");
+        //         break;
+        //     }
+        // }
+        // // reading elements (assuming only tetrahedra for now)
+        // for (Index i{0}; i < N_ELEMENTS; i++)
+        // {
+        //     TetConnect t;
+        //     ist >> t.a() >> t.b() >> t.c() >> t.d();
+        //     tet_connect.at(i) = t;
+        // }
 
-        while (getline(ist, line))
-        {
-            if (line.size() != 0)
-            {
-                // FAIL_IF(line != "#patches");
-                break;
-            }
-        }
+        // while (getline(ist, line))
+        // {
+        //     if (line.size() != 0)
+        //     {
+        //         // FAIL_IF(line != "#patches");
+        //         break;
+        //     }
+        // }
 
-        // Reading boundary patches
-        string patch_name;
-        Index N_surface_elements;
-        while (ist >> patch_name >> N_surface_elements)
-        {
-            TriConnect tri;
-            TriPatchConnect p;
-            p.patch_name = patch_name;
-            if (!config.input_file_contains_patch_name(p.patch_name))
-                throw std::runtime_error("Patch with name '" + p.patch_name + "' is not named in input file\n");
-            p.triangles.resize(N_surface_elements);
-            for (Index i{0}; i < N_surface_elements; i++)
-            {
-                ist >> tri.a() >> tri.b() >> tri.c();
-                p.triangles.at(i) = tri;
-            }
-            tri_patch_connect_list.emplace_back(p);
-        }
+        // // Reading boundary patches
+        // string patch_name;
+        // Index N_surface_elements;
+        // while (ist >> patch_name >> N_surface_elements)
+        // {
+        //     TriConnect tri;
+        //     TriPatchConnect p;
+        //     p.patch_name = patch_name;
+        //     if (!config.input_file_contains_patch_name(p.patch_name))
+        //         throw std::runtime_error("Patch with name '" + p.patch_name + "' is not named in input file\n");
+        //     p.triangles.resize(N_surface_elements);
+        //     for (Index i{0}; i < N_surface_elements; i++)
+        //     {
+        //         ist >> tri.a() >> tri.b() >> tri.c();
+        //         p.triangles.at(i) = tri;
+        //     }
+        //     tri_patch_connect_list.emplace_back(p);
+        // }
     }
 
     void PrimalGrid::read_su2_mesh(const Config &config)
@@ -125,9 +131,8 @@ namespace geometry
         if (!ist)
             throw std::runtime_error("Couldn't open the mesh file: " + mesh_filename);
 
-        const ShortIndex SU2_TET_TYPE = 10, SU2_TRI_TYPE = 5;
         string tmp_string;
-        ShortIndex tmp_int, element_type;
+        ShortIndex tmp_int, su2_e_id_int;
         Index N_NODES, N_ELEMENTS, N_PATCHES, element_num;
 
         auto check_string_correctness = [](string actual_string, string correct_string)
@@ -138,27 +143,35 @@ namespace geometry
 
         ist >> tmp_string >> tmp_int;
         check_string_correctness(tmp_string, "NDIME=");
-
         if (tmp_int != 3)
             throw std::runtime_error("Only three dimensions (NDIME=3) is accepted, NDIME = " + tmp_int);
-        // Reading element connectivity. Only permitting tetrahedral type
+
+        /*--------------------------------------------------------------------
+        Reading element connectivity
+        --------------------------------------------------------------------*/
         ist >> tmp_string >> N_ELEMENTS;
         check_string_correctness(tmp_string, "NELEM=");
-        tet_connect.resize(N_ELEMENTS);
-
+        volume_elements.reserve(N_ELEMENTS, MAX_NODES_VOLUME_ELEMENT);
+        array<Index, MAX_NODES_VOLUME_ELEMENT> volume_element_nodes;
         for (Index i{0}; i < N_ELEMENTS; i++)
         {
-            TetConnect t;
-            ist >> element_type >> t.a() >> t.b() >> t.c() >> t.d() >> element_num;
-            if (element_type != SU2_TET_TYPE)
-            {
-                throw std::runtime_error("Only tetrahedral volume elements are accepted (element type " +
-                                         std::to_string(SU2_TET_TYPE) + "), element type parsed = " + std::to_string(element_type) + "\n");
-            }
-            tet_connect.at(i) = t;
+            ist >> su2_e_id_int;
+            auto su2_e_id = static_cast<SU2_ElementID>(su2_e_id_int);
+            if (su2_identifier_to_element_type.count(su2_e_id) == 0)
+                throw std::runtime_error("Illegal su2 element identifier (" + std::to_string(su2_e_id_int) +
+                                         ") detected in su2 mesh file\n");
+            ElementType e_type = su2_identifier_to_element_type.at(su2_e_id);
+            if (!is_volume_element.at(e_type))
+                throw std::runtime_error("Face element of type " + element_type_to_string.at(e_type) +
+                                         "detected in su2 mesh file in the volume mesh");
+            for (ShortIndex k{0}; k < num_nodes_in_element.at(e_type); k++)
+                ist >> volume_element_nodes[k];
+            volume_elements.add_element(e_type, volume_element_nodes.data());
         }
 
-        // Reading nodes
+        /*--------------------------------------------------------------------
+        Reading nodes
+        --------------------------------------------------------------------*/
         ist >> tmp_string >> N_NODES;
         check_string_correctness(tmp_string, "NPOIN=");
         nodes.resize(N_NODES);
@@ -170,34 +183,43 @@ namespace geometry
             nodes.at(i) = node;
         }
 
-        // Reading boundary patches
+        /*--------------------------------------------------------------------
+        Reading boundary patches
+        --------------------------------------------------------------------*/
         ist >> tmp_string >> N_PATCHES;
         check_string_correctness(tmp_string, "NMARK=");
-        tri_patch_connect_list.reserve(N_PATCHES);
-
+        element_patches.resize(N_PATCHES);
+        array<Index, MAX_NODES_FACE_ELEMENT> boundary_element_nodes;
         for (Index i{0}; i < N_PATCHES; i++)
         {
-            TriPatchConnect p;
-            Index N_MARKER_ELEMENTS;
-            ist >> tmp_string >> p.patch_name;
+            Elements &boundary_elements = element_patches[i].boundary_elements;
+            string &patch_name = element_patches[i].patch_name;
+
+            ist >> tmp_string >> patch_name;
             check_string_correctness(tmp_string, "MARKER_TAG=");
-            if (!config.input_file_contains_patch_name(p.patch_name))
-                throw std::runtime_error("Patch with name '" + p.patch_name + "' is not named in input file\n");
+            if (!config.input_file_contains_patch_name(patch_name))
+                throw std::runtime_error("Patch with name '" + patch_name + "' is not named in input file\n");
+
+            Index N_MARKER_ELEMENTS;
             ist >> tmp_string >> N_MARKER_ELEMENTS;
             check_string_correctness(tmp_string, "MARKER_ELEMS=");
-            p.triangles.resize(N_MARKER_ELEMENTS);
+
+            boundary_elements.reserve(N_MARKER_ELEMENTS, MAX_NODES_FACE_ELEMENT);
             for (Index j{0}; j < N_MARKER_ELEMENTS; j++)
             {
-                TriConnect t;
-                ist >> element_type >> t.a() >> t.b() >> t.c() >> element_num;
-                if (element_type != SU2_TRI_TYPE)
-                {
-                    throw std::runtime_error("Only triangular surface elements are accepted (element type " +
-                                             std::to_string(SU2_TRI_TYPE) + "), element type parsed = " + std::to_string(element_type) + "\n");
-                }
-                p.triangles.at(j) = t;
+                ist >> su2_e_id_int;
+                auto su2_e_id = static_cast<SU2_ElementID>(su2_e_id_int);
+                if (su2_identifier_to_element_type.count(su2_e_id) == 0)
+                    throw std::runtime_error("Illegal su2 element identifier (" + std::to_string(su2_e_id_int) +
+                                             ") detected in su2 mesh file\n");
+                ElementType e_type = su2_identifier_to_element_type.at(su2_e_id);
+                if (is_volume_element.at(e_type))
+                    throw std::runtime_error("Volume element of type " + element_type_to_string.at(e_type) +
+                                             "detected in su2 mesh file among marker elements");
+                for (ShortIndex k{0}; k < num_nodes_in_element.at(e_type); k++)
+                    ist >> boundary_element_nodes[k];
+                boundary_elements.add_element(e_type, boundary_element_nodes.data());
             }
-            tri_patch_connect_list.push_back(p);
         }
     }
 
@@ -223,7 +245,7 @@ namespace geometry
         assert(face_k <= num_nodes_in_element.at(volume_element_type));
 
         ElementType face_element_type;
-        std::array<Index, MAX_NODES_FACE_ELEMENT> face_element;
+        array<Index, MAX_NODES_FACE_ELEMENT> face_element;
 
         if (volume_element_type == ElementType::Tetrahedron)
             get_face_element_k_of_tetrahedron(volume_element_type, volume_element, face_k, face_element_type, face_element);
@@ -319,36 +341,48 @@ namespace geometry
         }
     }
 
-    inline void element_calc_volume(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, double &volume)
+    inline void volume_element_calc_geometry_properties(ElementType e_type,
+                                                        const Index *element,
+                                                        const Vector<Vec3> &nodes,
+                                                        Scalar &volume,
+                                                        Vec3 &centroid)
     {
         assert(is_volume_element.at(e_type));
         if (e_type == ElementType::Tetrahedron)
-            tetrahedron_calc_volume(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]], volume);
+            tetrahedron_calc_geometry_properties(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]],
+                                                 volume, centroid);
         else if (e_type == ElementType::Hexahedron)
-            hexahedron_calc_volume(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]],
-                                   nodes[element[4]], nodes[element[5]], nodes[element[6]], nodes[element[7]], volume);
-        assert(false); // Invalid element type
+            hexahedron_calc_geometry_properties(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]],
+                                                nodes[element[4]], nodes[element[5]], nodes[element[6]], nodes[element[7]],
+                                                volume, centroid);
+        assert(false); // invalid element type
     }
-    inline void element_calc_centroid(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &centroid)
+
+    inline void face_element_calc_centroid(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &centroid)
     {
-        if (e_type == ElementType::Tetrahedron)
-            tetrahedron_calc_centroid(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]], centroid);
-        else if (e_type == ElementType::Triangle)
+        assert(!is_volume_element.at(e_type));
+        if (e_type == ElementType::Triangle)
             triangle_calc_centroid(nodes[element[0]], nodes[element[1]], nodes[element[2]], centroid);
-        else if (e_type == ElementType::Hexahedron)
-            hexahedron_calc_centroid(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]],
-                                     nodes[element[4]], nodes[element[5]], nodes[element[6]], nodes[element[7]], centroid);
         else if (e_type == ElementType::Quadrilateral)
             quadrilateral_calc_centroid(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]], centroid);
         assert(false); // Invalid element type
     }
-    inline void element_calc_face_normal(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &S_ij)
+
+    inline void face_element_calc_face_normal(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &S_ij)
     {
+        assert(!is_volume_element.at(e_type));
         if (e_type == ElementType::Triangle)
             triangle_calc_face_normal(nodes[element[0]], nodes[element[1]], nodes[element[2]], S_ij);
         else if (e_type == ElementType::Quadrilateral)
             quadrilateral_calc_face_normal(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]], S_ij);
         assert(false); // Invalid element type
+    }
+
+    inline void tetrahedron_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
+                                                     Scalar &volume, Vec3 &centroid)
+    {
+        tetrahedron_calc_volume(n0, n1, n2, n3, volume);
+        tetrahedron_calc_centroid(n0, n1, n2, n3, centroid);
     }
 
     inline void tetrahedron_calc_volume(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Scalar &volume)
@@ -377,17 +411,19 @@ namespace geometry
         centroid = (n0 + n1 + n2) / 3;
     }
 
-    // inline void hexahedron_calc_volume(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
-    //                                    const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7, Scalar &volume)
-    // {
-    //     assert(false);
-    // }
-    // inline void hexahedron_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
-    //                                      const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7, Vec3 &centroid)
-    // {
-    //     /*Composing the hexahedron into 6 pyramids and summing up each individual volume (Following Moukalled book)*/
+    inline void pyramid_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, const Vec3 &n4,
+                                                 Scalar &volume, Vec3 &centroid)
+    {
+        Vec3 centroid_base;
+        quadrilateral_calc_centroid(n0, n1, n2, n3, centroid_base);
+        Vec3 distance_top_to_centroid_base = centroid_base - n4;
+        Vec3 S_base;
+        quadrilateral_calc_face_normal(n0, n1, n2, n3, S_base);
 
-    //     Vec3 CG = (n0 + n1 + n2 + n3 + n4 + n5 + n6 + n7) / 8; // Geometric centre
+        centroid = 0.75 * centroid_base + 0.25 * n4;
+        volume = distance_top_to_centroid_base.dot(S_base) / 3;
+        assert(volume > 0);
+    }
 
     inline void hexahedron_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
                                                     const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7,
@@ -420,20 +456,6 @@ namespace geometry
         volume += volume_pyramid;
         centroid += volume_pyramid * centroid_pyramid;
         centroid /= volume;
-    }
-
-    inline void pyramid_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, const Vec3 &n4,
-                                                 Scalar &volume, Vec3 &centroid)
-    {
-        Vec3 centroid_base;
-        quadrilateral_calc_centroid(n0, n1, n2, n3, centroid_base);
-        Vec3 distance_top_to_centroid_base = centroid_base - n4;
-        Vec3 S_base;
-        quadrilateral_calc_face_normal(n0, n1, n2, n3, S_base);
-
-        centroid = 0.75 * centroid_base + 0.25 * n4;
-        volume = distance_top_to_centroid_base.dot(S_base) / 3;
-        assert(volume > 0);
     }
 
     inline void quadrilateral_calc_face_normal(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &S_ij)

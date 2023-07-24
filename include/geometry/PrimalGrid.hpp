@@ -4,7 +4,6 @@
 
 namespace geometry
 {
-    struct Connectivities;
     /*--------------------------------------------------------------------
     PrimalGrid stores reads the mesh file and stores nodes and
     connectivities of the FE type native/primal mesh, which is used to
@@ -40,7 +39,8 @@ namespace geometry
         Triangle,
         Tetrahedron,
         Quadrilateral,
-        Hexahedron
+        Hexahedron,
+        Pyramid
     };
 
     constexpr ShortIndex N_NODES_TET{4};
@@ -53,18 +53,42 @@ namespace geometry
 
     constexpr ShortIndex N_NODES_QUAD{4};
 
-    /*This constant stores num nodes for the face element with the most amount
-    of nodes (quadrilateral for now)*/
-    static constexpr ShortIndex MAX_NODES_FACE_ELEMENT{N_NODES_QUAD};
+    constexpr ShortIndex N_NODES_PYRAMID{5};
+
+    /*These constants store the maximum number of nodes among all element types
+    for volume and face elements*/
+    constexpr ShortIndex MAX_NODES_VOLUME_ELEMENT{N_NODES_HEX};
+    constexpr ShortIndex MAX_NODES_FACE_ELEMENT{N_NODES_QUAD};
 
     const map<ElementType, ShortIndex> num_nodes_in_element = {{ElementType::Triangle, N_NODES_TRI},
                                                                {ElementType::Quadrilateral, N_NODES_QUAD},
                                                                {ElementType::Tetrahedron, N_NODES_TET},
-                                                               {ElementType::Hexahedron, N_NODES_HEX}};
+                                                               {ElementType::Hexahedron, N_NODES_HEX},
+                                                               {ElementType::Pyramid, N_NODES_PYRAMID}};
+    const map<ElementType, string> element_type_to_string = {{ElementType::Triangle, "Triangle"},
+                                                             {ElementType::Quadrilateral, "Quadrilateral"},
+                                                             {ElementType::Tetrahedron, "Terahedron"},
+                                                             {ElementType::Hexahedron, "Hexahedron"},
+                                                             {ElementType::Pyramid, "Pyramid"}};
     const map<ElementType, bool> is_volume_element = {{ElementType::Triangle, false},
                                                       {ElementType::Tetrahedron, true},
                                                       {ElementType::Quadrilateral, false},
                                                       {ElementType::Hexahedron, true}};
+    /*Identifiers used in the su2 mesh format: https://su2code.github.io/docs/Mesh-File/
+    Add additional types when imlementing more elements*/
+    enum class SU2_ElementID
+    {
+        Triangle = 5,
+        Quadrilateral = 9,
+        Tetrahedron = 10,
+        Hexahedron = 12,
+        Pyramid = 14
+    };
+    const map<SU2_ElementID, ElementType> su2_identifier_to_element_type = {{SU2_ElementID::Triangle, ElementType::Triangle},
+                                                                            {SU2_ElementID::Quadrilateral, ElementType::Quadrilateral},
+                                                                            {SU2_ElementID::Tetrahedron, ElementType::Tetrahedron},
+                                                                            {SU2_ElementID::Hexahedron, ElementType::Hexahedron},
+                                                                            {SU2_ElementID::Pyramid, ElementType::Pyramid}};
     class Elements
     {
     protected:
@@ -196,7 +220,7 @@ namespace geometry
     struct ElementPatch
     {
         string patch_name;
-        Elements surface_elements;
+        Elements boundary_elements;
     };
 
     // returns the node connectivity of face_k from the node connectivity of tetraheder
@@ -205,28 +229,31 @@ namespace geometry
     /*--------------------------------------------------------------------
     Function to calculate geometry properties of various elements
     --------------------------------------------------------------------*/
+    inline void volume_element_calc_geometry_properties(ElementType e_type,
+                                                        const Index *element,
+                                                        const Vector<Vec3> &nodes,
+                                                        Scalar &volume,
+                                                        Vec3 &centroid);
 
-    inline void element_calc_volume(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Scalar &volume);
-    inline void element_calc_centroid(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &centroid);
-    inline void element_calc_face_normal(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &S_ij);
-
+    inline void face_element_calc_centroid(ElementType e_type,
+                                           const Index *element,
+                                           const Vector<Vec3> &nodes,
+                                           Vec3 &centroid);
+    inline void face_element_calc_face_normal(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &S_ij);
+    inline void tetrahedron_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
+                                                     Scalar &volume, Vec3 &centroid);
     inline void tetrahedron_calc_volume(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Scalar &volume);
     inline void tetrahedron_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &centroid);
 
     inline void triangle_calc_face_normal(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, Vec3 &S_ij);
     inline void triangle_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, Vec3 &centroid);
 
-    inline void hexahedron_calc_volume(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
-                                       const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7, Scalar &volume);
-    inline void hexahedron_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
-                                         const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7, Vec3 &centroid);
+    inline void pyramid_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, const Vec3 &n4,
+                                                 Scalar &volume, Vec3 &centroid);
 
     inline void hexahedron_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
                                                     const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7,
                                                     Scalar &volume, Vec3 &centroid);
-    inline void pyramid_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, const Vec3 &n4,
-                                                 Scalar &volume, Vec3 &centroid);
-
     inline void quadrilateral_calc_face_normal(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &S_ij);
     inline void quadrilateral_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &centroid);
 
