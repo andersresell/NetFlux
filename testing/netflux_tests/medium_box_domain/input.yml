@@ -3,6 +3,8 @@ solver: Euler
 
 n_timesteps: 10
 
+write_stride: 1
+
 CFL: 0.5
 
 time_scheme: ExplicitEuler
