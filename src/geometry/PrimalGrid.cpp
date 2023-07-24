@@ -3,6 +3,21 @@
 namespace geometry
 {
 
+    PrimalGrid::PrimalGrid(const Config &config)
+    {
+        try
+        {
+            read_mesh(config);
+#ifndef NDEBUG
+            print_grid();
+#endif
+        }
+        catch (const std::exception &e)
+        {
+            throw std::runtime_error("Error creating primal grid:\n" + string(e.what()));
+        }
+    }
+
     void PrimalGrid::read_mesh(const Config &config)
     {
         string mesh_filename_path = config.get_mesh_filename_path();
@@ -133,7 +148,7 @@ namespace geometry
 
         string tmp_string;
         ShortIndex tmp_int, vtk_e_id_int;
-        Index N_NODES, N_ELEMENTS, N_PATCHES, element_num;
+        Index N_NODES, N_ELEMENTS, N_PATCHES;
 
         auto check_string_correctness = [](string actual_string, string correct_string)
         {
@@ -156,8 +171,8 @@ namespace geometry
         for (Index i{0}; i < N_ELEMENTS; i++)
         {
             ist >> vtk_e_id_int;
-            if (legal_vtk_element_identifier(vtk_e_id_int))
-                throw std::runtime_error("Illegal su2 element identifier (" + std::to_string(vtk_e_id_int) +
+            if (!legal_vtk_element_identifier(vtk_e_id_int))
+                throw std::runtime_error("Illegal su2 volume element identifier (" + std::to_string(vtk_e_id_int) +
                                          ") detected in su2 mesh file\n");
             auto e_type = static_cast<ElementType>(vtk_e_id_int);
             if (!is_volume_element.at(e_type))
@@ -165,6 +180,7 @@ namespace geometry
                                          "detected in su2 mesh file in the volume mesh");
             for (ShortIndex k{0}; k < num_nodes_in_element.at(e_type); k++)
                 ist >> volume_element_nodes[k];
+            ist.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Skip to the next line
             volume_elements.add_element(e_type, volume_element_nodes.data());
         }
 
@@ -207,7 +223,7 @@ namespace geometry
             for (Index j{0}; j < N_MARKER_ELEMENTS; j++)
             {
                 ist >> vtk_e_id_int;
-                if (legal_vtk_element_identifier(vtk_e_id_int))
+                if (!legal_vtk_element_identifier(vtk_e_id_int))
                     throw std::runtime_error("Illegal su2 element identifier (" + std::to_string(vtk_e_id_int) +
                                              ") detected in su2 mesh file\n");
                 auto e_type = static_cast<ElementType>(vtk_e_id_int);
@@ -217,7 +233,32 @@ namespace geometry
                 for (ShortIndex k{0}; k < num_nodes_in_element.at(e_type); k++)
                     ist >> boundary_element_nodes[k];
                 boundary_elements.add_element(e_type, boundary_element_nodes.data());
+                ist.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Skip to the next line
             }
+        }
+    }
+    void PrimalGrid::print_grid() const
+
+    {
+        cout << "NODES:\n";
+        for (Index i{0}; i < nodes.size(); i++)
+        {
+            cout << i << ": " << array_to_string(nodes.at(i).data(), N_DIM) << endl;
+        }
+        cout << "\n\nVOLUME ELEMENTS:\n";
+        for (Index i{0}; i < volume_elements.size(); i++)
+        {
+            cout << volume_elements.to_string(i);
+        }
+        cout << "\n\nPATCH ELEMENTS:\n";
+        for (const auto &ep : element_patches)
+        {
+            cout << "BC type: " << ep.patch_name << endl;
+            for (Index i{0}; i < ep.boundary_elements.size(); i++)
+            {
+                cout << i << ": " << ep.boundary_elements.to_string(i) << endl;
+            }
+            cout << "\n\n";
         }
     }
 

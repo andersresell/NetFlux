@@ -3,9 +3,6 @@
 
 namespace geometry
 {
-    class Faces;
-    class Cells;
-    class Patches;
 
     /*--------------------------------------------------------------------
     FV_Grid contains mainly the face-based structure used by the FV solvers.
@@ -18,9 +15,6 @@ namespace geometry
 
     public:
         FV_Grid(Config &config, PrimalGrid &primal_grid);
-
-        // void print_grid(const Config &config) const;
-        void print_native_mesh() const;
 
         const Cells &get_cells() const { return cells; }
         const Faces &get_faces() const { return faces; }
@@ -50,11 +44,12 @@ namespace geometry
                                   Vec3 &centroid_to_face_i,
                                   Vec3 &centroid_to_face_j);
 
-        void calc_ghost_centroid(ElementType face_e_type,
-                                 const Index *surface_element,
+        void calc_ghost_centroid(ElementType boundary_e_type,
+                                 const Index *boundary_element,
                                  const Vector<Vec3> &nodes,
                                  const Vec3 &centroid_i,
                                  Vec3 &centroid_ghost);
+        void print_grid(const Config &config) const;
     };
 
 };

@@ -53,7 +53,7 @@ namespace geometry
                                                                {ElementType::Pyramid, N_NODES_PYRAMID}};
     const map<ElementType, string> element_type_to_string = {{ElementType::Triangle, "Triangle"},
                                                              {ElementType::Quadrilateral, "Quadrilateral"},
-                                                             {ElementType::Tetrahedron, "Terahedron"},
+                                                             {ElementType::Tetrahedron, "Tetrahedron"},
                                                              {ElementType::Hexahedron, "Hexahedron"},
                                                              {ElementType::Pyramid, "Pyramid"}};
     const map<ElementType, bool> is_volume_element = {{ElementType::Triangle, false},
@@ -70,7 +70,7 @@ namespace geometry
         Vector<ElementType> element_types;
 
     public:
-        Elements() { n_ptr.push_back(0); }
+        Elements() = default;
 
         Index size() const { return n_ptr.size() - 1; }
 
@@ -81,8 +81,8 @@ namespace geometry
         {
             ShortIndex n_nodes = num_nodes_in_element.at(e_type);
             n_ptr.emplace_back(n_ptr.back() + n_nodes);
-            for (ShortIndex i{0}; i < n_nodes; i++)
-                n_ind.emplace_back(element[i]);
+            for (ShortIndex k{0}; k < n_nodes; k++)
+                n_ind.emplace_back(element[k]);
             element_types.emplace_back(e_type);
         }
 
@@ -107,6 +107,8 @@ namespace geometry
 
         void reserve(Index n_elements, ShortIndex max_nodes_per_element);
         void shrink_to_fit();
+
+        string to_string(Index i) const;
     };
 
     struct FaceElement
@@ -116,24 +118,24 @@ namespace geometry
         const ElementType e_type;
         FaceElement(ElementType e_type, const Index *element) : n_nodes{num_nodes_in_element.at(e_type)}, e_type{e_type}
         {
-            assert(is_volume_element.at(e_type));
-            std::copy(element, element + n_nodes, nodes);
+            assert(!is_volume_element.at(e_type));
+            std::copy(element, element + n_nodes, nodes.begin());
         }
     };
 
-    inline FaceElement get_face_element_k_of_volume_element(ElementType volume_element_type,
-                                                            const Index *volume_element,
-                                                            ShortIndex face_k);
-    inline void get_face_element_k_of_tetrahedron(ElementType volume_element_type,
-                                                  const Index *ve,
-                                                  ShortIndex face_k,
-                                                  ElementType &face_element_type,
-                                                  array<Index, MAX_NODES_FACE_ELEMENT> &fe);
-    inline void get_face_element_k_of_hexahedron(ElementType volume_element_type,
-                                                 const Index *ve,
-                                                 ShortIndex face_k,
-                                                 ElementType &face_element_type,
-                                                 array<Index, MAX_NODES_FACE_ELEMENT> &fe);
+    FaceElement get_face_element_k_of_volume_element(ElementType volume_element_type,
+                                                     const Index *volume_element,
+                                                     ShortIndex face_k);
+    void get_face_element_k_of_tetrahedron(ElementType volume_element_type,
+                                           const Index *ve,
+                                           ShortIndex face_k,
+                                           ElementType &face_element_type,
+                                           array<Index, MAX_NODES_FACE_ELEMENT> &fe);
+    void get_face_element_k_of_hexahedron(ElementType volume_element_type,
+                                          const Index *ve,
+                                          ShortIndex face_k,
+                                          ElementType &face_element_type,
+                                          array<Index, MAX_NODES_FACE_ELEMENT> &fe);
 
     struct SortedFaceElement : public FaceElement
     {
@@ -166,33 +168,33 @@ namespace geometry
     /*--------------------------------------------------------------------
     Functions to calculate geometry properties of various elements
     --------------------------------------------------------------------*/
-    inline void volume_element_calc_geometry_properties(ElementType e_type,
-                                                        const Index *element,
-                                                        const Vector<Vec3> &nodes,
-                                                        Scalar &volume,
-                                                        Vec3 &centroid);
+    void volume_element_calc_geometry_properties(ElementType e_type,
+                                                 const Index *element,
+                                                 const Vector<Vec3> &nodes,
+                                                 Scalar &volume,
+                                                 Vec3 &centroid);
 
-    inline void face_element_calc_centroid(ElementType e_type,
-                                           const Index *element,
-                                           const Vector<Vec3> &nodes,
-                                           Vec3 &centroid);
-    inline void face_element_calc_face_normal(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &S_ij);
-    inline void tetrahedron_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
-                                                     Scalar &volume, Vec3 &centroid);
-    inline void tetrahedron_calc_volume(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Scalar &volume);
-    inline void tetrahedron_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &centroid);
+    void face_element_calc_centroid(ElementType e_type,
+                                    const Index *element,
+                                    const Vector<Vec3> &nodes,
+                                    Vec3 &centroid);
+    void face_element_calc_face_normal(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &S_ij);
+    void tetrahedron_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
+                                              Scalar &volume, Vec3 &centroid);
+    void tetrahedron_calc_volume(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Scalar &volume);
+    void tetrahedron_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &centroid);
 
-    inline void triangle_calc_face_normal(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, Vec3 &S_ij);
-    inline void triangle_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, Vec3 &centroid);
+    void triangle_calc_face_normal(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, Vec3 &S_ij);
+    void triangle_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, Vec3 &centroid);
 
-    inline void pyramid_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, const Vec3 &n4,
-                                                 Scalar &volume, Vec3 &centroid);
+    void pyramid_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, const Vec3 &n4,
+                                          Scalar &volume, Vec3 &centroid);
 
-    inline void hexahedron_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
-                                                    const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7,
-                                                    Scalar &volume, Vec3 &centroid);
-    inline void quadrilateral_calc_face_normal(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &S_ij);
-    inline void quadrilateral_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &centroid);
+    void hexahedron_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
+                                             const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7,
+                                             Scalar &volume, Vec3 &centroid);
+    void quadrilateral_calc_face_normal(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &S_ij);
+    void quadrilateral_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &centroid);
 
     /*A structure of arrays (SoA) containing the faces and their required properties*/
     class Faces
@@ -204,14 +206,12 @@ namespace geometry
             CellPair(Index i, Index j) : i{i}, j{j} {} // For some reason I had to define the constructor to make emplace_back work
 
             Index i, j;
-            bool operator<(CellPair rhs) const
+            bool operator<(const CellPair &other) const
             {
-                if (i != rhs.i)
-                    return i < rhs.i;
-
-                assert(j != rhs.j); // This would imply that cell indices are identical
-
-                return j < rhs.j;
+                if (i != other.i)
+                    return i < other.i;
+                assert(j != other.j); // Two faces can't ahve the same owner and neigbour cells
+                return j < other.j;
             }
         };
 
@@ -232,6 +232,7 @@ namespace geometry
         const Vec3 &get_face_normal(Index face_index) const { return face_normals[face_index]; }
         const Vec3 &get_centroid_to_face_i(Index face_index) const { return centroid_to_face_i[face_index]; }
         const Vec3 &get_centroid_to_face_j(Index face_index) const { return centroid_to_face_j[face_index]; }
+        string to_string(Index ij) const;
     };
 
     /*A structure of arrays (SoA) containing the cells and their required properties*/
@@ -242,11 +243,13 @@ namespace geometry
         Vector<Vec3> centroids;
 
         void resize(Index size);
+        void reserve(Index size);
 
     public:
         Index size() const { return volumes.size(); }
         Scalar get_cell_volume(Index cell_index) const { return volumes[cell_index]; }
         const Vec3 &get_centroid(Index cell_index) const { return centroids[cell_index]; }
+        string to_string(Index i) const;
     };
 
     struct Patch

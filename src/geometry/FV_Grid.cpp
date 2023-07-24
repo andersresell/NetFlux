@@ -9,6 +9,9 @@ namespace geometry
         {
             create_face_structure(config, primal_grid);
             calc_geometry_properties(config, primal_grid);
+#ifndef NDEBUG
+            print_grid(config);
+#endif
         }
         catch (const std::exception &e)
         {
@@ -89,6 +92,7 @@ namespace geometry
         Also add the face elements at the boundaries.
         --------------------------------------------------------------------*/
         cout << "Creating ghost cells..\n";
+        Index j_ghost = volume_elements.size();
         for (const auto &element_patch : element_patches)
         {
             Patch p;
@@ -103,14 +107,13 @@ namespace geometry
                 ElementType e_type = surface_elements.get_element_type(ij);
                 FaceElement face_element{e_type, surface_elements.get_element_nodes(ij)};
                 SortedFaceElement sorted_face_element{face_element};
-                Index j_ghost = cells.size();
                 assert(faces_to_cells.at(face_element).second == CELL_NOT_YET_ASSIGNED);
                 faces_to_cells.at(sorted_face_element).second = j_ghost;
                 Index i_domain = faces_to_cells.at(sorted_face_element).first;
                 assert(i_domain < j_ghost);
-                assert(j_ghost >= volume_elements.size());
                 faces.cell_indices.emplace_back(i_domain, j_ghost);
                 face_elements.add_element(e_type, face_element.nodes.data());
+                j_ghost++;
             }
         }
         assert(face_elements.size() == faces.size());
@@ -130,6 +133,9 @@ namespace geometry
         i allways being less than neigbour index j. The same logic is applied
         patch-wise to the boundaries
         --------------------------------------------------------------------*/
+
+        /*All Vectors within faces and cells must have the correct size before reordering*/
+        faces.resize_geometry_properties();
         cout << "Reorder faces..\n";
         reorder_faces(config);
 
@@ -169,8 +175,6 @@ namespace geometry
                                                     nodes, cells.volumes[i],
                                                     cells.centroids[i]);
 
-        faces.resize_geometry_properties();
-
         Index max_j{0}; // For consistency checking
 
         /*Loop over all faces to assign face normals cell-centroid-to-face-centroid vectors and ghost centroid */
@@ -183,8 +187,8 @@ namespace geometry
             if (j >= N_INTERIOR_CELLS)
             {
                 cells.volumes[j] = 0.0;
-                calc_ghost_centroid(volume_elements.get_element_type(i),
-                                    volume_elements.get_element_nodes(i),
+                calc_ghost_centroid(face_elements.get_element_type(ij),
+                                    face_elements.get_element_nodes(ij),
                                     nodes,
                                     cells.centroids[i],
                                     cells.centroids[j]);
@@ -225,66 +229,18 @@ namespace geometry
     {
         Index N_GHOST{0};
         for (const auto &element_patch : element_patches)
-            N_GHOST += element_patches.size();
+            N_GHOST += element_patch.boundary_elements.size();
         return N_GHOST;
     }
 
-    // void Grid::print_grid(const Config &config) const
-    // {
-
-    //     cout << "CELLS:\n";
-    //     for (Index i{0}; i < cells.size(); i++)
-    //     {
-    //         if (i >= config.get_N_INTERIOR_CELLS())
-    //             cout << "GHOST, ";
-    //         cout << i << ": " << cells.at(i) << endl;
-    //     }
-
-    //     cout << "\n\nFACES:\n";
-    //     for (Index i{0}; i < faces.size(); i++)
-    //         cout << i << ": " << faces.at(i) << endl;
-
-    //     cout << "\n\nPATCHES:\n";
-    //     for (const auto &patch : patches)
-    //     {
-    //         cout << "patch type: " << (int)patch.boundary_type << "\nFIRST FACE: " << patch.FIRST_FACE << "\nN_FACES: " << patch.N_FACES << "\n\n";
-    //     }
-    // }
-
-    // void FV_Grid::print_native_mesh() const
-    // {
-    //     cout << "NODES:\n";
-    //     for (Index i{0}; i < nodes.size(); i++)
-    //     {
-    //         cout << i << ": " << horizontal_string_Vec3(nodes.at(i)) << endl;
-    //     }
-    //     cout << "\n\nTET CONNECTIVITY:\n";
-    //     for (Index i{0}; i < tet_connect.size(); i++)
-    //     {
-    //         TetConnect t = tet_connect.at(i);
-    //         cout << i << ": " << t << endl;
-    //     }
-    //     cout << "\n\nTRIANGLE PATCH CONNECTIVITY:\n";
-    //     for (const auto &tpc : tri_patch_connect_list)
-    //     {
-    //         cout << "BC type: " << tpc.patch_name << endl;
-    //         for (Index i{0}; i < tpc.triangles.size(); i++)
-    //         {
-    //             TriConnect t = tpc.triangles.at(i);
-    //             cout << i << ": " << t << endl;
-    //         }
-    //         cout << "\n\n";
-    //     }
-    // }
-
-    inline void FV_Grid::calc_face_properties(ElementType e_type,
-                                              const Index *element,
-                                              const Vector<Vec3> &nodes,
-                                              const Vec3 &cell_center_i,
-                                              const Vec3 &cell_center_j,
-                                              Vec3 &S_ij,
-                                              Vec3 &centroid_to_face_i,
-                                              Vec3 &centroid_to_face_j)
+    void FV_Grid::calc_face_properties(ElementType e_type,
+                                       const Index *element,
+                                       const Vector<Vec3> &nodes,
+                                       const Vec3 &cell_center_i,
+                                       const Vec3 &cell_center_j,
+                                       Vec3 &S_ij,
+                                       Vec3 &centroid_to_face_i,
+                                       Vec3 &centroid_to_face_j)
     {
         face_element_calc_face_normal(e_type, element, nodes, S_ij);
         Scalar normal_dot_product = S_ij.dot(cell_center_j - cell_center_i);
@@ -297,16 +253,38 @@ namespace geometry
         centroid_to_face_j = face_centroid - cell_center_j;
     }
 
-    inline void FV_Grid::calc_ghost_centroid(ElementType face_e_type,
-                                             const Index *surface_element,
-                                             const Vector<Vec3> &nodes,
-                                             const Vec3 &centroid_i,
-                                             Vec3 &centroid_ghost)
+    void FV_Grid::calc_ghost_centroid(ElementType boundary_e_type,
+                                      const Index *boundary_element,
+                                      const Vector<Vec3> &nodes,
+                                      const Vec3 &centroid_i,
+                                      Vec3 &centroid_ghost)
     {
-        assert(!is_volume_element.at(face_e_type));
+        assert(!is_volume_element.at(boundary_e_type));
         Vec3 centroid_face;
-        face_element_calc_centroid(face_e_type, surface_element, nodes, centroid_face);
+        face_element_calc_centroid(boundary_e_type, boundary_element, nodes, centroid_face);
         centroid_ghost = 2 * centroid_face - centroid_i;
+    }
+
+    void FV_Grid::print_grid(const Config &config) const
+    {
+
+        cout << "CELLS:\n";
+        for (Index i{0}; i < cells.size(); i++)
+        {
+            if (i >= config.get_N_INTERIOR_CELLS())
+                cout << "GHOST, ";
+            cout << cells.to_string(i) << endl;
+        }
+
+        cout << "\n\nFACES:\n";
+        for (Index ij{0}; ij < faces.size(); ij++)
+            cout << faces.to_string(ij) << endl;
+
+        cout << "\n\nPATCHES:\n";
+        for (const auto &patch : patches)
+        {
+            cout << "patch type: " << (int)patch.boundary_type << "\nFIRST FACE: " << patch.FIRST_FACE << "\nN_FACES: " << patch.N_FACES << "\n\n";
+        }
     }
 
 }

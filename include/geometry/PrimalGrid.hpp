@@ -25,11 +25,13 @@ namespace geometry
         void read_su2_mesh(const Config &config);
 
     public:
+        PrimalGrid(const Config &config);
         const Vector<Vec3> &get_nodes() const { return nodes; }
         const Elements &get_volume_elements() const { return volume_elements; }
         const Elements &get_face_elements() const { return face_elements; }
         const Vector<ElementPatch> &get_element_patches() const { return element_patches; }
         Elements &get_face_elements() { return face_elements; }
+        void print_grid() const;
     };
 
 }

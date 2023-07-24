@@ -15,9 +15,18 @@ namespace geometry
         element_types.shrink_to_fit();
     }
 
-    inline FaceElement get_face_element_k_of_volume_element(ElementType volume_element_type,
-                                                            const Index *volume_element,
-                                                            ShortIndex face_k)
+    string Elements::to_string(Index i) const
+    {
+        ShortIndex n_nodes = get_num_nodes_of_element(i);
+        const Index *nodes = get_element_nodes(i);
+        std::stringstream ss;
+        ss << array_to_string(nodes, n_nodes) << ", " << element_type_to_string.at(get_element_type(i)) << endl;
+        return ss.str();
+    }
+
+    FaceElement get_face_element_k_of_volume_element(ElementType volume_element_type,
+                                                     const Index *volume_element,
+                                                     ShortIndex face_k)
     {
         assert(volume_element_type == ElementType::Tetrahedron || volume_element_type == ElementType::Hexahedron);
         assert(is_volume_element.at(volume_element_type));
@@ -33,11 +42,11 @@ namespace geometry
         return FaceElement{face_element_type, face_element.data()};
     }
 
-    inline void get_face_element_k_of_tetrahedron(ElementType volume_element_type,
-                                                  const Index *ve,
-                                                  ShortIndex face_k,
-                                                  ElementType &face_element_type,
-                                                  array<Index, MAX_NODES_FACE_ELEMENT> &fe)
+    void get_face_element_k_of_tetrahedron(ElementType volume_element_type,
+                                           const Index *ve,
+                                           ShortIndex face_k,
+                                           ElementType &face_element_type,
+                                           array<Index, MAX_NODES_FACE_ELEMENT> &fe)
     {
         face_element_type = ElementType::Triangle;
         if (face_k == 0)
@@ -69,11 +78,11 @@ namespace geometry
         // fe[0] = ve[0]*(face_k==0) + ve[0]*(face_k==1) + ve[0]*(face_k==2)+ ve[3]*(face_k==3);
     }
 
-    inline void get_face_element_k_of_hexahedron(ElementType volume_element_type,
-                                                 const Index *ve,
-                                                 ShortIndex face_k,
-                                                 ElementType &face_element_type,
-                                                 array<Index, MAX_NODES_FACE_ELEMENT> &fe)
+    void get_face_element_k_of_hexahedron(ElementType volume_element_type,
+                                          const Index *ve,
+                                          ShortIndex face_k,
+                                          ElementType &face_element_type,
+                                          array<Index, MAX_NODES_FACE_ELEMENT> &fe)
     {
         face_element_type = ElementType::Quadrilateral;
         if (face_k == 0)
@@ -120,13 +129,13 @@ namespace geometry
         }
     }
 
-    inline void volume_element_calc_geometry_properties(ElementType e_type,
-                                                        const Index *element,
-                                                        const Vector<Vec3> &nodes,
-                                                        Scalar &volume,
-                                                        Vec3 &centroid)
+    void volume_element_calc_geometry_properties(ElementType e_type,
+                                                 const Index *element,
+                                                 const Vector<Vec3> &nodes,
+                                                 Scalar &volume,
+                                                 Vec3 &centroid)
     {
-        assert(is_volume_element.at(e_type));
+        assert(e_type == ElementType::Tetrahedron || e_type == ElementType::Hexahedron);
         if (e_type == ElementType::Tetrahedron)
             tetrahedron_calc_geometry_properties(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]],
                                                  volume, centroid);
@@ -134,37 +143,34 @@ namespace geometry
             hexahedron_calc_geometry_properties(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]],
                                                 nodes[element[4]], nodes[element[5]], nodes[element[6]], nodes[element[7]],
                                                 volume, centroid);
-        assert(false); // invalid element type
     }
 
-    inline void face_element_calc_centroid(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &centroid)
+    void face_element_calc_centroid(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &centroid)
     {
-        assert(!is_volume_element.at(e_type));
+        assert(e_type == ElementType::Triangle || e_type == ElementType::Quadrilateral);
         if (e_type == ElementType::Triangle)
             triangle_calc_centroid(nodes[element[0]], nodes[element[1]], nodes[element[2]], centroid);
         else if (e_type == ElementType::Quadrilateral)
             quadrilateral_calc_centroid(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]], centroid);
-        assert(false); // Invalid element type
     }
 
-    inline void face_element_calc_face_normal(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &S_ij)
+    void face_element_calc_face_normal(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &S_ij)
     {
-        assert(!is_volume_element.at(e_type));
+        assert(e_type == ElementType::Triangle || e_type == ElementType::Quadrilateral);
         if (e_type == ElementType::Triangle)
             triangle_calc_face_normal(nodes[element[0]], nodes[element[1]], nodes[element[2]], S_ij);
         else if (e_type == ElementType::Quadrilateral)
             quadrilateral_calc_face_normal(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]], S_ij);
-        assert(false); // Invalid element type
     }
 
-    inline void tetrahedron_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
-                                                     Scalar &volume, Vec3 &centroid)
+    void tetrahedron_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
+                                              Scalar &volume, Vec3 &centroid)
     {
         tetrahedron_calc_volume(n0, n1, n2, n3, volume);
         tetrahedron_calc_centroid(n0, n1, n2, n3, centroid);
     }
 
-    inline void tetrahedron_calc_volume(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Scalar &volume)
+    void tetrahedron_calc_volume(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Scalar &volume)
     {
         Vec3 ab = n1 - n0;
         Vec3 ac = n2 - n0;
@@ -172,12 +178,12 @@ namespace geometry
         volume = -ab.cross(ac).dot(ad) / 6;
         assert(volume > 0);
     }
-    inline void tetrahedron_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &centroid)
+    void tetrahedron_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &centroid)
     {
         centroid = 1.0 / 4 * (n0 + n1 + n2 + n3);
     }
 
-    inline void triangle_calc_face_normal(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, Vec3 &S_ij)
+    void triangle_calc_face_normal(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, Vec3 &S_ij)
     {
         /*Using that the cross product of two vectors is the area of a parallelogram (with correct normal),
         so the half is the area of a triangle*/
@@ -185,13 +191,13 @@ namespace geometry
         Vec3 ac = n2 - n0;
         S_ij = 0.5 * ab.cross(ac);
     }
-    inline void triangle_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, Vec3 &centroid)
+    void triangle_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, Vec3 &centroid)
     {
         centroid = (n0 + n1 + n2) / 3;
     }
 
-    inline void pyramid_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, const Vec3 &n4,
-                                                 Scalar &volume, Vec3 &centroid)
+    void pyramid_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, const Vec3 &n4,
+                                          Scalar &volume, Vec3 &centroid)
     {
         Vec3 centroid_base;
         quadrilateral_calc_centroid(n0, n1, n2, n3, centroid_base);
@@ -204,9 +210,9 @@ namespace geometry
         assert(volume > 0);
     }
 
-    inline void hexahedron_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
-                                                    const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7,
-                                                    Scalar &volume, Vec3 &centroid)
+    void hexahedron_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
+                                             const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7,
+                                             Scalar &volume, Vec3 &centroid)
     {
         /*Composing the hexahedron into 6 pyramids and summing up each individual volume (Following Moukalled book)*/
 
@@ -237,7 +243,7 @@ namespace geometry
         centroid /= volume;
     }
 
-    inline void quadrilateral_calc_face_normal(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &S_ij)
+    void quadrilateral_calc_face_normal(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &S_ij)
     {
         Vec3 S_tri_a, S_tri_b;
         triangle_calc_face_normal(n0, n1, n2, S_tri_a);
@@ -245,7 +251,7 @@ namespace geometry
         S_ij = 0.5 * (S_tri_a + S_tri_b);
     }
 
-    inline void quadrilateral_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &centroid)
+    void quadrilateral_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &centroid)
     {
         Vec3 S_ij_tri_a, S_ij_tri_b;
         triangle_calc_face_normal(n0, n1, n2, S_ij_tri_a);
@@ -295,10 +301,28 @@ namespace geometry
             std::swap(centroid_to_face_j[i], centroid_to_face_j[indices[i - begin]]);
         }
     }
+    string Faces::to_string(Index ij) const
+    {
+        stringstream ss;
+        ss << ij << ": "
+           << "(" << cell_indices[ij].i << ", " << cell_indices[ij].j << "), S_ij = " << array_to_string(face_normals[ij].data(), N_DIM);
+        return ss.str();
+    }
 
     void Cells::resize(Index size)
     {
         volumes.resize(size);
         centroids.resize(size);
+    }
+    void Cells::reserve(Index size)
+    {
+        volumes.reserve(size);
+        centroids.reserve(size);
+    }
+    string Cells::to_string(Index i) const
+    {
+        stringstream ss;
+        ss << i << ": vol = " << volumes[i] << ", centroid = " << array_to_string(centroids[i].data(), N_DIM);
+        return ss.str();
     }
 }

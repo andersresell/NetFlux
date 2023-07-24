@@ -6,18 +6,19 @@ Driver::Driver(Config &config) : config{config}
          << "////////  ->| NetFlux |->  ////////\n"
          << "///////////////////////////////////\n\n";
 
-    grid = std::make_unique<geom::Grid>(config);
+    primal_grid = make_unique<geometry::PrimalGrid>(config);
+    FV_grid = make_unique<geometry::FV_Grid>(config, *primal_grid);
 
     switch (config.get_main_solver_type())
     {
     case MainSolverType::Euler:
-        solvers.push_back(make_unique<EulerSolver>(config, *grid));
+        solvers.push_back(make_unique<EulerSolver>(config, *primal_grid, *FV_grid));
         break;
     default:
         throw std::runtime_error("Error: Illegal solver type specified");
     }
 
-    output = make_unique<Output>(*grid, solvers, config);
+    output = make_unique<Output>(*primal_grid, solvers, config);
 }
 
 void Driver::solve()

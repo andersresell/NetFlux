@@ -8,8 +8,9 @@ EXE_RELEASE = $(BUILD_DIR_RELEASE)/$(EXE)
 CXX = mpic++ #MPI compiler wrapper (automatically includes headers and libraries)
 INC_DIR = ../include
 
-CXX_FLAGS_DEBUG = -g -Wall -Wno-unused-function -fmax-errors=1 -I$(INC_DIR)
-CXX_FLAGS_RELEASE = -DNDEBUG -Wall -Wno-unused-function -fmax-errors=1 -I$(INC_DIR) -O3 -flto
+CXX_FLAGS_COMMON = -Wall -Wno-unused-function -fmax-errors=1 #-I$(INC_DIR)
+CXX_FLAGS_DEBUG = $(CXX_FLAGS_COMMON) -g
+CXX_FLAGS_RELEASE = $(CXX_FLAGS_COMMON) -DNDEBUG -O3 -flto 
  
 #external libraries
 LDLIBS = -lyaml-cpp
@@ -55,19 +56,23 @@ $(BUILD_DIR_DEBUG)/%.o: %.cpp
 $(BUILD_DIR_RELEASE)/%.o: %.cpp 
 	$(CXX) -MMD -c -o $@ $< $(CXX_FLAGS_RELEASE)
 
-
 -include $(OBJ_DEBUG:.o=.d)
 -include $(OBJ_RELEASE:.o=.d)
 
-
-
 prep:
-	mkdir -p $(BUILD_DIR_DEBUG) $(BUILD_DIR_RELEASE)  
+	mkdir -p $(BUILD_DIR_DEBUG) 
+	mkdir -p $(BUILD_DIR_RELEASE)
+	mkdir -p $(BUILD_DIR_DEBUG)/containers
+	mkdir -p $(BUILD_DIR_RELEASE)/containers
+	mkdir -p $(BUILD_DIR_DEBUG)/geometry
+	mkdir -p $(BUILD_DIR_RELEASE)/geometry
+	mkdir -p $(BUILD_DIR_DEBUG)/parallelization
+	mkdir -p $(BUILD_DIR_RELEASE)/parallelization
 
 .PHONY: clean
 clean:
-	-rm -f $(BUILD_DIR_DEBUG)/*
-	-rm -f $(BUILD_DIR_RELEASE)/*
+	-rm -r $(BUILD_DIR_DEBUG)/*
+	-rm -r $(BUILD_DIR_RELEASE)/*
 
 
 

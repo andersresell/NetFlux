@@ -52,7 +52,6 @@ void Output::write_vtk_ascii_grid(const Config &config, const string &filename)
 
     const Index N_NODES = config.get_N_NODES();
     const Index N_CELLS = config.get_N_INTERIOR_CELLS();
-    const ShortIndex VTK_TET_TYPE = 10; // VTK_TRI_TYPE = 5;
     const auto &nodes = primal_grid.get_nodes();
     const auto &volume_elements = primal_grid.get_volume_elements();
     assert(N_CELLS == volume_elements.size());

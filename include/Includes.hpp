@@ -29,6 +29,7 @@ using std::min;
 using std::move;
 using std::pair;
 using std::string;
+using std::stringstream;
 using std::unique_ptr;
 namespace filesys = std::filesystem;
 
@@ -45,7 +46,16 @@ constexpr char Scalar_name[] = "double";
 
 using Vec3 = Eigen::Vector3<Scalar>;
 
-inline string horizontal_string_Vec3(const Vec3 &v) { return "[" + std::to_string(v[0]) + ", " + std::to_string(v[1]) + ", " + std::to_string(v[2]) + " ]"; }
+template <typename T>
+inline string array_to_string(const T *arr, size_t size)
+{
+    stringstream ss;
+    ss << "[";
+    for (size_t i{0}; i < size - 1; i++)
+        ss << arr[i] << ", ";
+    ss << arr[size - 1] << "]";
+    return ss.str();
+}
 
 constexpr ShortIndex N_DIM{3}; // spatial dimensions
 

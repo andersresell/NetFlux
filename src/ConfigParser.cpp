@@ -61,8 +61,8 @@ void ConfigParser::parse_yaml_file_options(Config &config)
     config.set_primvars_inf(0, density_fs);
 
     Vec3 velocity_fs = read_optional_option<Vec3>("velocity_fs", Vec3{0.0, 0.0, 0.0});
-    for (ShortIndex i{1}; i <= N_DIM; i++)
-        config.set_primvars_inf(i, velocity_fs[i]);
+    for (ShortIndex i{0}; i < N_DIM; i++)
+        config.set_primvars_inf(i + 1, velocity_fs[i]);
 
     Scalar pressure_fs = read_optional_option<Scalar>("pressure_fs", standard_air::pressure);
     config.set_primvars_inf(4, pressure_fs);

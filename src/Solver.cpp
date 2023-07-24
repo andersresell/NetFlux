@@ -2,7 +2,7 @@
 
 using namespace geometry;
 
-Solver::Solver(const PrimalGrid &primal_grid, const FV_Grid &FV_grid, const Config &config)
+Solver::Solver(const Config &config, const PrimalGrid &primal_grid, const FV_Grid &FV_grid)
     : primal_grid{primal_grid}, FV_grid{FV_grid}
 {
     create_BC_container(config);
@@ -132,8 +132,8 @@ void Solver::TVD_RK3(const Config &config)
         U(i, n_eq) = 1.0 / 3.0 * U_old(i, n_eq) + 2.0 / 3.0 * U(i, n_eq) + 2.0 / 3.0 * dt / cells.get_cell_volume(i) * R(i, n_eq);
 }
 
-EulerSolver::EulerSolver(const geometry::PrimalGrid &primal_grid, const geometry::FV_Grid &FV_grid, const Config &config)
-    : Solver(primal_grid, FV_grid, config)
+EulerSolver::EulerSolver(const Config &config, const geometry::PrimalGrid &primal_grid, const geometry::FV_Grid &FV_grid)
+    : Solver(config, primal_grid, FV_grid)
 {
     solver_data = make_unique<EulerSolverData>(config);
     validity_checker = make_unique<EulerValidityChecker>(config);
@@ -300,7 +300,7 @@ void EulerSolver::calc_Delta_S(const Config &config)
 void EulerSolver::set_constant_ghost_values(const Config &config)
 {
     const auto &patches = FV_grid.get_patches();
-    const auto &faces = grid.get_faces();
+    const auto &faces = FV_grid.get_faces();
     VecField &primvars = solver_data->get_primvars();
     Index i_domain, j_ghost;
 
@@ -316,7 +316,7 @@ void EulerSolver::set_constant_ghost_values(const Config &config)
             j_ghost = faces.get_cell_j(ij);
             assert(i_domain < config.get_N_INTERIOR_CELLS() && j_ghost >= config.get_N_INTERIOR_CELLS());
 
-            const Vec3 &S_ij = faces.get_normal_area(ij);
+            const Vec3 &S_ij = faces.get_face_normal(ij);
             // primvars.map_to_variable<EulerVec>(j) =
             //     BoundaryCondition::calc_ghost_val<BC_type, EulerVec>(primvars.map_to_variable<EulerVec>(i), S_ij);
 

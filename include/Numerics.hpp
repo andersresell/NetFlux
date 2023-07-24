@@ -113,7 +113,7 @@ namespace gradient
         {
             i = faces.get_cell_i(ij);
             j = faces.get_cell_j(ij);
-            const Vec3 &S_ij = faces.get_normal_area(ij);
+            const Vec3 &S_ij = faces.get_face_normal(ij);
 
             // Simple average for now, might improve later with distance weighting and orthogonal correctors later
             U_face = 0.5 * (vec_field.get_variable<FieldVec>(i) + vec_field.get_variable<FieldVec>(j));
