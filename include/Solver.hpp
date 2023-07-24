@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../include/Config.hpp"
-#include "../include/Grid.hpp"
+#include "../include/geometry/FV_Grid.hpp"
 #include "../include/Utilities.hpp"
 #include "../include/Numerics.hpp"
 #include "../include/SolverData.hpp"
@@ -10,13 +10,14 @@ class Solver
 {
 protected:
     unique_ptr<SolverData> solver_data;
-    const geom::Grid &grid;
+    const geometry::PrimalGrid &primal_grid;
+    const geometry::FV_Grid &FV_grid;
     unique_ptr<ValidityChecker> validity_checker;
 
     Vector<unique_ptr<BoundaryCondition>> BC_container;
 
 public:
-    Solver(const geom::Grid &grid, const Config &config);
+    Solver(const geometry::PrimalGrid &primal_grid, const geometry::FV_Grid &FV_grid, const Config &config);
 
     void step(const Config &config);
 
@@ -52,7 +53,7 @@ class EulerSolver : public Solver
 {
 
 public:
-    EulerSolver(const Config &config, const geom::Grid &grid);
+    EulerSolver(const geometry::PrimalGrid &primal_grid, const geometry::FV_Grid &FV_grid, const Config &config);
 
     void calc_timestep(Config &config) override;
 
@@ -94,7 +95,7 @@ inline void EulerSolver::calc_reconstructed_value(Index i,
         const EulerGradMap V_i_grad = primvars_grad.get_variable<EulerGrad>(i);
         const EulerVecMap limiter_i = primvars_limiter.get_variable<EulerVec>(i);
 
-        Reconstruction::calc_limited_reconstruction(V_i, V_i_grad, limiter_i, r_im, V_L);
+        reconstruction::calc_limited_reconstruction(V_i, V_i_grad, limiter_i, r_im, V_L);
 
         // cout << "V_i " << V_i << endl;
         // cout << "limiter " << limiter_i << endl;

@@ -1,16 +1,16 @@
 #include "../include/Solver.hpp"
 
-using namespace geom;
+using namespace geometry;
 
-Solver::Solver(const geom::Grid &grid, const Config &config)
-    : grid{grid}
+Solver::Solver(const PrimalGrid &primal_grid, const FV_Grid &FV_grid, const Config &config)
+    : primal_grid{primal_grid}, FV_grid{FV_grid}
 {
     create_BC_container(config);
 }
 
 void Solver::create_BC_container(const Config &config)
 {
-    for (const auto &patch : grid.get_patches())
+    for (const auto &patch : FV_grid.get_patches())
     {
         unique_ptr<BoundaryCondition> BC;
         switch (patch.boundary_type)
@@ -85,7 +85,7 @@ void Solver::explicit_euler(const Config &config)
     const Scalar dt = config.get_delta_time();
     VecField &U = solver_data->get_solution();
     VecField &R = solver_data->get_flux_balance();
-    const auto &cells = grid.get_cells();
+    const auto &cells = FV_grid.get_cells();
     Index i, n_eq;
 
     assert(U.get_N_EQS() == solver_data->get_N_EQS() && R.get_N_EQS() == solver_data->get_N_EQS());
@@ -106,7 +106,7 @@ void Solver::TVD_RK3(const Config &config)
     VecField &U = solver_data->get_solution();
     VecField &U_old = solver_data->get_solution_old();
     VecField &R = solver_data->get_flux_balance();
-    const auto &cells = grid.get_cells();
+    const auto &cells = FV_grid.get_cells();
     Index i, n_eq;
 
     assert(U.get_N_EQS() == solver_data->get_N_EQS() && U_old.get_N_EQS() == solver_data->get_N_EQS() && R.get_N_EQS() == solver_data->get_N_EQS());
@@ -132,7 +132,8 @@ void Solver::TVD_RK3(const Config &config)
         U(i, n_eq) = 1.0 / 3.0 * U_old(i, n_eq) + 2.0 / 3.0 * U(i, n_eq) + 2.0 / 3.0 * dt / cells.get_cell_volume(i) * R(i, n_eq);
 }
 
-EulerSolver::EulerSolver(const Config &config, const geom::Grid &grid) : Solver(grid, config)
+EulerSolver::EulerSolver(const geometry::PrimalGrid &primal_grid, const geometry::FV_Grid &FV_grid, const Config &config)
+    : Solver(primal_grid, FV_grid, config)
 {
     solver_data = make_unique<EulerSolverData>(config);
     validity_checker = make_unique<EulerValidityChecker>(config);
@@ -152,8 +153,8 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
     SpatialOrder spatial_order = config.get_spatial_order();
 
     Index i, j;
-    const auto &faces = grid.get_faces();
-    const auto &patches = grid.get_patches();
+    const auto &faces = FV_grid.get_faces();
+    const auto &patches = FV_grid.get_patches();
 
     // InvFluxFunction inv_flux_func = NumericalFlux::get_inviscid_flux_function(config);
 
@@ -171,7 +172,7 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
     {
         i = faces.get_cell_i(ij);
         j = faces.get_cell_j(ij);
-        const Vec3 &S_ij = faces.get_normal_area(ij);
+        const Vec3 &S_ij = faces.get_face_normal(ij);
         const Vec3 &r_im = faces.get_centroid_to_face_i(ij);
         const Vec3 &r_jm = faces.get_centroid_to_face_j(ij);
 
@@ -203,7 +204,7 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
         {
 
             Index i_domain = faces.get_cell_i(ij);
-            const Vec3 &S_ij = faces.get_normal_area(ij);
+            const Vec3 &S_ij = faces.get_face_normal(ij);
             const Vec3 &r_im = faces.get_centroid_to_face_i(ij);
 
             calc_reconstructed_value(i_domain, V_L, r_im, spatial_order);
@@ -242,7 +243,7 @@ void EulerSolver::calc_timestep(Config &config)
     const Vector<Vec3> &Delta_S = euler_data.get_Delta_S();
 
     const Scalar CFL = config.get_CFL();
-    auto cells = grid.get_cells();
+    auto cells = FV_grid.get_cells();
 
     const auto &primvars = solver_data->get_primvars();
 
@@ -275,7 +276,7 @@ void EulerSolver::calc_timestep(Config &config)
 void EulerSolver::calc_Delta_S(const Config &config)
 {
 
-    const auto &faces = grid.get_faces();
+    const auto &faces = FV_grid.get_faces();
     EulerSolverData &euler_data = dynamic_cast<EulerSolverData &>(*solver_data);
 
     Vector<Vec3> &Delta_S = euler_data.get_Delta_S();
@@ -287,7 +288,7 @@ void EulerSolver::calc_Delta_S(const Config &config)
     {
         i = faces.get_cell_i(ij);
         j = faces.get_cell_j(ij);
-        const Vec3 &S_ij = faces.get_normal_area(ij);
+        const Vec3 &S_ij = faces.get_face_normal(ij);
 
         tmp = 0.5 * S_ij.cwiseAbs();
 
@@ -298,7 +299,7 @@ void EulerSolver::calc_Delta_S(const Config &config)
 
 void EulerSolver::set_constant_ghost_values(const Config &config)
 {
-    const auto &patches = grid.get_patches();
+    const auto &patches = FV_grid.get_patches();
     const auto &faces = grid.get_faces();
     VecField &primvars = solver_data->get_primvars();
     Index i_domain, j_ghost;
@@ -336,7 +337,7 @@ void EulerSolver::evaluate_gradient(const Config &config)
     switch (config.get_grad_scheme())
     {
     case GradientScheme::GreenGauss:
-        Gradient::calc_green_gauss_gradient<N_EQS_EULER>(config, grid, primvars, primvars_grad);
+        gradient::calc_green_gauss_gradient<N_EQS_EULER>(config, FV_grid, primvars, primvars_grad);
         break;
     default:
         assert(false); // no others are yet implemented
@@ -355,13 +356,13 @@ void EulerSolver::evaluate_limiter(const Config &config)
     switch (config.get_limiter())
     {
     case Limiter::Barth:
-        Reconstruction::calc_max_and_min_values<N_EQS_EULER>(config,
-                                                             grid,
+        reconstruction::calc_max_and_min_values<N_EQS_EULER>(config,
+                                                             FV_grid,
                                                              primvars,
                                                              primvars_max,
                                                              primvars_min);
-        Reconstruction::calc_barth_limiter<N_EQS_EULER>(config,
-                                                        grid,
+        reconstruction::calc_barth_limiter<N_EQS_EULER>(config,
+                                                        FV_grid,
                                                         primvars,
                                                         primvars_grad,
                                                         primvars_max,

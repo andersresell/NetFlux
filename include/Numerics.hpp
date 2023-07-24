@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Utilities.hpp"
-#include "Grid.hpp"
+#include "geometry/FV_Grid.hpp"
 #include "SolverData.hpp"
 
 class NumericalFlux
@@ -79,13 +79,13 @@ public:
 
 namespace gradient
 {
-    using namespace geom;
+    using namespace geometry;
 
     /*Implementing the "compact" gradient in the cell center, from chapter 9.2 in Moukalled et. al. No orthogonal correction for now*/
 
     template <ShortIndex N_EQS>
     inline void calc_green_gauss_gradient(const Config &config,
-                                          const Grid &grid,
+                                          const FV_Grid &FV_grid,
                                           const VecField &vec_field,
                                           GradField &grad_field)
     {
@@ -96,8 +96,8 @@ namespace gradient
         using FieldVec = Eigen::Vector<Scalar, N_EQS>;
         using FieldGrad = Eigen::Matrix<Scalar, N_EQS, N_DIM>;
 
-        const Faces &faces = grid.get_faces();
-        const Cells &cells = grid.get_cells();
+        const Faces &faces = FV_grid.get_faces();
+        const Cells &cells = FV_grid.get_cells();
 
         const Index N_FACES = config.get_N_TOTAL_FACES();
         const Index N_CELLS = config.get_N_INTERIOR_CELLS();
@@ -147,7 +147,7 @@ namespace reconstruction
     /*Implementing the Barth limiter procedure in Blazek*/
     template <ShortIndex N_EQS>
     inline void calc_barth_limiter(const Config &config,
-                                   const Grid &grid,
+                                   const FV_Grid &FV_grid,
                                    const VecField &sol_field,
                                    const GradField &sol_grad,
                                    const VecField &max_field,
@@ -170,7 +170,7 @@ namespace reconstruction
 
         constexpr Scalar EPS = std::numeric_limits<Scalar>::epsilon();
 
-        const Faces &faces = grid.get_faces();
+        const Faces &faces = FV_grid.get_faces();
 
         FieldVec Delta_2;
         FieldGrad gradient;
@@ -252,7 +252,7 @@ namespace reconstruction
     /*Used in calculation of limiters*/
     template <ShortIndex N_EQS>
     void calc_max_and_min_values(const Config &config,
-                                 const Grid &grid,
+                                 const FV_Grid &FV_grid,
                                  const VecField &sol_field,
                                  VecField &max_field,
                                  VecField &min_field)
@@ -267,7 +267,7 @@ namespace reconstruction
         max_field = -DBL_MAX;
         min_field = DBL_MAX;
 
-        const auto &faces = grid.get_faces();
+        const auto &faces = FV_grid.get_faces();
 
         /*the formulas to be computed are (Taken from Blazek)
         U_max = max(U_i, max_j(U_j)) and U_min = min(U_i, min_j(U_j))

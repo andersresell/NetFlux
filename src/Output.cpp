@@ -1,8 +1,8 @@
 
 #include "../include/Output.hpp"
 
-Output::Output(const geom::Grid &grid, const Vector<unique_ptr<Solver>> &solvers, const Config &config)
-    : grid{grid}, solvers{solvers}
+Output::Output(const geometry::PrimalGrid &primal_grid, const Vector<unique_ptr<Solver>> &solvers, const Config &config)
+    : primal_grid{primal_grid}, solvers{solvers}
 {
     string output_dir = config.get_output_dir();
 
@@ -51,13 +51,18 @@ void Output::write_vtk_ascii_grid(const Config &config, const string &filename)
     FAIL_IF_MSG(!ost, "Couldn't open file " + filename);
 
     const Index N_NODES = config.get_N_NODES();
-    const Index N_TETS = config.get_N_TETS();
+    const Index N_CELLS = config.get_N_INTERIOR_CELLS();
     const ShortIndex VTK_TET_TYPE = 10; // VTK_TRI_TYPE = 5;
-    const auto &nodes = grid.get_nodes();
-    const auto &tet_connectivity = grid.get_tet_connect();
+    const auto &nodes = primal_grid.get_nodes();
+    const auto &volume_elements = primal_grid.get_volume_elements();
+    assert(N_CELLS == volume_elements.size());
+
+    // const Vector<Index> &n_ptr = volume_elements.get_n_ptr();
+    // const Vector<Index> &n_ind = volume_elements.get_n_ind();
+    const Index SUM_NODES_OVER_ALL_ELEMENTS = volume_elements.sum_nodes_over_all_elements();
 
     ost << "# vtk DataFile Version 3.0\n"
-        << "Compress 3D\n"
+        << "NetFlux\n"
         << "ASCII\n\n"
         << "DATASET UNSTRUCTURED_GRID\n\n"
         << "POINTS " << N_NODES << " " + string(Scalar_name) + "\n";
@@ -66,13 +71,20 @@ void Output::write_vtk_ascii_grid(const Config &config, const string &filename)
     for (const auto &node : nodes)
         ost << node.x() << " " << node.y() << " " << node.z() << "\n";
 
-    ost << "\nCELLS " << N_TETS << " " << (1 + N_TET_FACES) * N_TETS << "\n";
-    for (const auto &tc : tet_connectivity)
-        ost << N_TET_FACES << " " << tc.a() << " " << tc.b() << " " << tc.c() << " " << tc.d() << "\n";
+    ost << "\nCELLS " << N_CELLS << " " << 1 + SUM_NODES_OVER_ALL_ELEMENTS << "\n";
+    for (Index i{0}; i < N_CELLS; i++)
+    {
+        Index n_element_nodes = volume_elements.get_num_nodes_of_element(i);
+        const Index *element_nodes = volume_elements.get_element_nodes(i);
+        ost << n_element_nodes << " ";
+        for (ShortIndex k{0}; k < n_element_nodes; k++)
+            ost << element_nodes[i] << " ";
+        ost << "\n";
+    }
 
-    ost << "\nCELL_TYPES " << N_TETS << "\n";
-    for (Index i{0}; i < N_TETS; i++)
-        ost << VTK_TET_TYPE << "\n";
+    ost << "\nCELL_TYPES " << N_CELLS << "\n";
+    for (Index i{0}; i < N_CELLS; i++)
+        ost << static_cast<ShortIndex>(volume_elements.get_element_type(i)) << "\n";
 }
 
 /*Writing various fields such as limiters or gradients*/

@@ -221,47 +221,6 @@ namespace geometry
         }
     }
 
-    void Faces::reserve(Index size)
-    {
-        cell_indices.reserve(size);
-        face_normals.reserve(size);
-        centroid_to_face_i.reserve(size);
-        centroid_to_face_j.reserve(size);
-    }
-
-    void Faces::resize_geometry_properties()
-    {
-        face_normals.resize(cell_indices.size());
-        centroid_to_face_i.resize(cell_indices.size());
-        centroid_to_face_j.resize(cell_indices.size());
-    }
-
-    /*Sorting all the Vectors from indices begin to end based on the cell_indices*/
-    void Faces::sort(Index begin, Index end)
-    {
-        assert(begin < end && end <= cell_indices.size());
-
-        Vector<Index> indices(end - begin);
-        for (Index i{begin}; i < end; i++)
-            indices[i - begin] = i;
-
-        std::sort(indices.begin(), indices.end(), [this](Index a, Index b)
-                  { return cell_indices[a] < cell_indices[b]; });
-        for (Index i{begin}; i < end; i++)
-        {
-            std::swap(cell_indices[i], cell_indices[indices[i - begin]]);
-            std::swap(face_normals[i], face_normals[indices[i - begin]]);
-            std::swap(centroid_to_face_i[i], centroid_to_face_i[indices[i - begin]]);
-            std::swap(centroid_to_face_j[i], centroid_to_face_j[indices[i - begin]]);
-        }
-    }
-
-    void Cells::resize(Index size)
-    {
-        volumes.resize(size);
-        centroids.resize(size);
-    }
-
     Index FV_Grid::find_N_GHOST_cells(const Vector<ElementPatch> &element_patches)
     {
         Index N_GHOST{0};

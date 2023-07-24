@@ -16,13 +16,13 @@ class Config
 
     /*Options specified when reading mesh*/
 
-    Index N_NODES{0},
-        N_TETS{0};
+    Index N_NODES{0};
 
     Index N_INTERIOR_CELLS{0},
         N_TOTAL_CELLS{0},
         N_INTERIOR_FACES{0},
-        N_TOTAL_FACES{0};
+        N_TOTAL_FACES{0},
+        N_CONNECTIVITY_INDICES{0}; /*sum of nodes making up elements over all element, used to write vtk file*/
     bool grid_metrics_set{false};
 
     /*Options specified by input file*/
@@ -85,13 +85,14 @@ public:
     {
         return N_NODES;
     }
-    Index get_N_TETS() const { return N_TETS; }
+
     Index get_N_INTERIOR_CELLS() const { return N_INTERIOR_CELLS; }
     Index get_N_TOTAL_CELLS() const { return N_TOTAL_CELLS; }
     Index get_N_GHOST_CELLS() const { return N_TOTAL_CELLS - N_INTERIOR_CELLS; }
     Index get_N_INTERIOR_FACES() const { return N_INTERIOR_FACES; }
     Index get_N_TOTAL_FACES() const { return N_TOTAL_FACES; }
     Index get_N_BOUNDARY_FACES() const { return N_TOTAL_FACES - N_INTERIOR_FACES; }
+    Index get_N_CONNECTIVITY_INDICES() const { return N_CONNECTIVITY_INDICES; }
 
     void set_grid_metrics(Index N_NODES,
                           Index N_INTERIOR_CELLS,

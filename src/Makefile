@@ -18,7 +18,9 @@ LDLIBS = -lyaml-cpp
 SRC = NetFlux.cpp \
 	  Config.cpp \
 	  ConfigParser.cpp \
-	  Grid.cpp \
+	  geometry/PrimalGrid.cpp \
+	  geometry/FV_Grid.cpp \
+	  geometry/GeometryUtilities.cpp \
 	  Solver.cpp \
 	  Utilities.cpp \
 	  Output.cpp \
