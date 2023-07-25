@@ -64,6 +64,8 @@ namespace geometry
     /*Connectivities of elements laid out on the compressed row storage format (CRS) as METIS uses.*/
     class Elements
     {
+        friend class Faces;
+
     protected:
         Vector<Index> n_ptr = {0};
         Vector<Index> n_ind;
@@ -71,7 +73,8 @@ namespace geometry
 
     public:
         Elements() = default;
-
+        Elements(const Elements &other);
+        Elements &operator=(Elements other);
         Index size() const { return n_ptr.size() - 1; }
 
         // const Vector<Index> &get_n_ptr() const { return n_ptr; }
@@ -210,7 +213,7 @@ namespace geometry
             {
                 if (i != other.i)
                     return i < other.i;
-                assert(j != other.j); // Two faces can't ahve the same owner and neigbour cells
+                assert(j != other.j); // Two faces can't have the same owner and neigbour cells
                 return j < other.j;
             }
         };
@@ -222,7 +225,7 @@ namespace geometry
 
         void reserve(Index size);
         void resize_geometry_properties();
-        void sort(Index first, Index last);
+        void sort(Index begin, Index end, const Elements &face_elements_old, Elements &face_elements_to_sort);
 
     public:
         Index size() const { return cell_indices.size(); }

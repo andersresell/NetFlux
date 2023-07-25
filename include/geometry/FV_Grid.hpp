@@ -30,7 +30,7 @@ namespace geometry
         /*------Helper functions for creating face structure-------*/
 
         // Reorders the (for now interior) faces in an optimal fashion based on the face indices
-        void reorder_faces(const Config &config);
+        void reorder_faces(const Config &config, Elements &face_elements);
 
         /*Used to find the number of ghost cells before this value is set in Config object*/
         Index find_N_GHOST_cells(const Vector<ElementPatch> &element_patches);

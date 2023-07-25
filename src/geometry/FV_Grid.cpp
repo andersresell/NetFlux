@@ -136,8 +136,10 @@ namespace geometry
 
         /*All Vectors within faces and cells must have the correct size before reordering*/
         faces.resize_geometry_properties();
+        print_grid(config);
+
         cout << "Reorder faces..\n";
-        reorder_faces(config);
+        reorder_faces(config, face_elements);
 
         /*--------------------------------------------------------------------
         Ensuring that no unneccessary memory isn't used
@@ -207,22 +209,26 @@ namespace geometry
          the max value of i may be lower than N_INTERIOR CELLS-1*/
     }
 
-    void FV_Grid::reorder_faces(const Config &config)
+    void FV_Grid::reorder_faces(const Config &config, Elements &face_elements)
     {
         /*Sorts the faces based on the indices of the neighbour cells. We want them to be sorted in increasing order,
         with the owner cell i being prioritized first and the neighbour cell j second. As an example,
         the ordering {(0,1), (0,3), (0,2), (1,1)} should be changed to {(0,1), (0,2), (0,3), (1,1)}
         The way the grid is constructed this is allready achieved for the owner cell i. However j might need sorting.
         The comparison operator < for Face is defined for this purpose.
-        The interior and each boundary patch is sorted separately.*/
+        The interior and each boundary patch is sorted separately. The face elements are sorted accordingly*/
+
+        Elements face_elements_to_sort;
+
         Index N_INTERIOR_FACES = config.get_N_INTERIOR_FACES();
 
-        faces.sort(0, N_INTERIOR_FACES);
+        faces.sort(0, N_INTERIOR_FACES, face_elements, face_elements_to_sort);
 
         for (Patch &patch : patches)
         {
-            faces.sort(patch.FIRST_FACE, patch.FIRST_FACE + patch.N_FACES);
+            faces.sort(patch.FIRST_FACE, patch.FIRST_FACE + patch.N_FACES, face_elements, face_elements_to_sort);
         }
+        face_elements = face_elements_to_sort;
     }
 
     Index FV_Grid::find_N_GHOST_cells(const Vector<ElementPatch> &element_patches)

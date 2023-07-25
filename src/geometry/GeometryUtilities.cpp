@@ -2,6 +2,26 @@
 
 namespace geometry
 {
+
+    Elements::Elements(const Elements &other)
+
+    {
+        n_ptr.resize(other.n_ptr.size());
+        n_ind.resize(other.n_ind.size());
+        element_types.resize(other.element_types.size());
+        std::copy(other.n_ptr.begin(), other.n_ptr.end(), n_ptr.begin());
+        std::copy(other.n_ind.begin(), other.n_ind.end(), n_ind.begin());
+        std::copy(other.element_types.begin(), other.element_types.end(), element_types.begin());
+    }
+
+    Elements &Elements::operator=(Elements other)
+    {
+        std::swap(this->n_ptr, other.n_ptr);
+        std::swap(this->n_ind, other.n_ind);
+        std::swap(this->element_types, other.element_types);
+        return *this;
+    }
+
     void Elements::reserve(Index n_elements, ShortIndex max_nodes_per_element)
     {
         n_ptr.reserve(n_elements + 1);
@@ -283,9 +303,10 @@ namespace geometry
     }
 
     /*Sorting all the Vectors from indices begin to end based on the cell_indices*/
-    void Faces::sort(Index begin, Index end)
+    void Faces::sort(Index begin, Index end, const Elements &face_elements_old, Elements &face_elements_to_sort)
     {
         assert(begin < end && end <= cell_indices.size());
+        assert(face_elements_to_sort.size() == begin);
 
         Vector<Index> indices(end - begin);
         for (Index i{begin}; i < end; i++)
@@ -293,13 +314,17 @@ namespace geometry
 
         std::sort(indices.begin(), indices.end(), [this](Index a, Index b)
                   { return cell_indices[a] < cell_indices[b]; });
+
         for (Index i{begin}; i < end; i++)
         {
             std::swap(cell_indices[i], cell_indices[indices[i - begin]]);
             std::swap(face_normals[i], face_normals[indices[i - begin]]);
             std::swap(centroid_to_face_i[i], centroid_to_face_i[indices[i - begin]]);
             std::swap(centroid_to_face_j[i], centroid_to_face_j[indices[i - begin]]);
+            face_elements_to_sort.add_element(face_elements_old.get_element_type(indices[i - begin]),
+                                              face_elements_old.get_element_nodes(indices[i - begin]));
         }
+        assert(face_elements_to_sort.size() == end);
     }
     string Faces::to_string(Index ij) const
     {
