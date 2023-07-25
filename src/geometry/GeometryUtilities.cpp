@@ -367,11 +367,6 @@ namespace geometry
         Vec3 centroid_geometric = (n0 + n1 + n2 + n3 + n4 + n5 + n6 + n7) / 8; // Geometric centre of quad
         Scalar volume_pyramid;
         Vec3 centroid_pyramid;
-        cout << "n0 " << array_to_string(n0.data(), 3) << endl;
-        cout << "n1 " << array_to_string(n1.data(), 3) << endl;
-        cout << "n2 " << array_to_string(n2.data(), 3) << endl;
-        cout << "n3 " << array_to_string(n3.data(), 3) << endl;
-        cout << "cg " << array_to_string(centroid_geometric.data(), 3) << endl;
 
         pyramid_calc_geometry_properties(n0, n1, n2, n3, centroid_geometric, volume_pyramid, centroid_pyramid);
         volume += volume_pyramid;

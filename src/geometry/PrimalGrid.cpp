@@ -46,8 +46,6 @@ namespace geometry
             element_patch.boundary_elements.shrink_to_fit();
         assert(element_patches.capacity() == element_patches.size());
 
-        print_grid();
-
         if (config.check_grid_validity())
             partial_validity_check();
 

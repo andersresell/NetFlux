@@ -9,6 +9,7 @@ namespace geometry
         {
             create_face_structure(config, primal_grid);
             calc_geometry_properties(config, primal_grid);
+            print_grid(config, primal_grid.face_elements);
         }
         catch (const std::exception &e)
         {
@@ -34,7 +35,7 @@ namespace geometry
         Step 2: Associate the face nodes with its two neighboring cells.
         --------------------------------------------------------------------*/
 
-        map<SortedFaceElement, pair<Index, long int>> faces_to_cells;
+        map<FaceElement, pair<Index, long int>> faces_to_cells;
         constexpr int CELL_NOT_YET_ASSIGNED{-1};
 
         for (Index cell_index{0}; cell_index < volume_elements.size(); cell_index++)
@@ -46,18 +47,18 @@ namespace geometry
                 FaceElement face_element = get_face_element_k_of_volume_element(volume_element_type,
                                                                                 volume_elements.get_element_nodes(cell_index),
                                                                                 k);
-                SortedFaceElement sorted_face_element{face_element};
-                assert(faces_to_cells.count(sorted_face_element) <= 1);
-                if (faces_to_cells.count(sorted_face_element) == 0)
+
+                assert(faces_to_cells.count(face_element) <= 1);
+                if (faces_to_cells.count(face_element) == 0)
                 {
                     // Discovered a new face
-                    faces_to_cells.emplace(sorted_face_element, pair{cell_index, CELL_NOT_YET_ASSIGNED});
+                    faces_to_cells.emplace(face_element, pair{cell_index, CELL_NOT_YET_ASSIGNED});
                 }
                 else
                 {
-                    assert(faces_to_cells.at(sorted_face_element).second == CELL_NOT_YET_ASSIGNED);
+                    assert(faces_to_cells.at(face_element).second == CELL_NOT_YET_ASSIGNED);
                     // Face allready discovered by previous cell
-                    faces_to_cells.at(sorted_face_element).second = cell_index;
+                    faces_to_cells.at(face_element).second = cell_index;
                 }
             }
         }
@@ -103,10 +104,9 @@ namespace geometry
             {
                 ElementType e_type = surface_elements.get_element_type(ij);
                 FaceElement face_element{e_type, surface_elements.get_element_nodes(ij)};
-                SortedFaceElement sorted_face_element{face_element};
                 assert(faces_to_cells.at(face_element).second == CELL_NOT_YET_ASSIGNED);
-                faces_to_cells.at(sorted_face_element).second = j_ghost;
-                Index i_domain = faces_to_cells.at(sorted_face_element).first;
+                faces_to_cells.at(face_element).second = j_ghost;
+                Index i_domain = faces_to_cells.at(face_element).first;
                 assert(i_domain < j_ghost);
                 faces.cell_indices.emplace_back(i_domain, j_ghost);
                 face_elements.add_element(e_type, face_element.nodes.data());
@@ -243,7 +243,6 @@ namespace geometry
                                        Vec3 &centroid_to_face_i,
                                        Vec3 &centroid_to_face_j)
     {
-        cerr << "element ind " << array_to_string(element, get_num_nodes_in_element(e_type));
         face_element_calc_face_normal(e_type, element, nodes, S_ij);
         Scalar normal_dot_product = S_ij.dot(cell_center_j - cell_center_i);
         assert(normal_dot_product != 0); // Just banning this for now, altough it is possibly possible with a high skewness, but valid mesh

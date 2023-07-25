@@ -152,15 +152,33 @@ namespace geometry
         string to_string(Index i) const;
     };
 
-    struct FaceElement
+    class FaceElement
     {
+        std::array<Index, MAX_NODES_FACE_ELEMENT> nodes_sorted;
+
+    public:
         std::array<Index, MAX_NODES_FACE_ELEMENT> nodes;
         const ShortIndex n_nodes;
         const ElementType e_type;
+
         FaceElement(ElementType e_type, const Index *element) : n_nodes{get_num_nodes_in_element(e_type)}, e_type{e_type}
+
         {
             assert(!is_volume_element(e_type));
             std::copy(element, element + n_nodes, nodes.begin());
+            std::copy(element, element + n_nodes, nodes_sorted.begin());
+            std::sort(nodes_sorted.begin(), nodes_sorted.begin() + n_nodes);
+        }
+
+        bool operator<(const FaceElement &other) const
+        {
+            if (n_nodes != other.n_nodes)
+                return n_nodes < other.n_nodes;
+
+            for (ShortIndex i{0}; i < n_nodes; i++)
+                if (nodes_sorted[i] != other.nodes_sorted[i])
+                    return nodes_sorted[i] < other.nodes_sorted[i];
+            return false;
         }
     };
 
@@ -184,26 +202,26 @@ namespace geometry
                                      ElementType &face_element_type,
                                      array<Index, MAX_NODES_FACE_ELEMENT> &fe);
 
-    struct SortedFaceElement : public FaceElement
-    {
-        SortedFaceElement(const FaceElement &rhs) : FaceElement(rhs)
-        {
-            std::sort(nodes.begin(), nodes.begin() + n_nodes);
-        }
+    // struct SortedFaceElement : public FaceElement
+    // {
+    //     SortedFaceElement(const FaceElement &rhs) : FaceElement(rhs)
+    //     {
+    //         std::sort(nodes.begin(), nodes.begin() + n_nodes);
+    //     }
 
-        bool operator<(const SortedFaceElement &other) const
-        {
-            if (n_nodes == other.n_nodes)
-            {
-                for (ShortIndex i{0}; i < n_nodes; i++)
-                    if (nodes[i] != other.nodes[i])
-                        return nodes[i] < other.nodes[i];
-                return false;
-            }
-            else
-                return n_nodes < other.n_nodes;
-        }
-    };
+    //     bool operator<(const SortedFaceElement &other) const
+    //     {
+    //         if (n_nodes == other.n_nodes)
+    //         {
+    //             for (ShortIndex i{0}; i < n_nodes; i++)
+    //                 if (nodes[i] != other.nodes[i])
+    //                     return nodes[i] < other.nodes[i];
+    //             return false;
+    //         }
+    //         else
+    //             return n_nodes < other.n_nodes;
+    //     }
+    // };
 
     /*Holds name and triangles of a boundary patch*/
     struct ElementPatch
