@@ -252,8 +252,11 @@ namespace geometry
                                                 nodes[element[4]], nodes[element[5]], nodes[element[6]], nodes[element[7]],
                                                 volume, centroid);
         else if (e_type == ElementType::Pyramid)
-
-            else if (e_type == ElementType::Wedge)
+            pyramid_calc_geometry_properties(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]],
+                                             nodes[element[4]], volume, centroid);
+        else if (e_type == ElementType::Wedge)
+            wedge_calc_geometry_properties(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]],
+                                           nodes[element[4]], nodes[element[5]], volume, centroid);
     }
 
     void face_element_calc_centroid(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &centroid)
