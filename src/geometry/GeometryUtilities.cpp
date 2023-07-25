@@ -48,8 +48,10 @@ namespace geometry
                                                      const Index *volume_element,
                                                      ShortIndex face_k)
     {
-        assert(volume_element_type == ElementType::Tetrahedron || volume_element_type == ElementType::Hexahedron);
-        assert(is_volume_element(volume_element_type));
+        assert(volume_element_type == ElementType::Tetrahedron ||
+               volume_element_type == ElementType::Hexahedron ||
+               volume_element_type == ElementType::Pyramid ||
+               volume_element_type == ElementType::Wedge);
         assert(face_k <= get_num_faces_volume_element(volume_element_type));
         ElementType face_element_type;
         array<Index, MAX_NODES_FACE_ELEMENT> face_element;
@@ -317,7 +319,7 @@ namespace geometry
         quadrilateral_calc_centroid(n0, n1, n2, n3, centroid_base);
         Vec3 distance_top_to_centroid_base = centroid_base - n4;
         Vec3 S_base;
-        quadrilateral_calc_face_normal(n0, n1, n2, n3, S_base);
+        quadrilateral_calc_face_normal(n0, n3, n2, n1, S_base);
 
         centroid = 0.75 * centroid_base + 0.25 * n4;
         volume = distance_top_to_centroid_base.dot(S_base) / 3;
@@ -365,28 +367,33 @@ namespace geometry
         Vec3 centroid_geometric = (n0 + n1 + n2 + n3 + n4 + n5 + n6 + n7) / 8; // Geometric centre of quad
         Scalar volume_pyramid;
         Vec3 centroid_pyramid;
+        cout << "n0 " << array_to_string(n0.data(), 3) << endl;
+        cout << "n1 " << array_to_string(n1.data(), 3) << endl;
+        cout << "n2 " << array_to_string(n2.data(), 3) << endl;
+        cout << "n3 " << array_to_string(n3.data(), 3) << endl;
+        cout << "cg " << array_to_string(centroid_geometric.data(), 3) << endl;
 
         pyramid_calc_geometry_properties(n0, n1, n2, n3, centroid_geometric, volume_pyramid, centroid_pyramid);
         volume += volume_pyramid;
         centroid += volume_pyramid * centroid_pyramid;
 
-        pyramid_calc_geometry_properties(n4, n5, n6, n7, centroid_geometric, volume_pyramid, centroid_pyramid);
+        pyramid_calc_geometry_properties(n4, n7, n6, n5, centroid_geometric, volume_pyramid, centroid_pyramid);
         volume += volume_pyramid;
         centroid += volume_pyramid * centroid_pyramid;
 
-        pyramid_calc_geometry_properties(n3, n0, n4, n7, centroid_geometric, volume_pyramid, centroid_pyramid);
+        pyramid_calc_geometry_properties(n4, n0, n3, n7, centroid_geometric, volume_pyramid, centroid_pyramid);
         volume += volume_pyramid;
         centroid += volume_pyramid * centroid_pyramid;
 
-        pyramid_calc_geometry_properties(n1, n2, n6, n5, centroid_geometric, volume_pyramid, centroid_pyramid);
+        pyramid_calc_geometry_properties(n2, n1, n5, n6, centroid_geometric, volume_pyramid, centroid_pyramid);
         volume += volume_pyramid;
         centroid += volume_pyramid * centroid_pyramid;
 
-        pyramid_calc_geometry_properties(n0, n1, n5, n4, centroid_geometric, volume_pyramid, centroid_pyramid);
+        pyramid_calc_geometry_properties(n1, n0, n4, n5, centroid_geometric, volume_pyramid, centroid_pyramid);
         volume += volume_pyramid;
         centroid += volume_pyramid * centroid_pyramid;
 
-        pyramid_calc_geometry_properties(n2, n3, n7, n6, centroid_geometric, volume_pyramid, centroid_pyramid);
+        pyramid_calc_geometry_properties(n3, n2, n6, n7, centroid_geometric, volume_pyramid, centroid_pyramid);
         volume += volume_pyramid;
         centroid += volume_pyramid * centroid_pyramid;
 
@@ -395,10 +402,13 @@ namespace geometry
 
     void quadrilateral_calc_face_normal(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &S_ij)
     {
-        Vec3 S_tri_a, S_tri_b;
-        triangle_calc_face_normal(n0, n1, n2, S_tri_a);
-        triangle_calc_face_normal(n0, n1, n3, S_tri_b);
-        S_ij = 0.5 * (S_tri_a + S_tri_b);
+
+        Vec3 S_tri;
+        triangle_calc_face_normal(n0, n1, n2, S_tri);
+        S_ij = S_tri;
+        triangle_calc_face_normal(n0, n2, n3, S_tri);
+        assert(S_ij.dot(S_tri) > 0);
+        S_ij += S_tri;
     }
 
     void quadrilateral_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &centroid)
@@ -406,15 +416,16 @@ namespace geometry
         Vec3 S_ij_tri_a, S_ij_tri_b;
         triangle_calc_face_normal(n0, n1, n2, S_ij_tri_a);
         triangle_calc_face_normal(n0, n2, n3, S_ij_tri_b);
+        assert(S_ij_tri_a.dot(S_ij_tri_b) > 0.0);
 
-        Vec3 centroid_geometric_tri_a, centroid_geometric_tri_b;
-        triangle_calc_centroid(n0, n1, n2, centroid_geometric_tri_a);
-        triangle_calc_centroid(n0, n2, n3, centroid_geometric_tri_b);
+        Vec3 centroid_tri_a, centroid_tri_b;
+        triangle_calc_centroid(n0, n1, n2, centroid_tri_a);
+        triangle_calc_centroid(n0, n2, n3, centroid_tri_b);
 
         Scalar S_tri_a = S_ij_tri_a.norm();
         Scalar S_tri_b = S_ij_tri_b.norm();
         Scalar S_quad = S_tri_a + S_tri_b;
-        centroid = (S_tri_a * centroid_geometric_tri_a + S_tri_b * centroid_geometric_tri_b) / S_quad;
+        centroid = (S_tri_a * centroid_tri_a + S_tri_b * centroid_tri_b) / S_quad;
     }
 
     void Faces::reserve(Index size)
@@ -438,10 +449,6 @@ namespace geometry
         assert(begin < end && end <= cell_indices.size());
         assert(face_elements_to_sort.size() == begin);
 
-        // Vector<Index> indices(end - begin);
-        // for (Index i{begin}; i < end; i++)
-        //     indices[i - begin] = i;
-
         Vector<Index> indices(end - begin);
         for (Index i{begin}; i < end; i++)
             indices[i - begin] = i;
@@ -449,15 +456,11 @@ namespace geometry
         std::sort(indices.begin(), indices.end(), [this](Index a, Index b)
                   { return cell_indices[a] < cell_indices[b]; });
 
-        /*Copying all content of faces */
-        Vector<CellPair> cell_indices_copy(end - begin);
-        Vector<Vec3> face_normals_copy(end - begin);
-        Vector<Vec3> centroid_to_face_i_copy(end - begin);
-        Vector<Vec3> centroid_to_face_j_copy(end - begin);
-        std::copy(cell_indices.begin() + begin, cell_indices.begin() + end, cell_indices_copy.begin());
-        std::copy(face_normals.begin() + begin, face_normals.begin() + end, face_normals_copy.begin());
-        std::copy(centroid_to_face_i.begin() + begin, centroid_to_face_i.begin() + end, centroid_to_face_i_copy.begin());
-        std::copy(centroid_to_face_j.begin() + begin, centroid_to_face_j.begin() + end, centroid_to_face_j_copy.begin());
+        /*Copying all content of faces in the range [begin, end) */
+        const Vector<CellPair> cell_indices_copy(cell_indices.begin() + begin, cell_indices.begin() + end);
+        const Vector<Vec3> face_normals_copy(face_normals.begin() + begin, face_normals.begin() + end);
+        const Vector<Vec3> centroid_to_face_i_copy(centroid_to_face_i.begin() + begin, centroid_to_face_i.begin() + end);
+        const Vector<Vec3> centroid_to_face_j_copy(centroid_to_face_j.begin() + begin, centroid_to_face_j.begin() + end);
 
         for (Index i{begin}; i < end; i++)
         {
@@ -468,6 +471,7 @@ namespace geometry
             face_elements_to_sort.add_element(face_elements_old.get_element_type(indices[i - begin]),
                                               face_elements_old.get_element_nodes(indices[i - begin]));
         }
+
         assert(face_elements_to_sort.size() == end);
     }
     string Faces::to_string(Index ij) const

@@ -65,6 +65,7 @@ class Config
     Scalar primvars_inf[N_EQS_EULER]{0.0}; // May be used for setting initial values or boundary conditions
 
     bool check_physical_validity_{false};
+    bool check_grid_validity_{false};
 
     bool write_vtk_debug_{false};
 
@@ -167,6 +168,8 @@ public:
     }
 
     bool check_physical_validity() const { return check_physical_validity_; }
+
+    bool check_grid_validity() const { return check_grid_validity_; }
 
     bool write_vtk_debug() const { return write_vtk_debug_; }
 };

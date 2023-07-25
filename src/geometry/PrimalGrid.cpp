@@ -8,9 +8,6 @@ namespace geometry
         try
         {
             read_mesh(config);
-#ifndef NDEBUG
-            print_grid();
-#endif
         }
         catch (const std::exception &e)
         {
@@ -48,6 +45,11 @@ namespace geometry
         for (auto &element_patch : element_patches)
             element_patch.boundary_elements.shrink_to_fit();
         assert(element_patches.capacity() == element_patches.size());
+
+        print_grid();
+
+        if (config.check_grid_validity())
+            partial_validity_check();
 
         cout << "Native mesh has been read\n";
     }
@@ -177,7 +179,7 @@ namespace geometry
             auto e_type = static_cast<ElementType>(vtk_e_id_int);
 
             if (!is_volume_element(e_type))
-                throw std::runtime_error("Face element of type " + element_type_to_string.at(e_type) +
+                throw std::runtime_error("Face element of type " + get_element_string(e_type) +
                                          "detected in su2 mesh file in the volume mesh");
             for (ShortIndex k{0}; k < get_num_nodes_in_element(e_type); k++)
                 ist >> volume_element_nodes[k];
@@ -229,7 +231,7 @@ namespace geometry
                                              ") detected in su2 mesh file\n");
                 auto e_type = static_cast<ElementType>(vtk_e_id_int);
                 if (is_volume_element(e_type))
-                    throw std::runtime_error("Volume element of type " + element_type_to_string.at(e_type) +
+                    throw std::runtime_error("Volume element of type " + get_element_string(e_type) +
                                              "detected in su2 mesh file among marker elements");
                 for (ShortIndex k{0}; k < get_num_nodes_in_element(e_type); k++)
                     ist >> boundary_element_nodes[k];
@@ -262,5 +264,34 @@ namespace geometry
             cout << "\n\n";
         }
     }
+    /*Checking if volume is positive and if the centroid is within bounding box of element nodes*/
+    void PrimalGrid::partial_validity_check()
+    {
+        for (Index i{0}; i < volume_elements.size(); i++)
+        {
+            Vec3 centroid;
+            Scalar vol;
+            volume_element_calc_geometry_properties(volume_elements.get_element_type(i),
+                                                    volume_elements.get_element_nodes(i),
+                                                    nodes, vol, centroid);
 
+            Vec3 max_coord, min_coord;
+            max_coord.setConstant(-std::numeric_limits<double>::infinity());
+            min_coord.setConstant(std::numeric_limits<double>::infinity());
+
+            for (ShortIndex k{0}; k < volume_elements.get_n_element_nodes(i); k++)
+            {
+                const Vec3 &node = nodes[volume_elements.get_element_nodes(i)[k]];
+                max_coord = max_coord.cwiseMax(centroid.cwiseMax(node));
+                min_coord = min_coord.cwiseMin(centroid.cwiseMin(node));
+            }
+
+            if (vol < 0.0)
+                std::runtime_error("Element with negative volume detected in primal mesh. (Element " + std::to_string(i) + ")\n");
+
+            for (Index i_dim{0}; i_dim < N_DIM; i_dim++)
+                if (is_approx_equal(max_coord[i_dim], centroid[i_dim]) || is_approx_equal(max_coord[i_dim], centroid[i_dim]))
+                    std::runtime_error("Element with centroid outside bounding box detected in primal mesh. (Element " + std::to_string(i) + ")\n");
+        }
+    }
 }

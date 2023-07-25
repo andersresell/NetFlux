@@ -32,6 +32,7 @@ namespace geometry
         const Vector<ElementPatch> &get_element_patches() const { return element_patches; }
         Elements &get_face_elements() { return face_elements; }
         void print_grid() const;
+        void partial_validity_check();
     };
 
 }

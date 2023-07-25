@@ -14,22 +14,6 @@ namespace geometry
         Pyramid = 14,
         Wedge = 13
     };
-    inline bool legal_vtk_element_identifier(ShortIndex vtk_id)
-    {
-        auto e_type = static_cast<ElementType>(vtk_id);
-        switch (e_type)
-        {
-        case ElementType::Triangle:
-        case ElementType::Quadrilateral:
-        case ElementType::Tetrahedron:
-        case ElementType::Hexahedron:
-        case ElementType::Pyramid:
-        case ElementType::Wedge:
-            return true;
-        default:
-            return false;
-        }
-    }
 
     constexpr ShortIndex N_NODES_TET{4};
     constexpr ShortIndex N_FACES_TET{4};
@@ -51,51 +35,68 @@ namespace geometry
     for volume and face elements*/
     constexpr ShortIndex MAX_NODES_VOLUME_ELEMENT{N_NODES_HEX};
     constexpr ShortIndex MAX_NODES_FACE_ELEMENT{N_NODES_QUAD};
-
-    const map<ElementType, ShortIndex> element_num_nodes = {{ElementType::Triangle, N_NODES_TRI},
-                                                            {ElementType::Quadrilateral, N_NODES_QUAD},
-                                                            {ElementType::Tetrahedron, N_NODES_TET},
-                                                            {ElementType::Hexahedron, N_NODES_HEX},
-                                                            {ElementType::Pyramid, N_NODES_PYRAMID},
-                                                            {ElementType::Wedge, N_NODES_WEDGE}};
-    const map<ElementType, ShortIndex> volume_element_num_faces = {{ElementType::Tetrahedron, N_FACES_TET},
-                                                                   {ElementType::Hexahedron, N_FACES_HEX},
-                                                                   {ElementType::Pyramid, N_FACES_PYRAMID}};
-    const map<ElementType, string> element_to_string = {{ElementType::Triangle, "Triangle"},
-                                                        {ElementType::Quadrilateral, "Quadrilateral"},
-                                                        {ElementType::Tetrahedron, "Tetrahedron"},
-                                                        {ElementType::Hexahedron, "Hexahedron"},
-                                                        {ElementType::Pyramid, "Pyramid"},
-                                                        {ElementType::Wedge, "Wedge"}};
-    const map<ElementType, bool> element_is_volume = {{ElementType::Triangle, false},
-                                                      {ElementType::Tetrahedron, true},
-                                                      {ElementType::Quadrilateral, false},
-                                                      {ElementType::Hexahedron, true},
-                                                      {ElementType::Pyramid, true},
-                                                      {ElementType::Wedge, true}};
-
+    namespace element_details
+    {
+        const map<ElementType, ShortIndex> element_num_nodes = {{ElementType::Triangle, N_NODES_TRI},
+                                                                {ElementType::Quadrilateral, N_NODES_QUAD},
+                                                                {ElementType::Tetrahedron, N_NODES_TET},
+                                                                {ElementType::Hexahedron, N_NODES_HEX},
+                                                                {ElementType::Pyramid, N_NODES_PYRAMID},
+                                                                {ElementType::Wedge, N_NODES_WEDGE}};
+        const map<ElementType, ShortIndex> volume_element_num_faces = {{ElementType::Tetrahedron, N_FACES_TET},
+                                                                       {ElementType::Hexahedron, N_FACES_HEX},
+                                                                       {ElementType::Pyramid, N_FACES_PYRAMID}};
+        const map<ElementType, string> element_to_string = {{ElementType::Triangle, "Triangle"},
+                                                            {ElementType::Quadrilateral, "Quadrilateral"},
+                                                            {ElementType::Tetrahedron, "Tetrahedron"},
+                                                            {ElementType::Hexahedron, "Hexahedron"},
+                                                            {ElementType::Pyramid, "Pyramid"},
+                                                            {ElementType::Wedge, "Wedge"}};
+        const map<ElementType, bool> element_is_volume = {{ElementType::Triangle, false},
+                                                          {ElementType::Tetrahedron, true},
+                                                          {ElementType::Quadrilateral, false},
+                                                          {ElementType::Hexahedron, true},
+                                                          {ElementType::Pyramid, true},
+                                                          {ElementType::Wedge, true}};
+    }
+    inline bool legal_vtk_element_identifier(ShortIndex vtk_id)
+    {
+        auto e_type = static_cast<ElementType>(vtk_id);
+        switch (e_type)
+        {
+        case ElementType::Triangle:
+        case ElementType::Quadrilateral:
+        case ElementType::Tetrahedron:
+        case ElementType::Hexahedron:
+        case ElementType::Pyramid:
+        case ElementType::Wedge:
+            return true;
+        default:
+            return false;
+        }
+    }
     inline ShortIndex get_num_nodes_in_element(ElementType e_type)
     {
-        assert(element_num_nodes.count(e_type) == 1);
-        return element_num_nodes.at(e_type);
-    }
-    inline ShortIndex get_num_faces_volume_element(ElementType e_type)
-    {
-        assert(is_volume_element(e_type));
-        assert(volume_element_num_faces.count(e_type) == 1);
-        return volume_element_num_faces.at(e_type);
+        assert(element_details::element_num_nodes.count(e_type) == 1);
+        return element_details::element_num_nodes.at(e_type);
     }
 
     inline string get_element_string(ElementType e_type)
     {
-        assert(element_to_string.count(e_type) == 1);
-        return element_to_string.at(e_type);
+        assert(element_details::element_to_string.count(e_type) == 1);
+        return element_details::element_to_string.at(e_type);
     }
 
     inline bool is_volume_element(ElementType e_type)
     {
-        assert(element_is_volume.count(e_type) == 1);
-        return element_is_volume.at(e_type);
+        assert(element_details::element_is_volume.count(e_type) == 1);
+        return element_details::element_is_volume.at(e_type);
+    }
+    inline ShortIndex get_num_faces_volume_element(ElementType e_type)
+    {
+        assert(is_volume_element(e_type));
+        assert(element_details::volume_element_num_faces.count(e_type) == 1);
+        return element_details::volume_element_num_faces.at(e_type);
     }
 
     /*Connectivities of elements laid out on the compressed row storage format (CRS) as METIS uses.*/

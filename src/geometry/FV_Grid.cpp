@@ -134,7 +134,6 @@ namespace geometry
         /*All Vectors within faces and cells must have the correct size before reordering*/
         faces.resize_geometry_properties();
 
-        cout << "Reorder faces..\n";
         reorder_faces(config, face_elements);
 
         /*--------------------------------------------------------------------
@@ -244,6 +243,7 @@ namespace geometry
                                        Vec3 &centroid_to_face_i,
                                        Vec3 &centroid_to_face_j)
     {
+        cerr << "element ind " << array_to_string(element, get_num_nodes_in_element(e_type));
         face_element_calc_face_normal(e_type, element, nodes, S_ij);
         Scalar normal_dot_product = S_ij.dot(cell_center_j - cell_center_i);
         assert(normal_dot_product != 0); // Just banning this for now, altough it is possibly possible with a high skewness, but valid mesh
