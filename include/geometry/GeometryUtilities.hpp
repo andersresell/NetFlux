@@ -207,9 +207,9 @@ namespace geometry
         struct CellPair
         {
             CellPair(Index i, Index j) : i{i}, j{j} {} // For some reason I had to define the constructor to make emplace_back work
-
+            CellPair() = default;
             Index i, j;
-            bool operator<(const CellPair &other) const
+            bool operator<(CellPair other) const
             {
                 if (i != other.i)
                     return i < other.i;

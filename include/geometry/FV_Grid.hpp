@@ -49,7 +49,7 @@ namespace geometry
                                  const Vector<Vec3> &nodes,
                                  const Vec3 &centroid_i,
                                  Vec3 &centroid_ghost);
-        void print_grid(const Config &config) const;
+        void print_grid(const Config &config, const Elements &face_elements) const;
     };
 
 };

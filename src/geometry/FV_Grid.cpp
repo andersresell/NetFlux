@@ -9,9 +9,6 @@ namespace geometry
         {
             create_face_structure(config, primal_grid);
             calc_geometry_properties(config, primal_grid);
-#ifndef NDEBUG
-            print_grid(config);
-#endif
         }
         catch (const std::exception &e)
         {
@@ -136,11 +133,12 @@ namespace geometry
 
         /*All Vectors within faces and cells must have the correct size before reordering*/
         faces.resize_geometry_properties();
-        print_grid(config);
+        print_grid(config, face_elements);
 
         cout << "Reorder faces..\n";
         reorder_faces(config, face_elements);
 
+        print_grid(config, face_elements);
         /*--------------------------------------------------------------------
         Ensuring that no unneccessary memory isn't used
         --------------------------------------------------------------------*/
@@ -271,7 +269,7 @@ namespace geometry
         centroid_ghost = 2 * centroid_face - centroid_i;
     }
 
-    void FV_Grid::print_grid(const Config &config) const
+    void FV_Grid::print_grid(const Config &config, const Elements &face_elements) const
     {
 
         cout << "CELLS:\n";
@@ -284,7 +282,7 @@ namespace geometry
 
         cout << "\n\nFACES:\n";
         for (Index ij{0}; ij < faces.size(); ij++)
-            cout << faces.to_string(ij) << endl;
+            cout << faces.to_string(ij) << ", Element: " << face_elements.to_string(ij) << endl;
 
         cout << "\n\nPATCHES:\n";
         for (const auto &patch : patches)
