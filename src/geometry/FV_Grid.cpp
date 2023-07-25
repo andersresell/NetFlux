@@ -133,12 +133,10 @@ namespace geometry
 
         /*All Vectors within faces and cells must have the correct size before reordering*/
         faces.resize_geometry_properties();
-        print_grid(config, face_elements);
 
         cout << "Reorder faces..\n";
         reorder_faces(config, face_elements);
 
-        print_grid(config, face_elements);
         /*--------------------------------------------------------------------
         Ensuring that no unneccessary memory isn't used
         --------------------------------------------------------------------*/
