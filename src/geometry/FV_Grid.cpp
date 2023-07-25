@@ -40,8 +40,8 @@ namespace geometry
         for (Index cell_index{0}; cell_index < volume_elements.size(); cell_index++)
         {
             ElementType volume_element_type = volume_elements.get_element_type(cell_index);
-            assert(is_volume_element.at(volume_element_type));
-            for (ShortIndex k{0}; k < num_nodes_in_element.at(volume_element_type); k++)
+            assert(is_volume_element(volume_element_type));
+            for (ShortIndex k{0}; k < get_num_faces_volume_element(volume_element_type); k++)
             {
                 FaceElement face_element = get_face_element_k_of_volume_element(volume_element_type,
                                                                                 volume_elements.get_element_nodes(cell_index),
@@ -261,7 +261,7 @@ namespace geometry
                                       const Vec3 &centroid_i,
                                       Vec3 &centroid_ghost)
     {
-        assert(!is_volume_element.at(boundary_e_type));
+        assert(!is_volume_element(boundary_e_type));
         Vec3 centroid_face;
         face_element_calc_centroid(boundary_e_type, boundary_element, nodes, centroid_face);
         centroid_ghost = 2 * centroid_face - centroid_i;

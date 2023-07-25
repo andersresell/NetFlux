@@ -73,7 +73,7 @@ void Output::write_vtk_ascii_grid(const Config &config, const string &filename)
     ost << "\nCELLS " << N_CELLS << " " << N_CELLS + SUM_NODES_OVER_ALL_ELEMENTS << "\n";
     for (Index i{0}; i < N_CELLS; i++)
     {
-        Index n_element_nodes = volume_elements.get_num_nodes_of_element(i);
+        Index n_element_nodes = volume_elements.get_n_element_nodes(i);
         const Index *element_nodes = volume_elements.get_element_nodes(i);
         ost << n_element_nodes << " ";
         for (ShortIndex k{0}; k < n_element_nodes; k++)

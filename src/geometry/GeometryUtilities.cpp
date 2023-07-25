@@ -37,10 +37,10 @@ namespace geometry
 
     string Elements::to_string(Index i) const
     {
-        ShortIndex n_nodes = get_num_nodes_of_element(i);
+        ShortIndex n_nodes = get_n_element_nodes(i);
         const Index *nodes = get_element_nodes(i);
         std::stringstream ss;
-        ss << array_to_string(nodes, n_nodes) << ", " << element_type_to_string.at(get_element_type(i)) << endl;
+        ss << array_to_string(nodes, n_nodes) << ", " << get_element_string(get_element_type(i)) << endl;
         return ss.str();
     }
 
@@ -49,25 +49,29 @@ namespace geometry
                                                      ShortIndex face_k)
     {
         assert(volume_element_type == ElementType::Tetrahedron || volume_element_type == ElementType::Hexahedron);
-        assert(is_volume_element.at(volume_element_type));
-        assert(face_k <= num_nodes_in_element.at(volume_element_type));
-
+        assert(is_volume_element(volume_element_type));
+        assert(face_k <= get_num_faces_volume_element(volume_element_type));
         ElementType face_element_type;
         array<Index, MAX_NODES_FACE_ELEMENT> face_element;
 
         if (volume_element_type == ElementType::Tetrahedron)
-            get_face_element_k_of_tetrahedron(volume_element_type, volume_element, face_k, face_element_type, face_element);
+            get_face_element_k_of_tetrahedron(volume_element, face_k, face_element_type, face_element);
         else if (volume_element_type == ElementType::Hexahedron)
-            get_face_element_k_of_hexahedron(volume_element_type, volume_element, face_k, face_element_type, face_element);
+            get_face_element_k_of_hexahedron(volume_element, face_k, face_element_type, face_element);
+        else if (volume_element_type == ElementType::Pyramid)
+            get_face_element_k_of_pyramid(volume_element, face_k, face_element_type, face_element);
+        else if (volume_element_type == ElementType::Wedge)
+            get_face_element_k_of_wedge(volume_element, face_k, face_element_type, face_element);
+
         return FaceElement{face_element_type, face_element.data()};
     }
 
-    void get_face_element_k_of_tetrahedron(ElementType volume_element_type,
-                                           const Index *ve,
+    void get_face_element_k_of_tetrahedron(const Index *ve,
                                            ShortIndex face_k,
                                            ElementType &face_element_type,
                                            array<Index, MAX_NODES_FACE_ELEMENT> &fe)
     {
+        assert(face_k < N_FACES_TET);
         face_element_type = ElementType::Triangle;
         if (face_k == 0)
         {
@@ -98,12 +102,12 @@ namespace geometry
         // fe[0] = ve[0]*(face_k==0) + ve[0]*(face_k==1) + ve[0]*(face_k==2)+ ve[3]*(face_k==3);
     }
 
-    void get_face_element_k_of_hexahedron(ElementType volume_element_type,
-                                          const Index *ve,
+    void get_face_element_k_of_hexahedron(const Index *ve,
                                           ShortIndex face_k,
                                           ElementType &face_element_type,
                                           array<Index, MAX_NODES_FACE_ELEMENT> &fe)
     {
+        assert(face_k < N_FACES_HEX);
         face_element_type = ElementType::Quadrilateral;
         if (face_k == 0)
         {
@@ -148,6 +152,90 @@ namespace geometry
             fe[3] = ve[5];
         }
     }
+    void get_face_element_k_of_pyramid(const Index *ve,
+                                       ShortIndex face_k,
+                                       ElementType &face_element_type,
+                                       array<Index, MAX_NODES_FACE_ELEMENT> &fe)
+    {
+        assert(face_k < N_FACES_PYRAMID);
+        face_element_type = (face_k == 0) ? ElementType::Quadrilateral : ElementType::Triangle;
+        if (face_k == 0)
+        {
+            fe[0] = ve[0];
+            fe[1] = ve[1];
+            fe[2] = ve[2];
+            fe[3] = ve[3];
+        }
+        else if (face_k == 1)
+        {
+            fe[0] = ve[0];
+            fe[1] = ve[1];
+            fe[2] = ve[4];
+        }
+        else if (face_k == 2)
+        {
+            fe[0] = ve[1];
+            fe[1] = ve[2];
+            fe[2] = ve[4];
+        }
+        else if (face_k == 3)
+        {
+            fe[0] = ve[2];
+            fe[1] = ve[3];
+            fe[2] = ve[4];
+        }
+        else if (face_k == 4)
+        {
+            fe[0] = ve[3];
+            fe[1] = ve[0];
+            fe[2] = ve[4];
+        }
+    }
+    void get_face_element_k_of_wedge(const Index *ve,
+                                     ShortIndex face_k,
+                                     ElementType &face_element_type,
+                                     array<Index, MAX_NODES_FACE_ELEMENT> &fe)
+    {
+        assert(face_k < N_FACES_WEDGE);
+        if (face_k == 0)
+        {
+            face_element_type = ElementType::Triangle;
+            fe[0] = ve[0];
+            fe[1] = ve[1];
+            fe[2] = ve[2];
+        }
+        else if (face_k == 1)
+        {
+            face_element_type = ElementType::Triangle;
+            fe[0] = ve[4];
+            fe[1] = ve[3];
+            fe[2] = ve[5];
+        }
+        else if (face_k == 2)
+        {
+            face_element_type = ElementType::Quadrilateral;
+            fe[0] = ve[1];
+            fe[1] = ve[0];
+            fe[2] = ve[3];
+            fe[3] = ve[4];
+        }
+        else if (face_k == 3)
+        {
+            face_element_type = ElementType::Quadrilateral;
+            fe[0] = ve[0];
+            fe[1] = ve[2];
+            fe[2] = ve[5];
+            fe[3] = ve[3];
+        }
+        else if (face_k == 4)
+        {
+            face_element_type = ElementType::Quadrilateral;
+            fe[0] = ve[4];
+            fe[1] = ve[5];
+            fe[2] = ve[2];
+            fe[3] = ve[1];
+        }
+    }
 
     void volume_element_calc_geometry_properties(ElementType e_type,
                                                  const Index *element,
@@ -155,7 +243,7 @@ namespace geometry
                                                  Scalar &volume,
                                                  Vec3 &centroid)
     {
-        assert(e_type == ElementType::Tetrahedron || e_type == ElementType::Hexahedron);
+        assert(is_volume_element(e_type));
         if (e_type == ElementType::Tetrahedron)
             tetrahedron_calc_geometry_properties(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]],
                                                  volume, centroid);
@@ -163,6 +251,9 @@ namespace geometry
             hexahedron_calc_geometry_properties(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]],
                                                 nodes[element[4]], nodes[element[5]], nodes[element[6]], nodes[element[7]],
                                                 volume, centroid);
+        else if (e_type == ElementType::Pyramid)
+
+            else if (e_type == ElementType::Wedge)
     }
 
     void face_element_calc_centroid(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &centroid)
@@ -229,37 +320,73 @@ namespace geometry
         volume = distance_top_to_centroid_base.dot(S_base) / 3;
         assert(volume > 0);
     }
+    void wedge_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, const Vec3 &n4, const Vec3 &n5,
+                                        Scalar &volume, Vec3 &centroid)
+    {
+        volume = 0;
+        centroid = {0, 0, 0};
+        Vec3 centroid_geometric = (n0 + n1 + n2 + n3 + n4 + n5) / 6;
+        Scalar vol_subgeom;
+        Vec3 centroid_subgeom;
+
+        tetrahedron_calc_geometry_properties(n0, n2, n1, centroid_geometric, vol_subgeom, centroid_subgeom);
+        volume += vol_subgeom;
+        centroid += vol_subgeom * centroid_subgeom;
+
+        tetrahedron_calc_geometry_properties(n3, n4, n5, centroid_geometric, vol_subgeom, centroid_subgeom);
+        volume += vol_subgeom;
+        centroid += vol_subgeom * centroid_subgeom;
+
+        pyramid_calc_geometry_properties(n0, n3, n5, n2, centroid_geometric, vol_subgeom, centroid_subgeom);
+        volume += vol_subgeom;
+        centroid += vol_subgeom * centroid_subgeom;
+
+        pyramid_calc_geometry_properties(n0, n1, n4, n3, centroid_geometric, vol_subgeom, centroid_subgeom);
+        volume += vol_subgeom;
+        centroid += vol_subgeom * centroid_subgeom;
+
+        pyramid_calc_geometry_properties(n0, n1, n5, n4, centroid_geometric, vol_subgeom, centroid_subgeom);
+        volume += vol_subgeom;
+        centroid += vol_subgeom * centroid_subgeom;
+
+        centroid /= volume;
+    }
 
     void hexahedron_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
                                              const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7,
                                              Scalar &volume, Vec3 &centroid)
     {
         /*Composing the hexahedron into 6 pyramids and summing up each individual volume (Following Moukalled book)*/
-
         volume = 0;
         centroid = {0, 0, 0};
         Vec3 centroid_geometric = (n0 + n1 + n2 + n3 + n4 + n5 + n6 + n7) / 8; // Geometric centre of quad
-
         Scalar volume_pyramid;
         Vec3 centroid_pyramid;
+
         pyramid_calc_geometry_properties(n0, n1, n2, n3, centroid_geometric, volume_pyramid, centroid_pyramid);
         volume += volume_pyramid;
         centroid += volume_pyramid * centroid_pyramid;
+
         pyramid_calc_geometry_properties(n4, n5, n6, n7, centroid_geometric, volume_pyramid, centroid_pyramid);
         volume += volume_pyramid;
         centroid += volume_pyramid * centroid_pyramid;
+
         pyramid_calc_geometry_properties(n3, n0, n4, n7, centroid_geometric, volume_pyramid, centroid_pyramid);
         volume += volume_pyramid;
         centroid += volume_pyramid * centroid_pyramid;
+
         pyramid_calc_geometry_properties(n1, n2, n6, n5, centroid_geometric, volume_pyramid, centroid_pyramid);
         volume += volume_pyramid;
         centroid += volume_pyramid * centroid_pyramid;
+
         pyramid_calc_geometry_properties(n0, n1, n5, n4, centroid_geometric, volume_pyramid, centroid_pyramid);
         volume += volume_pyramid;
         centroid += volume_pyramid * centroid_pyramid;
+
         pyramid_calc_geometry_properties(n2, n3, n7, n6, centroid_geometric, volume_pyramid, centroid_pyramid);
         volume += volume_pyramid;
         centroid += volume_pyramid * centroid_pyramid;
+
         centroid /= volume;
     }
 

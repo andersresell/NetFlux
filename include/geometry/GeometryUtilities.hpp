@@ -11,7 +11,8 @@ namespace geometry
         Quadrilateral = 9,
         Tetrahedron = 10,
         Hexahedron = 12,
-        Pyramid = 14
+        Pyramid = 14,
+        Wedge = 13
     };
     inline bool legal_vtk_element_identifier(ShortIndex vtk_id)
     {
@@ -23,6 +24,7 @@ namespace geometry
         case ElementType::Tetrahedron:
         case ElementType::Hexahedron:
         case ElementType::Pyramid:
+        case ElementType::Wedge:
             return true;
         default:
             return false;
@@ -40,26 +42,61 @@ namespace geometry
     constexpr ShortIndex N_NODES_QUAD{4};
 
     constexpr ShortIndex N_NODES_PYRAMID{5};
+    constexpr ShortIndex N_FACES_PYRAMID{5};
+
+    constexpr ShortIndex N_NODES_WEDGE{6};
+    constexpr ShortIndex N_FACES_WEDGE{5};
 
     /*These constants store the maximum number of nodes among all element types
     for volume and face elements*/
     constexpr ShortIndex MAX_NODES_VOLUME_ELEMENT{N_NODES_HEX};
     constexpr ShortIndex MAX_NODES_FACE_ELEMENT{N_NODES_QUAD};
 
-    const map<ElementType, ShortIndex> num_nodes_in_element = {{ElementType::Triangle, N_NODES_TRI},
-                                                               {ElementType::Quadrilateral, N_NODES_QUAD},
-                                                               {ElementType::Tetrahedron, N_NODES_TET},
-                                                               {ElementType::Hexahedron, N_NODES_HEX},
-                                                               {ElementType::Pyramid, N_NODES_PYRAMID}};
-    const map<ElementType, string> element_type_to_string = {{ElementType::Triangle, "Triangle"},
-                                                             {ElementType::Quadrilateral, "Quadrilateral"},
-                                                             {ElementType::Tetrahedron, "Tetrahedron"},
-                                                             {ElementType::Hexahedron, "Hexahedron"},
-                                                             {ElementType::Pyramid, "Pyramid"}};
-    const map<ElementType, bool> is_volume_element = {{ElementType::Triangle, false},
+    const map<ElementType, ShortIndex> element_num_nodes = {{ElementType::Triangle, N_NODES_TRI},
+                                                            {ElementType::Quadrilateral, N_NODES_QUAD},
+                                                            {ElementType::Tetrahedron, N_NODES_TET},
+                                                            {ElementType::Hexahedron, N_NODES_HEX},
+                                                            {ElementType::Pyramid, N_NODES_PYRAMID},
+                                                            {ElementType::Wedge, N_NODES_WEDGE}};
+    const map<ElementType, ShortIndex> volume_element_num_faces = {{ElementType::Tetrahedron, N_FACES_TET},
+                                                                   {ElementType::Hexahedron, N_FACES_HEX},
+                                                                   {ElementType::Pyramid, N_FACES_PYRAMID}};
+    const map<ElementType, string> element_to_string = {{ElementType::Triangle, "Triangle"},
+                                                        {ElementType::Quadrilateral, "Quadrilateral"},
+                                                        {ElementType::Tetrahedron, "Tetrahedron"},
+                                                        {ElementType::Hexahedron, "Hexahedron"},
+                                                        {ElementType::Pyramid, "Pyramid"},
+                                                        {ElementType::Wedge, "Wedge"}};
+    const map<ElementType, bool> element_is_volume = {{ElementType::Triangle, false},
                                                       {ElementType::Tetrahedron, true},
                                                       {ElementType::Quadrilateral, false},
-                                                      {ElementType::Hexahedron, true}};
+                                                      {ElementType::Hexahedron, true},
+                                                      {ElementType::Pyramid, true},
+                                                      {ElementType::Wedge, true}};
+
+    inline ShortIndex get_num_nodes_in_element(ElementType e_type)
+    {
+        assert(element_num_nodes.count(e_type) == 1);
+        return element_num_nodes.at(e_type);
+    }
+    inline ShortIndex get_num_faces_volume_element(ElementType e_type)
+    {
+        assert(is_volume_element(e_type));
+        assert(volume_element_num_faces.count(e_type) == 1);
+        return volume_element_num_faces.at(e_type);
+    }
+
+    inline string get_element_string(ElementType e_type)
+    {
+        assert(element_to_string.count(e_type) == 1);
+        return element_to_string.at(e_type);
+    }
+
+    inline bool is_volume_element(ElementType e_type)
+    {
+        assert(element_is_volume.count(e_type) == 1);
+        return element_is_volume.at(e_type);
+    }
 
     /*Connectivities of elements laid out on the compressed row storage format (CRS) as METIS uses.*/
     class Elements
@@ -82,7 +119,7 @@ namespace geometry
 
         void add_element(ElementType e_type, const Index *element)
         {
-            ShortIndex n_nodes = num_nodes_in_element.at(e_type);
+            ShortIndex n_nodes = get_num_nodes_in_element(e_type);
             n_ptr.emplace_back(n_ptr.back() + n_nodes);
             for (ShortIndex k{0}; k < n_nodes; k++)
                 n_ind.emplace_back(element[k]);
@@ -93,13 +130,13 @@ namespace geometry
 
         const Index *get_element_nodes(Index i) const
         {
-            assert((n_ptr[i + 1] - n_ptr[i]) == num_nodes_in_element.at(element_types[i]));
+            assert((n_ptr[i + 1] - n_ptr[i]) == get_num_nodes_in_element(element_types[i]));
             return &n_ind[n_ptr[i]];
         }
-        const ShortIndex get_num_nodes_of_element(Index i) const
+        const ShortIndex get_n_element_nodes(Index i) const
         {
             Index num_nodes{n_ptr[i + 1] - n_ptr[i]};
-            assert(num_nodes == num_nodes_in_element.at(element_types[i]));
+            assert(num_nodes == get_num_nodes_in_element(element_types[i]));
             return num_nodes;
         }
 
@@ -119,9 +156,9 @@ namespace geometry
         std::array<Index, MAX_NODES_FACE_ELEMENT> nodes;
         const ShortIndex n_nodes;
         const ElementType e_type;
-        FaceElement(ElementType e_type, const Index *element) : n_nodes{num_nodes_in_element.at(e_type)}, e_type{e_type}
+        FaceElement(ElementType e_type, const Index *element) : n_nodes{get_num_nodes_in_element(e_type)}, e_type{e_type}
         {
-            assert(!is_volume_element.at(e_type));
+            assert(!is_volume_element(e_type));
             std::copy(element, element + n_nodes, nodes.begin());
         }
     };
@@ -129,16 +166,22 @@ namespace geometry
     FaceElement get_face_element_k_of_volume_element(ElementType volume_element_type,
                                                      const Index *volume_element,
                                                      ShortIndex face_k);
-    void get_face_element_k_of_tetrahedron(ElementType volume_element_type,
-                                           const Index *ve,
+    void get_face_element_k_of_tetrahedron(const Index *ve,
                                            ShortIndex face_k,
                                            ElementType &face_element_type,
                                            array<Index, MAX_NODES_FACE_ELEMENT> &fe);
-    void get_face_element_k_of_hexahedron(ElementType volume_element_type,
-                                          const Index *ve,
+    void get_face_element_k_of_hexahedron(const Index *ve,
                                           ShortIndex face_k,
                                           ElementType &face_element_type,
                                           array<Index, MAX_NODES_FACE_ELEMENT> &fe);
+    void get_face_element_k_of_pyramid(const Index *ve,
+                                       ShortIndex face_k,
+                                       ElementType &face_element_type,
+                                       array<Index, MAX_NODES_FACE_ELEMENT> &fe);
+    void get_face_element_k_of_wedge(const Index *ve,
+                                     ShortIndex face_k,
+                                     ElementType &face_element_type,
+                                     array<Index, MAX_NODES_FACE_ELEMENT> &fe);
 
     struct SortedFaceElement : public FaceElement
     {
@@ -185,17 +228,19 @@ namespace geometry
     void tetrahedron_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
                                               Scalar &volume, Vec3 &centroid);
     void tetrahedron_calc_volume(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Scalar &volume);
+
     void tetrahedron_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &centroid);
 
     void triangle_calc_face_normal(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, Vec3 &S_ij);
     void triangle_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, Vec3 &centroid);
 
-    void pyramid_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, const Vec3 &n4,
-                                          Scalar &volume, Vec3 &centroid);
-
     void hexahedron_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
                                              const Vec3 &n4, const Vec3 &n5, const Vec3 &n6, const Vec3 &n7,
                                              Scalar &volume, Vec3 &centroid);
+    void pyramid_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, const Vec3 &n4,
+                                          Scalar &volume, Vec3 &centroid);
+    void wedge_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, const Vec3 &n4, const Vec3 &n5,
+                                        Scalar &volume, Vec3 &centroid);
     void quadrilateral_calc_face_normal(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &S_ij);
     void quadrilateral_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &centroid);
 

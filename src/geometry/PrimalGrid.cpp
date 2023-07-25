@@ -175,10 +175,11 @@ namespace geometry
                 throw std::runtime_error("Illegal su2 volume element identifier (" + std::to_string(vtk_e_id_int) +
                                          ") detected in su2 mesh file\n");
             auto e_type = static_cast<ElementType>(vtk_e_id_int);
-            if (!is_volume_element.at(e_type))
+
+            if (!is_volume_element(e_type))
                 throw std::runtime_error("Face element of type " + element_type_to_string.at(e_type) +
                                          "detected in su2 mesh file in the volume mesh");
-            for (ShortIndex k{0}; k < num_nodes_in_element.at(e_type); k++)
+            for (ShortIndex k{0}; k < get_num_nodes_in_element(e_type); k++)
                 ist >> volume_element_nodes[k];
             ist.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Skip to the next line
             volume_elements.add_element(e_type, volume_element_nodes.data());
@@ -227,10 +228,10 @@ namespace geometry
                     throw std::runtime_error("Illegal su2 element identifier (" + std::to_string(vtk_e_id_int) +
                                              ") detected in su2 mesh file\n");
                 auto e_type = static_cast<ElementType>(vtk_e_id_int);
-                if (is_volume_element.at(e_type))
+                if (is_volume_element(e_type))
                     throw std::runtime_error("Volume element of type " + element_type_to_string.at(e_type) +
                                              "detected in su2 mesh file among marker elements");
-                for (ShortIndex k{0}; k < num_nodes_in_element.at(e_type); k++)
+                for (ShortIndex k{0}; k < get_num_nodes_in_element(e_type); k++)
                     ist >> boundary_element_nodes[k];
                 boundary_elements.add_element(e_type, boundary_element_nodes.data());
                 ist.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Skip to the next line
