@@ -37,5 +37,9 @@
 # CFD output files
 *.vtk
 
+#salome files
+*.hdf 
+testing/meshing/*
+
 #other
 debug_log.txt
