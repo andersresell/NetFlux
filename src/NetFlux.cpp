@@ -1,9 +1,19 @@
 
+#include "../include/parallelization/MPI.hpp"
 
 #include "../include/Driver.hpp"
 
+#include <mpi.h>
+
 int main(int argc, char *argv[])
 {
+
+    int rank, size_world;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size_world);
+    cout << "rank " << rank << ", size " << size_world << endl;
+
     try
     {
         if (argc != 2)

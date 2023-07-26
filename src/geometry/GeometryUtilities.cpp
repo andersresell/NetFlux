@@ -6,33 +6,56 @@ namespace geometry
     Elements::Elements(const Elements &other)
 
     {
-        n_ptr.resize(other.n_ptr.size());
-        n_ind.resize(other.n_ind.size());
+        e_ptr.resize(other.e_ptr.size());
+        e_ind.resize(other.e_ind.size());
         element_types.resize(other.element_types.size());
-        std::copy(other.n_ptr.begin(), other.n_ptr.end(), n_ptr.begin());
-        std::copy(other.n_ind.begin(), other.n_ind.end(), n_ind.begin());
+        std::copy(other.e_ptr.begin(), other.e_ptr.end(), e_ptr.begin());
+        std::copy(other.e_ind.begin(), other.e_ind.end(), e_ind.begin());
         std::copy(other.element_types.begin(), other.element_types.end(), element_types.begin());
     }
 
     Elements &Elements::operator=(Elements other)
     {
-        std::swap(this->n_ptr, other.n_ptr);
-        std::swap(this->n_ind, other.n_ind);
+        std::swap(this->e_ptr, other.e_ptr);
+        std::swap(this->e_ind, other.e_ind);
         std::swap(this->element_types, other.element_types);
         return *this;
     }
 
     void Elements::reserve(Index n_elements, ShortIndex max_nodes_per_element)
     {
-        n_ptr.reserve(n_elements + 1);
-        n_ind.reserve(n_elements * max_nodes_per_element); // This will give some redundency if multiple element types are present in the mesh
+        e_ptr.reserve(n_elements + 1);
+        e_ind.reserve(n_elements * max_nodes_per_element); // This will give some redundency if multiple element types are present in the mesh
         element_types.reserve(n_elements);
     }
     void Elements::shrink_to_fit()
     {
-        n_ptr.shrink_to_fit();
-        n_ind.shrink_to_fit();
+        e_ptr.shrink_to_fit();
+        e_ind.shrink_to_fit();
         element_types.shrink_to_fit();
+    }
+    void Elements::salome_to_vtk_connectivity()
+    {
+        using std::swap;
+
+        for (Index i{0}; i < this->size(); i++)
+        {
+            Index *nodes = this->get_element_nodes_modifiable(i);
+            ElementType e_type = this->get_element_type(i);
+            if (e_type == ElementType::Tetrahedron)
+            {
+                swap(nodes[1], nodes[2]);
+            }
+            else if (e_type == ElementType::Hexahedron)
+            {
+                swap(nodes[1], nodes[3]);
+                swap(nodes[5], nodes[7]);
+            }
+            else if (e_type == ElementType::Pyramid)
+            {
+                swap(nodes[1], nodes[3]);
+            }
+        }
     }
 
     string Elements::to_string(Index i) const
@@ -438,31 +461,6 @@ namespace geometry
         Scalar S_tri_b = S_ij_tri_b.norm();
         Scalar S_quad = S_tri_a + S_tri_b;
         centroid = (S_tri_a * centroid_tri_a + S_tri_b * centroid_tri_b) / S_quad;
-    }
-
-    void salome_to_vtk_connectivity(Elements &elements)
-    {
-        using std::swap;
-        // Vector<Index> &n_ind = elements.get_n_ind();
-        // const Vector<Index>&n_ptr=elements.get_n_ptr();
-        for (Index i{0}; i < elements.size(); i++)
-        {
-            Index *nodes = elements.get_element_nodes(i);
-            ElementType e_type = elements.get_element_type(i);
-            if (e_type == ElementType::Tetrahedron)
-            {
-                swap(nodes[1], nodes[2]);
-            }
-            else if (e_type == ElementType::Hexahedron)
-            {
-                swap(nodes[1], nodes[3]);
-                swap(nodes[5], nodes[7]);
-            }
-            else if (e_type == ElementType::Pyramid)
-            {
-                swap(nodes[1], nodes[3]);
-            }
-        }
     }
 
     void Faces::reserve(Index size)

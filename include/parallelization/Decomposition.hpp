@@ -1,9 +1,10 @@
 #pragma once
 #include "../geometry/FV_Grid.hpp"
+#include "MPI.hpp"
+#include <metis.h>
 
 namespace METIS
 {
-#include <metis.h>
     using namespace geometry;
 
     const map<rstatus_et, string> metis_statuses = {{METIS_OK, "METIS_OK"},
@@ -11,8 +12,6 @@ namespace METIS
                                                     {METIS_ERROR_MEMORY, "METIS_ERROR_MEMORY"},
                                                     {METIS_ERROR, "METIS_ERROR"}};
 
-    // void create_mesh_partition(const Vector<TetConnect> &elements,
-    //                            Vector<idx_t> &element_partition,
-    //                            idx_t n_nodes,
-    //                            idx_t n_partitions);
+    Vector<Index> calc_element_partition(PrimalGrid &primal_grid,
+                                         Index n_partitions);
 }

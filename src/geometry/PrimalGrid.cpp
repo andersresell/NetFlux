@@ -238,9 +238,9 @@ namespace geometry
             }
         }
         /*Converting connectivities to vtk format*/
-        salome_to_vtk_connectivity(volume_elements);
+        volume_elements.salome_to_vtk_connectivity();
         for (auto &patch : element_patches)
-            salome_to_vtk_connectivity(patch.boundary_elements);
+            patch.boundary_elements.salome_to_vtk_connectivity();
     }
     void PrimalGrid::print_grid() const
 

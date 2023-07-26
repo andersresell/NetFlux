@@ -16,7 +16,6 @@
 #include <cfloat>
 #include <type_traits>
 #include <filesystem>
-#include <mpi.h>
 
 using std::array;
 using std::cerr;
