@@ -170,12 +170,17 @@ void ConfigParser::set_mesh_name(Config &config)
     else
     {
         // No valid mesh files found
-        string valid_mesh_names;
-        for (const auto &extension : config.valid_mesh_extensions)
+        stringstream valid_mesh_names;
+        for (auto it = config.valid_mesh_extensions.begin(); it < config.valid_mesh_extensions.end(); it++)
         {
-            valid_mesh_names += string(config.MESH_NAME_NO_EXTENSION) + "." + string(extension) + ",\n";
+            valid_mesh_names << "'" << config.MESH_NAME_NO_EXTENSION << "." << *it << "'";
+            if (it < config.valid_mesh_extensions.end() - 1)
+                valid_mesh_names << ", ";
+            else
+                valid_mesh_names << "\n";
         }
-        throw std::runtime_error("No files in the sim-dir has a valid mesh name. Valid mesh names are:\n" + valid_mesh_names +
+
+        throw std::runtime_error("No files in the sim-dir '" + config.get_sim_dir() + "'  has a valid mesh name. Valid mesh names are:\n" + valid_mesh_names.str() +
                                  "Make sure that a file such a name is located in the sim-directory");
     }
 }

@@ -12,6 +12,8 @@ int main(int argc, char *argv[])
             return 1;
         }
         string sim_dir_path = argv[1];
+        cout << "\nProject folder: "
+             << "'" << sim_dir_path << "'\n";
         Config config{sim_dir_path};
         Driver driver{config};
         driver.solve();

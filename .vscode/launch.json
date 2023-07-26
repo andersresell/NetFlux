@@ -163,5 +163,59 @@
             ],
             "preLaunchTask": "build debug NetFlux"
         },
+        {
+            "name": "runCyprienHexTutorial",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build_debug/NetFlux",
+            "args": [
+                "${workspaceFolder}/testing/netflux_tests/cyprien_hex_tutorial"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/src/",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build debug NetFlux"
+        },
+        {
+            "name": "runBrick_10x10x100",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build_debug/NetFlux",
+            "args": [
+                "${workspaceFolder}/testing/netflux_tests/brick_10x10x100"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/src/",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build debug NetFlux"
+        },
     ]
 }

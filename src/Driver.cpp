@@ -23,13 +23,11 @@ Driver::Driver(Config &config) : config{config}
 
 void Driver::solve()
 {
+    cout << "\n----- Starting solver -----\n";
     config.start_counter();
-
     config.set_timestep(0);
     config.set_time(0.0);
-
     output->write_vtk_ascii(config);
-
     while (1)
     {
         /*If main solvers consisting of multiple sub-solvers (for instance NS + scalar transport) are implemented in the future,

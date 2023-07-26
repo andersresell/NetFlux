@@ -237,6 +237,10 @@ namespace geometry
                 ist.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Skip to the next line
             }
         }
+        /*Converting connectivities to vtk format*/
+        salome_to_vtk_connectivity(volume_elements);
+        for (auto &patch : element_patches)
+            salome_to_vtk_connectivity(patch.boundary_elements);
     }
     void PrimalGrid::print_grid() const
 
@@ -265,10 +269,14 @@ namespace geometry
     /*Checking if volume is positive and if the centroid is within bounding box of element nodes*/
     void PrimalGrid::partial_validity_check()
     {
+        cout << "Running some checks on primal mesh..\n";
         for (Index i{0}; i < volume_elements.size(); i++)
         {
             Vec3 centroid;
             Scalar vol;
+            // cerr << "elem " << get_element_string(volume_elements.get_element_type(i))
+            //      << " " << array_to_string(volume_elements.get_element_nodes(i), volume_elements.get_n_element_nodes(i)) << endl;
+
             volume_element_calc_geometry_properties(volume_elements.get_element_type(i),
                                                     volume_elements.get_element_nodes(i),
                                                     nodes, vol, centroid);

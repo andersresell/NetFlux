@@ -291,8 +291,24 @@ namespace geometry
         Vec3 ab = n1 - n0;
         Vec3 ac = n2 - n0;
         Vec3 ad = n3 - n0;
-        volume = -ab.cross(ac).dot(ad) / 6;
-        assert(volume > 0);
+
+        // Vec3 a{0, 0, 0};
+        // Vec3 b{1, 0, 0};
+        // Vec3 c{0, 1, 0};
+        // Vec3 d{0, 0, 1};
+        // ab = b - a;
+        // ac = c - a;
+        // ad = d - a;
+        // Vec3 cross = ab.cross(ac);
+        // cerr << "cross " << cross;
+        // volume = cross.dot(ad) / 6;
+        // cerr << "volume " << volume << endl;
+
+        volume = ab.cross(ac).dot(ad) / 6;
+        // volume = abs(volume);
+        /*Seems like salome doesnt use the exact same element connectivity as the vtk format
+        (Or perhaps it's the salome to vtk converter, trying this fix for now)*/
+        // assert(volume > 0);
     }
     void tetrahedron_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &centroid)
     {
@@ -350,11 +366,12 @@ namespace geometry
         volume += vol_subgeom;
         centroid += vol_subgeom * centroid_subgeom;
 
-        pyramid_calc_geometry_properties(n0, n1, n5, n4, centroid_geometric, vol_subgeom, centroid_subgeom);
+        pyramid_calc_geometry_properties(n4, n1, n2, n5, centroid_geometric, vol_subgeom, centroid_subgeom);
         volume += vol_subgeom;
         centroid += vol_subgeom * centroid_subgeom;
 
         centroid /= volume;
+        assert(volume > 0);
     }
 
     void hexahedron_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
@@ -421,6 +438,31 @@ namespace geometry
         Scalar S_tri_b = S_ij_tri_b.norm();
         Scalar S_quad = S_tri_a + S_tri_b;
         centroid = (S_tri_a * centroid_tri_a + S_tri_b * centroid_tri_b) / S_quad;
+    }
+
+    void salome_to_vtk_connectivity(Elements &elements)
+    {
+        using std::swap;
+        // Vector<Index> &n_ind = elements.get_n_ind();
+        // const Vector<Index>&n_ptr=elements.get_n_ptr();
+        for (Index i{0}; i < elements.size(); i++)
+        {
+            Index *nodes = elements.get_element_nodes(i);
+            ElementType e_type = elements.get_element_type(i);
+            if (e_type == ElementType::Tetrahedron)
+            {
+                swap(nodes[1], nodes[2]);
+            }
+            else if (e_type == ElementType::Hexahedron)
+            {
+                swap(nodes[1], nodes[3]);
+                swap(nodes[5], nodes[7]);
+            }
+            else if (e_type == ElementType::Pyramid)
+            {
+                swap(nodes[1], nodes[3]);
+            }
+        }
     }
 
     void Faces::reserve(Index size)

@@ -20,6 +20,7 @@ limiter: Barth
 initial_cond: Freestream
 
 check_physical_validity: true
+check_grid_validity: true
  
 density_fs: 1.2
 velocity_fs: [600, 0, 0]

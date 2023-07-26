@@ -3,7 +3,7 @@
 #----------Takes a dumped python script from salome and spits out an su2 mesh by using the cdfmsh.py library-------
 
 if [ $# -lt 1 ]; then
-    echo "Provide a salome python file as input"
+    echo "Provide a salome python file as input. Usage: ./salome_su2.sh <python_file.py>"
     exit 1
 fi
 

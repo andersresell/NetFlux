@@ -9,7 +9,7 @@ namespace geometry
         {
             create_face_structure(config, primal_grid);
             calc_geometry_properties(config, primal_grid);
-            print_grid(config, primal_grid.face_elements);
+            // print_grid(config, primal_grid.face_elements);
         }
         catch (const std::exception &e)
         {
@@ -153,7 +153,7 @@ namespace geometry
 
     void FV_Grid::calc_geometry_properties(const Config &config, const PrimalGrid &primal_grid)
     {
-        cout << "Assigning geometrical properties to cells and faces\n";
+        cout << "Assigning geometrical properties to cells and faces.\n";
 
         const Vector<Vec3> &nodes = primal_grid.get_nodes();
         const Elements &volume_elements = primal_grid.get_volume_elements();
