@@ -129,6 +129,19 @@ namespace geometry
                 e_ind.emplace_back(element[k]);
             element_types.emplace_back(e_type);
         }
+        /*Special function that uses a map to convert from global to local node indices
+        when using multiple processors*/
+        void add_element_local(ElementType e_type, const Index *element, const map<Index, Index> &glob_to_loc)
+        {
+            ShortIndex n_nodes = get_num_nodes_in_element(e_type);
+            e_ptr.emplace_back(e_ptr.back() + n_nodes);
+            for (ShortIndex k{0}; k < n_nodes; k++)
+            {
+                assert(glob_to_loc.count(element[k] == 1));
+                e_ind.emplace_back(glob_to_loc.at(element[k]));
+            }
+            element_types.emplace_back(e_type);
+        }
 
         Index sum_nodes_over_all_elements() const { return e_ptr.back(); }
 

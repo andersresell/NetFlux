@@ -1,4 +1,5 @@
 #include "../include/Driver.hpp"
+#include "../include/parallelization/DomainDecomposition.hpp"
 
 Driver::Driver(Config &config) : config{config}
 {
@@ -6,8 +7,7 @@ Driver::Driver(Config &config) : config{config}
          << "////////  ->| NetFlux |->  ////////\n"
          << "///////////////////////////////////\n\n";
 
-    primal_grid = make_unique<geometry::PrimalGrid>(config);
-    FV_grid = make_unique<geometry::FV_Grid>(config, *primal_grid);
+    create_partitioned_grids(config, primal_grid, FV_grid);
 
     switch (config.get_main_solver_type())
     {

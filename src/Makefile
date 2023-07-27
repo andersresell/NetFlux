@@ -28,8 +28,8 @@ SRC = NetFlux.cpp \
 	  Driver.cpp \
 	  SolverData.cpp \
 	  Numerics.cpp \
-	  parallelization/MPI.cpp \
-	  parallelization/Decomposition.cpp
+	  parallelization/MPI_Wrapper.cpp \
+	  parallelization/DomainDecomposition.cpp
 
 OBJ_DEBUG = $(patsubst %.cpp, $(BUILD_DIR_DEBUG)/%.o, $(SRC)) 
 OBJ_RELEASE = $(patsubst %.cpp, $(BUILD_DIR_RELEASE)/%.o, $(SRC)) 

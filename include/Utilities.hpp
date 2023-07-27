@@ -1,6 +1,6 @@
 #pragma once
 #include "Includes.hpp"
-// #include "containers/StaticContainer.hpp"
+#include "parallelization/MPI_Wrapper.hpp"
 
 constexpr ShortIndex N_EQS_EULER{N_DIM + 2};
 

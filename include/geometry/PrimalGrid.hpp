@@ -25,7 +25,11 @@ namespace geometry
         void read_su2_mesh(const Config &config);
 
     public:
+        /*Reads mesh file*/
         PrimalGrid(const Config &config);
+        /*Is constructed from existing mesh properties*/
+        PrimalGrid(Vector<Vec3> &&nodes, Elements &&volume_elements, Vector<ElementPatch> &&element_patches);
+
         const Vector<Vec3> &get_nodes() const { return nodes; }
         const Elements &get_volume_elements() const { return volume_elements; }
         Elements &get_volume_elements() { return volume_elements; }

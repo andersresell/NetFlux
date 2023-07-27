@@ -2,11 +2,14 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "runNetFluxBrickSmall",
+            "name": "mpirun_NetFluxBrickSmall",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build_debug/NetFlux",
+            "program": "/usr/bin/mpirun",
             "args": [
+                "-np",
+                "2",
+                "${workspaceFolder}/build_debug/NetFlux",
                 "${workspaceFolder}/testing/netflux_tests/small_brick_domain"
             ],
             "stopAtEntry": false,
@@ -29,174 +32,12 @@
             "preLaunchTask": "build debug NetFlux"
         },
         {
-            "name": "runNetFluxBoxMedium",
+            "name": "serial_NetFluxBrickSmall",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build_debug/NetFlux",
             "args": [
-                "${workspaceFolder}/testing/netflux_tests/medium_box_domain"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/src/",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
-                }
-            ],
-            "miDebuggerArgs": "--init-command=/home/anders/.gdbinit",
-            "preLaunchTask": "build debug NetFlux"
-        },
-        {
-            "name": "runNetFluxBoxFine",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build_debug/NetFlux",
-            "args": [
-                "${workspaceFolder}/testing/netflux_tests/fine_box_domain"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/src/",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
-                }
-            ],
-            "preLaunchTask": "build debug NetFlux"
-        },
-        {
-            "name": "runNetFluxBrickVeryFine",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build_debug/NetFlux",
-            "args": [
-                "${workspaceFolder}/testing/netflux_tests/very_fine_brick_domain"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/src/",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
-                }
-            ],
-            "preLaunchTask": "build debug NetFlux"
-        },
-        {
-            "name": "C/C++: g++ build and debug active file",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${fileDirname}/${fileBasenameNoExtension}",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${fileDirname}",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
-                }
-            ],
-            "preLaunchTask": "C/C++: g++ build active file",
-            "miDebuggerPath": "/usr/bin/gdb"
-        },
-        {
-            "name": "runMixedTiny",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build_debug/NetFlux",
-            "args": [
-                "${workspaceFolder}/testing/netflux_tests/mixed_tiny"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/src/",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
-                }
-            ],
-            "preLaunchTask": "build debug NetFlux"
-        },
-        {
-            "name": "runCyprienHexTutorial",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build_debug/NetFlux",
-            "args": [
-                "${workspaceFolder}/testing/netflux_tests/cyprien_hex_tutorial"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/src/",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
-                }
-            ],
-            "preLaunchTask": "build debug NetFlux"
-        },
-        {
-            "name": "runBrick_10x10x100",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build_debug/NetFlux",
-            "args": [
-                "${workspaceFolder}/testing/netflux_tests/brick_10x10x100"
+                "${workspaceFolder}/testing/netflux_tests/small_brick_domain"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/src/",

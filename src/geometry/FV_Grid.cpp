@@ -115,6 +115,12 @@ namespace geometry
         }
         assert(face_elements.size() == faces.size());
 
+        /*--------------------------------------------------------------------
+        Step 5: Assign interior ghost cells between domains.
+        Now all faces except the ones arising from interprocessor domain
+        boundaries should be accounted for.
+        --------------------------------------------------------------------*/
+
         /*-------------------------------------------------------------------
             Set some grid metrics in the config object
         --------------------------------------------------------------------*/

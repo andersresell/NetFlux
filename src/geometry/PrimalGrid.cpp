@@ -5,6 +5,7 @@ namespace geometry
 
     PrimalGrid::PrimalGrid(const Config &config)
     {
+        cerr << "PrimalGrid mesh read constructor called, rank " << NF_MPI::get_rank() << endl;
         try
         {
             read_mesh(config);
@@ -13,6 +14,12 @@ namespace geometry
         {
             throw std::runtime_error("Error creating primal grid:\n" + string(e.what()));
         }
+    }
+
+    PrimalGrid::PrimalGrid(Vector<Vec3> &&nodes, Elements &&volume_elements, Vector<ElementPatch> &&element_patches)
+        : nodes{move(nodes)}, volume_elements{move(volume_elements)}, element_patches{move(element_patches)}
+    {
+        cerr << "PrimalGrid existing element constructor called, rank " << NF_MPI::get_rank() << endl;
     }
 
     void PrimalGrid::read_mesh(const Config &config)
