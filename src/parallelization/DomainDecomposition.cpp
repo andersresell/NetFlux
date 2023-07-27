@@ -17,10 +17,30 @@ void create_partitioned_grids(Config &config,
     /*--------------------------------------------------------------------
     Rank 0 creates a global grid.
     --------------------------------------------------------------------*/
-    unique_ptr<PrimalGrid> primal_grid_glob;
+
     if (rank == 0)
     {
-        primal_grid_glob = make_unique<PrimalGrid>(config);
+        auto primal_grid_glob = make_unique<PrimalGrid>(config);
+        auto FV_Grid_glob = make_unique<FV_Grid>(config, primal_grid_glob);
+
+        Vector<Index> volume_element_partition = NF_METIS::calc_element_partition(*primal_grid_glob, num_procs);
+
+        // Given that I have:
+        map<FaceElement, pair<Index, Index>> face_to_glob_cells;
+
+        Vector<map<FaceElement, pair<Index, Index>>> face_to_loc_cells_vec(num_procs);
+
+        for (const auto &kv : face_to_glob_cells)
+        {
+            const FaceElement &face = kv.first;
+            Index i_glob = kv.second.first;
+            Index j_glob = kv.second.second;
+            ShortIndex proc_i = volume_element_partition[i_glob];
+            ShortIndex proc_j = volume_element_partition[j_glob];
+
+            if (face_to_loc_cells_vec[proc_i].count(face) == 0)
+                face_to_loc_cells_vec[proc_i].emplace(face, {})
+        }
 
         /*--------------------------------------------------------------------
         If there is only one processor, assign the global grid as the only
@@ -32,123 +52,123 @@ void create_partitioned_grids(Config &config,
             FV_grid = make_unique<geometry::FV_Grid>(config, *primal_grid);
             return;
         }
-    }
-
-    /*--------------------------------------------------------------------
-    If multiple processors are used, the domain must be partitioned into several
-    pieces. This is handled by METIS.
-    The return value 'volume_element_partition', is a vector of indices
-    from 0 to n_procs-1 marking which processor each volume element
-    belongs to.
-    --------------------------------------------------------------------*/
-    Vector<Index> volume_element_partition = NF_METIS::calc_element_partition(*primal_grid_glob, num_procs);
-
-    const Elements &volume_elements_glob = primal_grid_glob->get_volume_elements();
-    const Vector<Vec3> &nodes_glob = primal_grid_glob->get_nodes();
-    assert(volume_element_partition.size() == volume_elements_glob.size());
-
-    /*Count num nodes for each rank (only used for preallocation)*/
-    Index num_volume_elements_loc{0};
-    for (Index i : volume_element_partition)
-        if (i == rank)
-            num_volume_elements_loc++;
-
-    Elements volume_elements_loc;
-    volume_elements_loc.reserve(num_volume_elements_loc, MAX_NODES_VOLUME_ELEMENT);
-    Vector<Vec3> nodes_loc;
-    nodes_loc.reserve(1.5 * nodes_glob.size() / num_procs); /*Assuming equal partition times a factor as estimate for number of nodes for each processor*/
-
-    map<Index, Index> glob_to_loc_node_id;
-
-    /*--------------------------------------------------------------------
-    Looping over volume elements to copy from global elements and nodes
-    to local elements and nodes.
-    --------------------------------------------------------------------*/
-    for (Index i{0}; i < volume_elements_glob.size(); i++)
-    {
-        if (volume_element_partition[i] == rank)
-        {
-            const Index *element = volume_elements_glob.get_element_nodes(i);
-            ShortIndex num_nodes = volume_elements_glob.get_n_element_nodes(i);
-            ElementType e_type = volume_elements_glob.get_element_type(i);
-
-            /*--------------------------------------------------------------------
-            Loops over all global node indices of an element. If a new node index is
-            discovered, the point corresponding to the node index is added and the
-            a mapping from global indices are added.
-            --------------------------------------------------------------------*/
-            for (ShortIndex k{0}; k < num_nodes; k++)
-            {
-                Index node_id_glob = element[k];
-                if (glob_to_loc_node_id.count(node_id_glob) == 0)
-                {
-                    nodes_loc.emplace_back(nodes_glob[node_id_glob]);
-                    Index node_id_loc = nodes_loc.size();
-                    glob_to_loc_node_id.emplace(node_id_glob, node_id_loc);
-                }
-            }
-            /*--------------------------------------------------------------------
-            Copies an element from the global to the local domain, and renumbers
-            the node indices from global to local values.
-            --------------------------------------------------------------------*/
-            volume_elements_loc.add_element_local(e_type, element, glob_to_loc_node_id);
-        }
-    }
-
-    /*--------------------------------------------------------------------
-    Looping over patches and copying the patch elements and the patch name
-    from global to local.
-    --------------------------------------------------------------------*/
-    Vector<ElementPatch> element_patches_loc;
-
-    const Vector<ElementPatch> &element_patches_glob = primal_grid->get_element_patches();
-
-    for (const auto &element_patch_glob : element_patches_glob)
-    {
-        const Elements &boundary_elements_glob = element_patch_glob.boundary_elements;
-        const string &patch_name_glob = element_patch_glob.patch_name;
-        element_patches_loc.emplace_back();
-        element_patches_loc.back().patch_name = patch_name_glob;
-        Elements &boundary_elements_loc = element_patches_loc.back().boundary_elements;
-        boundary_elements_loc.reserve(boundary_elements_glob.size(), MAX_NODES_FACE_ELEMENT);
 
         /*--------------------------------------------------------------------
-        Looping over all elements of a patch
+        If multiple processors are used, the domain must be partitioned into several
+        pieces. This is handled by METIS.
+        The return value 'volume_element_partition', is a vector of indices
+        from 0 to n_procs-1 marking which processor each volume element
+        belongs to.
         --------------------------------------------------------------------*/
-        for (Index i{0}; i < boundary_elements_glob.size(); i++)
+        Vector<Index> volume_element_partition = NF_METIS::calc_element_partition(*primal_grid_glob, num_procs);
+
+        const Elements &volume_elements_glob = primal_grid_glob->get_volume_elements();
+        const Vector<Vec3> &nodes_glob = primal_grid_glob->get_nodes();
+        assert(volume_element_partition.size() == volume_elements_glob.size());
+
+        /*Count num nodes for each rank (only used for preallocation)*/
+        Index num_volume_elements_loc{0};
+        for (Index i : volume_element_partition)
+            if (i == rank)
+                num_volume_elements_loc++;
+
+        Elements volume_elements_loc;
+        volume_elements_loc.reserve(num_volume_elements_loc, MAX_NODES_VOLUME_ELEMENT);
+        Vector<Vec3> nodes_loc;
+        nodes_loc.reserve(1.5 * nodes_glob.size() / num_procs); /*Assuming equal partition times a factor as estimate for number of nodes for each processor*/
+
+        map<Index, Index> glob_to_loc_node_id;
+
+        /*--------------------------------------------------------------------
+        Looping over volume elements to copy from global elements and nodes
+        to local elements and nodes.
+        --------------------------------------------------------------------*/
+        for (Index i{0}; i < volume_elements_glob.size(); i++)
         {
-            ElementType e_type = boundary_elements_glob.get_element_type(i);
-            const Index *element = boundary_elements_glob.get_element_nodes(i);
-            ShortIndex num_nodes = boundary_elements_glob.get_n_element_nodes(i);
+            if (volume_element_partition[i] == rank)
+            {
+                const Index *element = volume_elements_glob.get_element_nodes(i);
+                ShortIndex num_nodes = volume_elements_glob.get_n_element_nodes(i);
+                ElementType e_type = volume_elements_glob.get_element_type(i);
+
+                /*--------------------------------------------------------------------
+                Loops over all global node indices of an element. If a new node index is
+                discovered, the point corresponding to the node index is added and the
+                a mapping from global indices are added.
+                --------------------------------------------------------------------*/
+                for (ShortIndex k{0}; k < num_nodes; k++)
+                {
+                    Index node_id_glob = element[k];
+                    if (glob_to_loc_node_id.count(node_id_glob) == 0)
+                    {
+                        nodes_loc.emplace_back(nodes_glob[node_id_glob]);
+                        Index node_id_loc = nodes_loc.size();
+                        glob_to_loc_node_id.emplace(node_id_glob, node_id_loc);
+                    }
+                }
+                /*--------------------------------------------------------------------
+                Copies an element from the global to the local domain, and renumbers
+                the node indices from global to local values.
+                --------------------------------------------------------------------*/
+                volume_elements_loc.add_element_local(e_type, element, glob_to_loc_node_id);
+            }
+        }
+
+        /*--------------------------------------------------------------------
+        Looping over patches and copying the patch elements and the patch name
+        from global to local.
+        --------------------------------------------------------------------*/
+        Vector<ElementPatch> element_patches_loc;
+
+        const Vector<ElementPatch> &element_patches_glob = primal_grid->get_element_patches();
+
+        for (const auto &element_patch_glob : element_patches_glob)
+        {
+            const Elements &boundary_elements_glob = element_patch_glob.boundary_elements;
+            const string &patch_name_glob = element_patch_glob.patch_name;
+            element_patches_loc.emplace_back();
+            element_patches_loc.back().patch_name = patch_name_glob;
+            Elements &boundary_elements_loc = element_patches_loc.back().boundary_elements;
+            boundary_elements_loc.reserve(boundary_elements_glob.size(), MAX_NODES_FACE_ELEMENT);
 
             /*--------------------------------------------------------------------
-            Using the global to local node index map (from the volume element loop)
-            to check wether a boundary face belongs to the local domain. Keep in mind
-            that this map only contains the nodes belonging to the local domain.
-            If all global nodes are common, the global face has to be part of the
-            local domain. In that case, the boundary element is added. Interfaces
-            between local domains are not handled in this step.
+            Looping over all elements of a patch
             --------------------------------------------------------------------*/
-            bool shared_face = true;
-            for (ShortIndex k{0}; k < num_nodes; k++)
+            for (Index i{0}; i < boundary_elements_glob.size(); i++)
             {
-                Index node_id_glob = element[k];
-                if (glob_to_loc_node_id.count(node_id_glob) != 1)
-                {
-                    shared_face = false;
-                    break;
-                }
-            }
-            if (shared_face)
-                boundary_elements_loc.add_element_local(e_type, element, glob_to_loc_node_id);
-        }
-        boundary_elements_loc.shrink_to_fit();
-    }
-    element_patches_loc.shrink_to_fit();
-    volume_elements_loc.shrink_to_fit();
-    nodes_loc.shrink_to_fit();
+                ElementType e_type = boundary_elements_glob.get_element_type(i);
+                const Index *element = boundary_elements_glob.get_element_nodes(i);
+                ShortIndex num_nodes = boundary_elements_glob.get_n_element_nodes(i);
 
-    primal_grid = make_unique<PrimalGrid>(nodes_loc, volume_elements_loc, element_patches_loc);
+                /*--------------------------------------------------------------------
+                Using the global to local node index map (from the volume element loop)
+                to check wether a boundary face belongs to the local domain. Keep in mind
+                that this map only contains the nodes belonging to the local domain.
+                If all global nodes are common, the global face has to be part of the
+                local domain. In that case, the boundary element is added. Interfaces
+                between local domains are not handled in this step.
+                --------------------------------------------------------------------*/
+                bool shared_face = true;
+                for (ShortIndex k{0}; k < num_nodes; k++)
+                {
+                    Index node_id_glob = element[k];
+                    if (glob_to_loc_node_id.count(node_id_glob) != 1)
+                    {
+                        shared_face = false;
+                        break;
+                    }
+                }
+                if (shared_face)
+                    boundary_elements_loc.add_element_local(e_type, element, glob_to_loc_node_id);
+            }
+            boundary_elements_loc.shrink_to_fit();
+        }
+        element_patches_loc.shrink_to_fit();
+        volume_elements_loc.shrink_to_fit();
+        nodes_loc.shrink_to_fit();
+
+        primal_grid = make_unique<PrimalGrid>(nodes_loc, volume_elements_loc, element_patches_loc);
+    }
 }
 
 namespace NF_METIS
