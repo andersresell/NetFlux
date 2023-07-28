@@ -9,6 +9,8 @@ namespace geometry
     --------------------------------------------------------------------*/
     class FV_Grid
     {
+        friend class GridCreator;
+
         Cells cells;
         Faces faces;
         Vector<Patch> patches;
@@ -33,7 +35,7 @@ namespace geometry
         void reorder_faces(const Config &config, Elements &face_elements);
 
         /*Used to find the number of ghost cells before this value is set in Config object*/
-        Index find_N_GHOST_cells(const Vector<ElementPatch> &element_patches);
+        static Index find_N_GHOST_cells(const Vector<ElementPatch> &element_patches);
 
         void calc_face_properties(ElementType e_type,
                                   const Index *element,

@@ -131,14 +131,14 @@ namespace geometry
         }
         /*Special function that uses a map to convert from global to local node indices
         when using multiple processors*/
-        void add_element_local(ElementType e_type, const Index *element, const map<Index, Index> &glob_to_loc)
+        void add_element_local(ElementType e_type, const Index *element, const map<Index, Index> &node_glob_to_loc)
         {
             ShortIndex n_nodes = get_num_nodes_in_element(e_type);
             e_ptr.emplace_back(e_ptr.back() + n_nodes);
             for (ShortIndex k{0}; k < n_nodes; k++)
             {
-                assert(glob_to_loc.count(element[k] == 1));
-                e_ind.emplace_back(glob_to_loc.at(element[k]));
+                assert(node_glob_to_loc.count(element[k] == 1));
+                e_ind.emplace_back(node_glob_to_loc.at(element[k]));
             }
             element_types.emplace_back(e_type);
         }
@@ -214,6 +214,17 @@ namespace geometry
                 if (nodes_sorted[i] != other.nodes_sorted[i])
                     return nodes_sorted[i] < other.nodes_sorted[i];
             return false;
+        }
+
+        void loc_to_glob(const map<Index, Index> &nID_loc_to_glob)
+        {
+            for (ShortIndex k{0}; k < n_nodes; k++)
+            {
+                assert(nID_loc_to_glob.count(nodes[k]) == 1);
+                nodes[k] = nID_loc_to_glob.at(nodes[k]);
+                nodes_sorted[k] = nID_loc_to_glob.at(nodes_sorted[k]);
+            }
+            std::sort(nodes_sorted.begin(), nodes_sorted.begin() + n_nodes);
         }
     };
 
@@ -302,6 +313,7 @@ namespace geometry
     class Faces
     {
         friend class FV_Grid;
+        friend class GridCreator;
 
         struct CellPair
         {
@@ -341,6 +353,7 @@ namespace geometry
     class Cells
     {
         friend class FV_Grid;
+        friend class GridCreator;
         Vector<Scalar> volumes;
         Vector<Vec3> centroids;
 
