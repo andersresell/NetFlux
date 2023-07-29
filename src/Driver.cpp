@@ -7,7 +7,7 @@ Driver::Driver(Config &config) : config{config}
          << "////////  ->| NetFlux |->  ////////\n"
          << "///////////////////////////////////\n\n";
 
-    create_partitioned_grids(config, primal_grid, FV_grid);
+    geometry::GridCreator::create_partitioned_grids(config, primal_grid, FV_grid);
 
     switch (config.get_main_solver_type())
     {

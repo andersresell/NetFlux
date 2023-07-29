@@ -3,8 +3,9 @@
 namespace geometry
 {
 
-    FV_Grid::FV_Grid(Cells &&cells, Faces &&faces, Vector<Patch> &&patches)
-        : cells{cells}, faces{faces}, patches{patches}
+    FV_Grid::FV_Grid(Cells &&cells, Faces &&faces, Vector<Patch> &&patches, Vector<PartitionPatch> &&partition_patches)
+
+        : cells{cells}, faces{faces}, patches{patches}, partition_patches{partition_patches}
     {
     }
 
@@ -24,144 +25,144 @@ namespace geometry
 
     /*Creates the finite volume face-based graph structure (each face stores indices
     to it's two neigbour cells). Additionally it saves the element nodes of each face.*/
-    void FV_Grid::create_face_structure(Config &config, PrimalGrid &primal_grid)
-    {
-        const Vector<Vec3> &nodes = primal_grid.get_nodes();
-        const Elements &vol_elements = primal_grid.get_vol_elements();
-        Elements &face_elements = primal_grid.get_face_elements();
-        const Vector<ElementPatch> &element_patches = primal_grid.get_element_patches();
+    // void FV_Grid::create_face_structure(Config &config, PrimalGrid &primal_grid)
+    // {
+    //     const Vector<Vec3> &nodes = primal_grid.get_nodes();
+    //     const Elements &vol_elements = primal_grid.get_vol_elements();
+    //     Elements &face_elements = primal_grid.get_face_elements();
+    //     const Vector<ElementPatch> &element_patches = primal_grid.get_element_patches();
 
-        /*--------------------------------------------------------------------
-        Step 1: Create all cells from elements.
-        --------------------------------------------------------------------*/
+    //     /*--------------------------------------------------------------------
+    //     Step 1: Create all cells from elements.
+    //     --------------------------------------------------------------------*/
 
-        cells.resize(vol_elements.size() + find_N_GHOST_cells(element_patches));
+    //     cells.resize(vol_elements.size() + find_N_GHOST_cells(element_patches));
 
-        /*--------------------------------------------------------------------
-        Step 2: Associate the face nodes with its two neighboring cells.
-        --------------------------------------------------------------------*/
+    //     /*--------------------------------------------------------------------
+    //     Step 2: Associate the face nodes with its two neighboring cells.
+    //     --------------------------------------------------------------------*/
 
-        map<FaceElement, pair<Index, long int>> faces_to_cells;
-        constexpr int CELL_NOT_YET_ASSIGNED{-1};
+    //     map<FaceElement, pair<Index, long int>> faces_to_cells;
+    //     constexpr int CELL_NOT_YET_ASSIGNED{-1};
 
-        for (Index cell_index{0}; cell_index < vol_elements.size(); cell_index++)
-        {
-            ElementType volume_element_type = vol_elements.get_element_type(cell_index);
-            assert(is_volume_element(volume_element_type));
-            for (ShortIndex k{0}; k < get_num_faces_volume_element(volume_element_type); k++)
-            {
-                FaceElement face_element = get_face_element_k_of_volume_element(volume_element_type,
-                                                                                vol_elements.get_element_nodes(cell_index),
-                                                                                k);
+    //     for (Index cell_index{0}; cell_index < vol_elements.size(); cell_index++)
+    //     {
+    //         ElementType volume_element_type = vol_elements.get_element_type(cell_index);
+    //         assert(is_volume_element(volume_element_type));
+    //         for (ShortIndex k{0}; k < get_num_faces_volume_element(volume_element_type); k++)
+    //         {
+    //             FaceElement face_element = get_face_element_k_of_volume_element(volume_element_type,
+    //                                                                             vol_elements.get_element_nodes(cell_index),
+    //                                                                             k);
 
-                assert(faces_to_cells.count(face_element) <= 1);
-                if (faces_to_cells.count(face_element) == 0)
-                {
-                    // Discovered a new face
-                    faces_to_cells.emplace(face_element, pair{cell_index, CELL_NOT_YET_ASSIGNED});
-                }
-                else
-                {
-                    assert(faces_to_cells.at(face_element).second == CELL_NOT_YET_ASSIGNED);
-                    // Face allready discovered by previous cell
-                    faces_to_cells.at(face_element).second = cell_index;
-                }
-            }
-        }
-        face_elements.reserve(faces_to_cells.size(), MAX_NODES_FACE_ELEMENT);
-        faces.reserve(faces_to_cells.size());
+    //             assert(faces_to_cells.count(face_element) <= 1);
+    //             if (faces_to_cells.count(face_element) == 0)
+    //             {
+    //                 // Discovered a new face
+    //                 faces_to_cells.emplace(face_element, pair{cell_index, CELL_NOT_YET_ASSIGNED});
+    //             }
+    //             else
+    //             {
+    //                 assert(faces_to_cells.at(face_element).second == CELL_NOT_YET_ASSIGNED);
+    //                 // Face allready discovered by previous cell
+    //                 faces_to_cells.at(face_element).second = cell_index;
+    //             }
+    //         }
+    //     }
+    //     face_elements.reserve(faces_to_cells.size(), MAX_NODES_FACE_ELEMENT);
+    //     faces.reserve(faces_to_cells.size());
 
-        /*--------------------------------------------------------------------
-        Step 3: Adding internal faces to the map. (Boundary faces are added
-        later, this is to get the correct grouping of patches). Face elements
-        (used for calculating geometry properties) are created simultaneously
-        as faces, to get the correct ordering.
-        --------------------------------------------------------------------*/
+    //     /*--------------------------------------------------------------------
+    //     Step 3: Adding internal faces to the map. (Boundary faces are added
+    //     later, this is to get the correct grouping of patches). Face elements
+    //     (used for calculating geometry properties) are created simultaneously
+    //     as faces, to get the correct ordering.
+    //     --------------------------------------------------------------------*/
 
-        for (const auto &face : faces_to_cells)
-        {
-            Index cell_i = face.second.first;
-            long int cell_j = face.second.second;
-            if (cell_j != CELL_NOT_YET_ASSIGNED)
-            { // Only add internal faces
-                assert(cell_i < cell_j);
-                faces.cell_indices.emplace_back(cell_i, static_cast<Index>(cell_j));
-                face_elements.add_element(face.first.e_type, face.first.nodes.data());
-            }
-        }
-        assert(face_elements.size() == faces.size());
+    //     for (const auto &face : faces_to_cells)
+    //     {
+    //         Index cell_i = face.second.first;
+    //         long int cell_j = face.second.second;
+    //         if (cell_j != CELL_NOT_YET_ASSIGNED)
+    //         { // Only add internal faces
+    //             assert(cell_i < cell_j);
+    //             faces.cell_indices.emplace_back(cell_i, static_cast<Index>(cell_j));
+    //             face_elements.add_element(face.first.e_type, face.first.nodes.data());
+    //         }
+    //     }
+    //     assert(face_elements.size() == faces.size());
 
-        /*--------------------------------------------------------------------
-        Step 4: Create the faces at the boundaries and ghost cells.
-        Also add the face elements at the boundaries.
-        --------------------------------------------------------------------*/
-        cout << "Creating ghost cells..\n";
-        Index j_ghost = vol_elements.size();
-        for (const auto &element_patch : element_patches)
-        {
-            Patch p;
-            p.boundary_type = config.get_boundary_type(element_patch.patch_name);
-            p.FIRST_FACE = faces.size();
-            p.N_FACES = element_patch.boundary_elements.size();
-            patches.push_back(p);
+    //     /*--------------------------------------------------------------------
+    //     Step 4: Create the faces at the boundaries and ghost cells.
+    //     Also add the face elements at the boundaries.
+    //     --------------------------------------------------------------------*/
+    //     cout << "Creating ghost cells..\n";
+    //     Index j_ghost = vol_elements.size();
+    //     for (const auto &element_patch : element_patches)
+    //     {
+    //         Patch p;
+    //         p.boundary_type = config.get_boundary_type(element_patch.patch_name);
+    //         p.FIRST_FACE = faces.size();
+    //         p.N_FACES = element_patch.boundary_elements.size();
+    //         patches.push_back(p);
 
-            const Elements &surface_elements = element_patch.boundary_elements;
-            for (Index ij{0}; ij < surface_elements.size(); ij++)
-            {
-                ElementType e_type = surface_elements.get_element_type(ij);
-                FaceElement face_element{e_type, surface_elements.get_element_nodes(ij)};
-                assert(faces_to_cells.at(face_element).second == CELL_NOT_YET_ASSIGNED);
-                faces_to_cells.at(face_element).second = j_ghost;
-                Index i_domain = faces_to_cells.at(face_element).first;
-                assert(i_domain < j_ghost);
-                faces.cell_indices.emplace_back(i_domain, j_ghost);
-                face_elements.add_element(e_type, face_element.nodes.data());
-                j_ghost++;
-            }
-        }
-        assert(face_elements.size() == faces.size());
+    //         const Elements &surface_elements = element_patch.boundary_elements;
+    //         for (Index ij{0}; ij < surface_elements.size(); ij++)
+    //         {
+    //             ElementType e_type = surface_elements.get_element_type(ij);
+    //             FaceElement face_element{e_type, surface_elements.get_element_nodes(ij)};
+    //             assert(faces_to_cells.at(face_element).second == CELL_NOT_YET_ASSIGNED);
+    //             faces_to_cells.at(face_element).second = j_ghost;
+    //             Index i_domain = faces_to_cells.at(face_element).first;
+    //             assert(i_domain < j_ghost);
+    //             faces.cell_indices.emplace_back(i_domain, j_ghost);
+    //             face_elements.add_element(e_type, face_element.nodes.data());
+    //             j_ghost++;
+    //         }
+    //     }
+    //     assert(face_elements.size() == faces.size());
 
-        /*--------------------------------------------------------------------
-        Step 5: Assign interior ghost cells between domains.
-        Now all faces except the ones arising from interprocessor domain
-        boundaries should be accounted for.
-        --------------------------------------------------------------------*/
+    //     /*--------------------------------------------------------------------
+    //     Step 5: Assign interior ghost cells between domains.
+    //     Now all faces except the ones arising from interprocessor domain
+    //     boundaries should be accounted for.
+    //     --------------------------------------------------------------------*/
 
-        /*-------------------------------------------------------------------
-            Set some grid metrics in the config object
-        --------------------------------------------------------------------*/
-        Index N_NODES = nodes.size();
-        Index N_INTERIOR_CELLS = vol_elements.size();
-        Index N_TOTAL_CELLS = cells.size();
-        Index N_INTERIOR_FACES = faces.size() - find_N_GHOST_cells(element_patches);
-        Index N_TOTAL_FACES = faces.size();
-        config.set_grid_metrics(N_NODES, N_INTERIOR_CELLS, N_TOTAL_CELLS, N_INTERIOR_FACES, N_TOTAL_FACES);
+    //     /*-------------------------------------------------------------------
+    //         Set some grid metrics in the config object
+    //     --------------------------------------------------------------------*/
+    //     Index N_NODES = nodes.size();
+    //     Index N_INTERIOR_CELLS = vol_elements.size();
+    //     Index N_TOTAL_CELLS = cells.size();
+    //     Index N_INTERIOR_FACES = faces.size() - find_N_GHOST_cells(element_patches);
+    //     Index N_TOTAL_FACES = faces.size();
+    //     config.set_grid_metrics(N_NODES, N_INTERIOR_CELLS, N_TOTAL_CELLS, N_INTERIOR_FACES, N_TOTAL_FACES);
 
-        /*--------------------------------------------------------------------
-        Sort faces so that the interior faces appear first with the owner index
-        i allways being less than neigbour index j. The same logic is applied
-        patch-wise to the boundaries
-        --------------------------------------------------------------------*/
+    //     /*--------------------------------------------------------------------
+    //     Sort faces so that the interior faces appear first with the owner index
+    //     i allways being less than neigbour index j. The same logic is applied
+    //     patch-wise to the boundaries
+    //     --------------------------------------------------------------------*/
 
-        /*All Vectors within faces and cells must have the correct size before reordering*/
-        faces.resize_geometry_properties();
+    //     /*All Vectors within faces and cells must have the correct size before reordering*/
+    //     faces.resize_geometry_properties();
 
-        reorder_faces(config, face_elements);
+    //     reorder_faces(config, face_elements);
 
-        /*--------------------------------------------------------------------
-        Ensuring that no unneccessary memory isn't used
-        --------------------------------------------------------------------*/
-        primal_grid.element_patches.clear(); // element patches no longer needed.
-        assert(primal_grid.element_patches.empty());
-        assert(faces.cell_indices.capacity() == N_TOTAL_FACES);
-        assert(faces.face_normals.capacity() == N_TOTAL_FACES);
-        assert(faces.centroid_to_face_i.capacity() == N_TOTAL_FACES);
-        assert(faces.centroid_to_face_j.capacity() == N_TOTAL_FACES);
-        assert(cells.volumes.capacity() == N_TOTAL_CELLS);
-        assert(cells.centroids.capacity() == N_TOTAL_CELLS);
+    //     /*--------------------------------------------------------------------
+    //     Ensuring that no unneccessary memory isn't used
+    //     --------------------------------------------------------------------*/
+    //     primal_grid.element_patches.clear(); // element patches no longer needed.
+    //     assert(primal_grid.element_patches.empty());
+    //     assert(faces.cell_indices.capacity() == N_TOTAL_FACES);
+    //     assert(faces.face_normals.capacity() == N_TOTAL_FACES);
+    //     assert(faces.centroid_to_face_i.capacity() == N_TOTAL_FACES);
+    //     assert(faces.centroid_to_face_j.capacity() == N_TOTAL_FACES);
+    //     assert(cells.volumes.capacity() == N_TOTAL_CELLS);
+    //     assert(cells.centroids.capacity() == N_TOTAL_CELLS);
 
-        cout << "Computational grid has been created.\n";
-    }
+    //     cout << "Computational grid has been created.\n";
+    // }
 
     void FV_Grid::calc_geometry_properties(const Config &config, const PrimalGrid &primal_grid)
     {
@@ -171,11 +172,11 @@ namespace geometry
         const Elements &vol_elements = primal_grid.get_vol_elements();
         const Elements &face_elements = primal_grid.get_face_elements();
 
-        assert(config.get_N_INTERIOR_CELLS() == vol_elements.size());
-        assert(config.get_N_TOTAL_FACES() == face_elements.size());
-        assert(config.get_N_TOTAL_CELLS() == cells.size());
+        assert(config.get_N_INTERIOR_CELLS_LOC() == vol_elements.size());
+        assert(config.get_N_TOTAL_FACES_LOC() == face_elements.size());
+        assert(config.get_N_TOTAL_CELLS_LOC() == cells.size());
 
-        Index N_INTERIOR_CELLS = config.get_N_INTERIOR_CELLS();
+        Index N_INTERIOR_CELLS = config.get_N_INTERIOR_CELLS_LOC();
 
         /*Calculate properties for the cells*/
         for (Index i{0}; i < N_INTERIOR_CELLS; i++)
@@ -187,7 +188,7 @@ namespace geometry
         Index max_j{0}; // For consistency checking
 
         /*Loop over all faces to assign face normals cell-centroid-to-face-centroid vectors and ghost centroid */
-        for (Index ij{0}; ij < config.get_N_TOTAL_FACES(); ij++)
+        for (Index ij{0}; ij < config.get_N_TOTAL_FACES_LOC(); ij++)
         {
             Index i = faces.get_cell_i(ij);
             Index j = faces.get_cell_j(ij);
@@ -211,16 +212,28 @@ namespace geometry
                                  faces.centroid_to_face_i[ij],
                                  faces.centroid_to_face_j[ij]);
         }
-        assert(max_j == config.get_N_TOTAL_CELLS() - 1);
+        assert(max_j == config.get_N_TOTAL_CELLS_LOC() - 1);
         /*Remember to never make an assertion like this: max_i == config.get_N_INTERIOR_CELLS() - 1.
          the max value of i may be lower than N_INTERIOR CELLS-1*/
     }
 
-    Index FV_Grid::find_N_GHOST_cells(const Vector<ElementPatch> &element_patches)
+    /*Counts the number of external ghost cells (not ghost cells due to partitioning)*/
+    Index FV_Grid::find_num_ghost_external(const Vector<ElementPatch> &element_patches)
     {
         Index N_GHOST{0};
         for (const auto &element_patch : element_patches)
             N_GHOST += element_patch.boundary_elements.size();
+        return N_GHOST;
+    }
+
+    Index FV_Grid::find_num_ghost_tot(const Vector<Patch> &external_patches,
+                                      const Vector<PartitionPatch> &partition_patches)
+    {
+        Index N_GHOST{0};
+        for (const auto &ext_patch : external_patches)
+            N_GHOST += ext_patch.N_FACES;
+        for (const auto &int_patch : partition_patches)
+            N_GHOST += int_patch.N_FACES;
         return N_GHOST;
     }
 
@@ -262,7 +275,7 @@ namespace geometry
         cout << "CELLS:\n";
         for (Index i{0}; i < cells.size(); i++)
         {
-            if (i >= config.get_N_INTERIOR_CELLS())
+            if (i >= config.get_N_INTERIOR_CELLS_LOC())
                 cout << "GHOST, ";
             cout << cells.to_string(i) << endl;
         }

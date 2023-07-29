@@ -14,9 +14,10 @@ namespace geometry
         Cells cells;
         Faces faces;
         Vector<Patch> patches;
+        Vector<PartitionPatch> partition_patches;
 
     public:
-        FV_Grid(Cells &&cells, Faces &&faces, Vector<Patch> &&patches);
+        FV_Grid(Cells &&cells, Faces &&faces, Vector<Patch> &&patches, Vector<PartitionPatch> &&partition_patches);
         // FV_Grid(Config &config, PrimalGrid &primal_grid);
 
         const Cells &get_cells() const { return cells; }
@@ -25,15 +26,16 @@ namespace geometry
 
     private:
         /*Creates computational grid from native mesh*/
-        void create_face_structure(Config &config, PrimalGrid &primal_grid);
+        // void create_face_structure(Config &config, PrimalGrid &primal_grid);
 
         /*Calculates various geometrical properties to cells and faces based on the primal grid*/
         void calc_geometry_properties(const Config &config, const PrimalGrid &primal_grid);
 
         /*------Helper functions for creating face structure-------*/
 
-        /*Used to find the number of ghost cells before this value is set in Config object*/
-        static Index find_N_GHOST_cells(const Vector<ElementPatch> &element_patches);
+        static Index find_num_ghost_external(const Vector<ElementPatch> &element_patches);
+        static Index find_num_ghost_tot(const Vector<Patch> &external_patches,
+                                        const Vector<PartitionPatch> &partition_patches);
 
         void calc_face_properties(ElementType e_type,
                                   const Index *element,

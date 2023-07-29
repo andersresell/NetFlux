@@ -1,12 +1,12 @@
 #pragma once
 #include "../geometry/FV_Grid.hpp"
-#include <metis.h>
+#include "Metis_Wrapper.hpp"
 
 namespace geometry
 {
     class GridCreator
     {
-        static constexpr int NOT_ASSIGNED{-1};
+        static constexpr int CELL_NOT_ASSIGNED{-1};
 
     public:
         static void create_partitioned_grids(Config &config,
@@ -35,7 +35,7 @@ namespace geometry
                                          const map<FaceElement, pair<Index, long int>> &faces_to_cells_glob,
                                          const PartitionUtils &utils,
                                          Index rank_loc,
-                                         unique_ptr<FV_Grid> &FV_Grid_loc,
+                                         unique_ptr<FV_Grid> &FV_grid_loc,
                                          PrimalGrid &primal_grid_loc,
                                          map<FaceElement, GhostDataPartition> const &internal_boundary_faces_glob);
 
@@ -98,19 +98,5 @@ namespace geometry
             return nID_glob_to_loc.at(nID_glob);
         }
     };
-
-}
-
-namespace NF_METIS
-{
-    using namespace geometry;
-
-    const map<rstatus_et, string> metis_statuses = {{METIS_OK, "METIS_OK"},
-                                                    {METIS_ERROR_INPUT, "METIS_ERROR_INPUT"},
-                                                    {METIS_ERROR_MEMORY, "METIS_ERROR_MEMORY"},
-                                                    {METIS_ERROR, "METIS_ERROR"}};
-
-    Vector<Index> calc_element_partition(PrimalGrid &primal_grid,
-                                         Index n_partitions);
 
 }

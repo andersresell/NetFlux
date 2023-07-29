@@ -375,7 +375,13 @@ namespace geometry
     struct Patch
     {
         BoundaryType boundary_type;
-        // Vector<Index> boundary_face_indices;
+        Index N_FACES;
+        Index FIRST_FACE;
+    };
+
+    struct PartitionPatch
+    {
+        ShortIndex rank_neighbour;
         Index N_FACES;
         Index FIRST_FACE;
     };
