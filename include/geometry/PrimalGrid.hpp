@@ -13,9 +13,10 @@ namespace geometry
     class PrimalGrid
     {
         friend class FV_Grid;
+        friend class GridCreator;
         /*These are read from the input mesh*/
         Vector<Vec3> nodes;
-        Elements volume_elements;
+        Elements vol_elements;
         Vector<ElementPatch> element_patches;
 
         Elements face_elements; /*Storing elements of all faces*/
@@ -28,11 +29,11 @@ namespace geometry
         /*Reads mesh file*/
         PrimalGrid(const Config &config);
         /*Is constructed from existing mesh properties*/
-        PrimalGrid(Vector<Vec3> &&nodes, Elements &&volume_elements, Vector<ElementPatch> &&element_patches);
+        PrimalGrid(Vector<Vec3> &&nodes, Elements &&vol_elements, Vector<ElementPatch> &&element_patches);
 
         const Vector<Vec3> &get_nodes() const { return nodes; }
-        const Elements &get_volume_elements() const { return volume_elements; }
-        Elements &get_volume_elements() { return volume_elements; }
+        const Elements &get_vol_elements() const { return vol_elements; }
+        Elements &get_vol_elements() { return vol_elements; }
         const Elements &get_face_elements() const { return face_elements; }
         const Vector<ElementPatch> &get_element_patches() const { return element_patches; }
         Elements &get_face_elements() { return face_elements; }

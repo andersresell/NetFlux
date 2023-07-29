@@ -16,7 +16,8 @@ namespace geometry
         Vector<Patch> patches;
 
     public:
-        FV_Grid(Config &config, PrimalGrid &primal_grid);
+        FV_Grid(Cells &&cells, Faces &&faces, Vector<Patch> &&patches);
+        // FV_Grid(Config &config, PrimalGrid &primal_grid);
 
         const Cells &get_cells() const { return cells; }
         const Faces &get_faces() const { return faces; }
@@ -30,9 +31,6 @@ namespace geometry
         void calc_geometry_properties(const Config &config, const PrimalGrid &primal_grid);
 
         /*------Helper functions for creating face structure-------*/
-
-        // Reorders the (for now interior) faces in an optimal fashion based on the face indices
-        void reorder_faces(const Config &config, Elements &face_elements);
 
         /*Used to find the number of ghost cells before this value is set in Config object*/
         static Index find_N_GHOST_cells(const Vector<ElementPatch> &element_patches);

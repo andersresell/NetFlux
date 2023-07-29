@@ -336,10 +336,13 @@ namespace geometry
 
         void reserve(Index size);
         void resize_geometry_properties();
-        void sort(Index begin, Index end, const Elements &face_elements_old, Elements &face_elements_to_sort);
+        void sort_face_entities(Index begin, Index end, const Elements &face_elements_old, Elements &face_elements_to_sort);
 
     public:
-        Index size() const { return cell_indices.size(); }
+        Index size() const
+        {
+            return cell_indices.size();
+        }
 
         Index get_cell_i(Index face_index) const { return cell_indices[face_index].i; }
         Index get_cell_j(Index face_index) const { return cell_indices[face_index].j; }
@@ -348,6 +351,8 @@ namespace geometry
         const Vec3 &get_centroid_to_face_j(Index face_index) const { return centroid_to_face_j[face_index]; }
         string to_string(Index ij) const;
     };
+
+    void reorder_faces(const Config &config, Elements &face_elements);
 
     /*A structure of arrays (SoA) containing the cells and their required properties*/
     class Cells

@@ -3,25 +3,31 @@
 namespace geometry
 {
 
-    FV_Grid::FV_Grid(Config &config, PrimalGrid &primal_grid)
+    FV_Grid::FV_Grid(Cells &&cells, Faces &&faces, Vector<Patch> &&patches)
+        : cells{cells}, faces{faces}, patches{patches}
     {
-        try
-        {
-            create_face_structure(config, primal_grid);
-            calc_geometry_properties(config, primal_grid);
-            // print_grid(config, primal_grid.face_elements);
-        }
-        catch (const std::exception &e)
-        {
-            throw std::runtime_error("Error creating grid:\n" + string(e.what()));
-        }
     }
+
+    // FV_Grid::FV_Grid(Config &config, PrimalGrid &primal_grid)
+    // {
+    //     try
+    //     {
+    //         create_face_structure(config, primal_grid);
+    //         calc_geometry_properties(config, primal_grid);
+    //         // print_grid(config, primal_grid.face_elements);
+    //     }
+    //     catch (const std::exception &e)
+    //     {
+    //         throw std::runtime_error("Error creating grid:\n" + string(e.what()));
+    //     }
+    // }
+
     /*Creates the finite volume face-based graph structure (each face stores indices
     to it's two neigbour cells). Additionally it saves the element nodes of each face.*/
     void FV_Grid::create_face_structure(Config &config, PrimalGrid &primal_grid)
     {
         const Vector<Vec3> &nodes = primal_grid.get_nodes();
-        const Elements &volume_elements = primal_grid.get_volume_elements();
+        const Elements &vol_elements = primal_grid.get_vol_elements();
         Elements &face_elements = primal_grid.get_face_elements();
         const Vector<ElementPatch> &element_patches = primal_grid.get_element_patches();
 
@@ -29,7 +35,7 @@ namespace geometry
         Step 1: Create all cells from elements.
         --------------------------------------------------------------------*/
 
-        cells.resize(volume_elements.size() + find_N_GHOST_cells(element_patches));
+        cells.resize(vol_elements.size() + find_N_GHOST_cells(element_patches));
 
         /*--------------------------------------------------------------------
         Step 2: Associate the face nodes with its two neighboring cells.
@@ -38,14 +44,14 @@ namespace geometry
         map<FaceElement, pair<Index, long int>> faces_to_cells;
         constexpr int CELL_NOT_YET_ASSIGNED{-1};
 
-        for (Index cell_index{0}; cell_index < volume_elements.size(); cell_index++)
+        for (Index cell_index{0}; cell_index < vol_elements.size(); cell_index++)
         {
-            ElementType volume_element_type = volume_elements.get_element_type(cell_index);
+            ElementType volume_element_type = vol_elements.get_element_type(cell_index);
             assert(is_volume_element(volume_element_type));
             for (ShortIndex k{0}; k < get_num_faces_volume_element(volume_element_type); k++)
             {
                 FaceElement face_element = get_face_element_k_of_volume_element(volume_element_type,
-                                                                                volume_elements.get_element_nodes(cell_index),
+                                                                                vol_elements.get_element_nodes(cell_index),
                                                                                 k);
 
                 assert(faces_to_cells.count(face_element) <= 1);
@@ -90,7 +96,7 @@ namespace geometry
         Also add the face elements at the boundaries.
         --------------------------------------------------------------------*/
         cout << "Creating ghost cells..\n";
-        Index j_ghost = volume_elements.size();
+        Index j_ghost = vol_elements.size();
         for (const auto &element_patch : element_patches)
         {
             Patch p;
@@ -125,7 +131,7 @@ namespace geometry
             Set some grid metrics in the config object
         --------------------------------------------------------------------*/
         Index N_NODES = nodes.size();
-        Index N_INTERIOR_CELLS = volume_elements.size();
+        Index N_INTERIOR_CELLS = vol_elements.size();
         Index N_TOTAL_CELLS = cells.size();
         Index N_INTERIOR_FACES = faces.size() - find_N_GHOST_cells(element_patches);
         Index N_TOTAL_FACES = faces.size();
@@ -162,10 +168,10 @@ namespace geometry
         cout << "Assigning geometrical properties to cells and faces.\n";
 
         const Vector<Vec3> &nodes = primal_grid.get_nodes();
-        const Elements &volume_elements = primal_grid.get_volume_elements();
+        const Elements &vol_elements = primal_grid.get_vol_elements();
         const Elements &face_elements = primal_grid.get_face_elements();
 
-        assert(config.get_N_INTERIOR_CELLS() == volume_elements.size());
+        assert(config.get_N_INTERIOR_CELLS() == vol_elements.size());
         assert(config.get_N_TOTAL_FACES() == face_elements.size());
         assert(config.get_N_TOTAL_CELLS() == cells.size());
 
@@ -173,8 +179,8 @@ namespace geometry
 
         /*Calculate properties for the cells*/
         for (Index i{0}; i < N_INTERIOR_CELLS; i++)
-            volume_element_calc_geometry_properties(volume_elements.get_element_type(i),
-                                                    volume_elements.get_element_nodes(i),
+            volume_element_calc_geometry_properties(vol_elements.get_element_type(i),
+                                                    vol_elements.get_element_nodes(i),
                                                     nodes, cells.volumes[i],
                                                     cells.centroids[i]);
 
@@ -208,28 +214,6 @@ namespace geometry
         assert(max_j == config.get_N_TOTAL_CELLS() - 1);
         /*Remember to never make an assertion like this: max_i == config.get_N_INTERIOR_CELLS() - 1.
          the max value of i may be lower than N_INTERIOR CELLS-1*/
-    }
-
-    void FV_Grid::reorder_faces(const Config &config, Elements &face_elements)
-    {
-        /*Sorts the faces based on the indices of the neighbour cells. We want them to be sorted in increasing order,
-        with the owner cell i being prioritized first and the neighbour cell j second. As an example,
-        the ordering {(0,1), (0,3), (0,2), (1,1)} should be changed to {(0,1), (0,2), (0,3), (1,1)}
-        The way the grid is constructed this is allready achieved for the owner cell i. However j might need sorting.
-        The comparison operator < for Face is defined for this purpose.
-        The interior and each boundary patch is sorted separately. The face elements are sorted accordingly*/
-
-        Elements face_elements_to_sort;
-
-        Index N_INTERIOR_FACES = config.get_N_INTERIOR_FACES();
-
-        faces.sort(0, N_INTERIOR_FACES, face_elements, face_elements_to_sort);
-
-        for (Patch &patch : patches)
-        {
-            faces.sort(patch.FIRST_FACE, patch.FIRST_FACE + patch.N_FACES, face_elements, face_elements_to_sort);
-        }
-        face_elements = face_elements_to_sort;
     }
 
     Index FV_Grid::find_N_GHOST_cells(const Vector<ElementPatch> &element_patches)

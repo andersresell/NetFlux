@@ -53,12 +53,12 @@ void Output::write_vtk_ascii_grid(const Config &config, const string &filename)
     const Index N_NODES = config.get_N_NODES();
     const Index N_CELLS = config.get_N_INTERIOR_CELLS();
     const auto &nodes = primal_grid.get_nodes();
-    const auto &volume_elements = primal_grid.get_volume_elements();
-    assert(N_CELLS == volume_elements.size());
+    const auto &vol_elements = primal_grid.get_vol_elements();
+    assert(N_CELLS == vol_elements.size());
 
-    // const Vector<Index> &n_ptr = volume_elements.get_n_ptr();
-    // const Vector<Index> &n_ind = volume_elements.get_n_ind();
-    const Index SUM_NODES_OVER_ALL_ELEMENTS = volume_elements.sum_nodes_over_all_elements();
+    // const Vector<Index> &n_ptr = vol_elements.get_n_ptr();
+    // const Vector<Index> &n_ind = vol_elements.get_n_ind();
+    const Index SUM_NODES_OVER_ALL_ELEMENTS = vol_elements.sum_nodes_over_all_elements();
 
     ost << "# vtk DataFile Version 3.0\n"
         << "NetFlux\n"
@@ -73,8 +73,8 @@ void Output::write_vtk_ascii_grid(const Config &config, const string &filename)
     ost << "\nCELLS " << N_CELLS << " " << N_CELLS + SUM_NODES_OVER_ALL_ELEMENTS << "\n";
     for (Index i{0}; i < N_CELLS; i++)
     {
-        Index n_element_nodes = volume_elements.get_n_element_nodes(i);
-        const Index *element_nodes = volume_elements.get_element_nodes(i);
+        Index n_element_nodes = vol_elements.get_n_element_nodes(i);
+        const Index *element_nodes = vol_elements.get_element_nodes(i);
         ost << n_element_nodes << " ";
         for (ShortIndex k{0}; k < n_element_nodes; k++)
             ost << element_nodes[k] << " ";
@@ -83,7 +83,7 @@ void Output::write_vtk_ascii_grid(const Config &config, const string &filename)
 
     ost << "\nCELL_TYPES " << N_CELLS << "\n";
     for (Index i{0}; i < N_CELLS; i++)
-        ost << static_cast<ShortIndex>(volume_elements.get_element_type(i)) << "\n";
+        ost << static_cast<ShortIndex>(vol_elements.get_element_type(i)) << "\n";
 }
 
 void EulerOutput::write_vtk_ascii_cell_data(const Config &config, const string &filename, const VecField &consvars)

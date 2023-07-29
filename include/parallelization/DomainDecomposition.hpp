@@ -14,40 +14,49 @@ namespace geometry
                                              unique_ptr<FV_Grid> &FV_grid);
 
     private:
-        static void construct_global_face_entities(const Elements &volume_elements_glob,
-                                                   const Vector<ElementPatch> &element_patches,
-                                                   map<FaceElement, pair<Index, long int>> &faces_to_cells_glob,
-                                                   Elements &face_elements_glob,
-                                                   map<FaceElement, InternalGhostData> &internal_boundary_faces,
-                                                   const Vector<Index> &part);
+        static void create_global_face_entities(const Elements &vol_elements_glob,
+                                                const Vector<ElementPatch> &element_patches,
+                                                map<FaceElement, pair<Index, long int>> &faces_to_cells_glob,
+                                                Elements &face_elements_glob,
+                                                map<FaceElement, GhostDataPartition> &internal_boundary_faces,
+                                                const Vector<Index> &part);
 
-        static void create_local_volume_entities(const Elements &volume_elements_glob,
-                                                 const Vector<Vec3> &nodes_glob,
-                                                 const Vector<ElementPatch> &element_patches_glob,
-                                                 Index i_part,
-                                                 const Vector<Index> &part,
-                                                 Elements &volume_elements_loc,
-                                                 Vector<Vec3> &nodes_loc,
-                                                 Vector<ElementPatch> &element_patches_loc,
-                                                 map<Index, Index> &nID_glob_to_loc,
-                                                 map<Index, Index> &nID_loc_to_glob,
-                                                 map<Index, Index> &eID_glob_to_loc);
+        static void create_primal_grid_local(const Elements &vol_elements_glob,
+                                             const Vector<Vec3> &nodes_glob,
+                                             const Vector<ElementPatch> &element_patches_glob,
+                                             Index i_part,
+                                             const Vector<Index> &part,
+                                             unique_ptr<PrimalGrid> &primal_grid_loc,
+                                             map<Index, Index> &nID_glob_to_loc,
+                                             map<Index, Index> &nID_loc_to_glob,
+                                             map<Index, Index> &eID_glob_to_loc);
 
-        static void create_FV_grid_local(const map<FaceElement, pair<Index, long int>> &faces_to_cells_glob,
-                                         const GridUtils &grid_utils,
+        static void create_FV_grid_local(const Config &config,
+                                         const map<FaceElement, pair<Index, long int>> &faces_to_cells_glob,
+                                         const PartitionUtils &utils,
                                          Index rank_loc,
                                          unique_ptr<FV_Grid> &FV_Grid_loc,
                                          PrimalGrid &primal_grid_loc,
-                                         map<FaceElement, InternalGhostData> const &internal_boundary_faces_glob);
+                                         map<FaceElement, GhostDataPartition> const &internal_boundary_faces_glob);
+
+        /*Sorts faces and face_elements patch-wise after the cell indices of the faces.*/
+        static void reorder_faces_enitities(Index num_interior_faces,
+                                            const Vector<Patch> &patches,
+                                            Faces &faces,
+                                            Elements &face_elements);
+
+        static void scatter_grids(Config &config,
+                                  Vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
+                                  Vector<unique_ptr<FV_Grid>> &FV_grids_loc);
     };
 
-    struct InternalGhostData
+    struct GhostDataPartition
     {
         Index cID_a, cID_b;
         ShortIndex rank_a, rank_b;
     };
 
-    class GridUtils
+    class PartitionUtils
     {
         const Vector<Index> &part;
         const map<Index, Index> &eID_glob_to_loc;
@@ -55,10 +64,10 @@ namespace geometry
         const map<Index, Index> &nID_loc_to_glob;
 
     public:
-        GridUtils(const Vector<Index> &part,
-                  const map<Index, Index> &eID_glob_to_loc,
-                  const map<Index, Index> &nID_glob_to_loc,
-                  const map<Index, Index> &nID_loc_to_glob)
+        PartitionUtils(const Vector<Index> &part,
+                       const map<Index, Index> &eID_glob_to_loc,
+                       const map<Index, Index> &nID_glob_to_loc,
+                       const map<Index, Index> &nID_loc_to_glob)
             : part{part}, eID_glob_to_loc{eID_glob_to_loc},
               nID_glob_to_loc{nID_glob_to_loc}, nID_loc_to_glob{nID_loc_to_glob}
         {
@@ -77,25 +86,7 @@ namespace geometry
         {
             return part[eID_glob];
         }
-        Index get_local_ghost_index(Index fID_glob, Index cID_i_glob) const
-        {
-            Index u = face_graph_glob.get_u(fID_glob);
-            Index v = face_graph_glob.get_v(fID_glob);
-            assert(u != v);
 
-            Index ghostID_glob;
-            if (cID_i_glob == u)
-            {
-                ghostID_glob = v;
-            }
-            else
-            {
-                assert(cID_i_glob == v);
-                ghostID_glob = u;
-            }
-            assert(eID_glob_to_loc.count(ghostID_glob) == 1);
-            return eID_glob_to_loc.at(ghostID_glob);
-        }
         Index get_local_element_index(Index eID_glob) const
         {
             assert(eID_glob_to_loc.at(eID_glob) == 1);

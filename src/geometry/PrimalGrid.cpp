@@ -16,8 +16,8 @@ namespace geometry
         }
     }
 
-    PrimalGrid::PrimalGrid(Vector<Vec3> &&nodes, Elements &&volume_elements, Vector<ElementPatch> &&element_patches)
-        : nodes{move(nodes)}, volume_elements{move(volume_elements)}, element_patches{move(element_patches)}
+    PrimalGrid::PrimalGrid(Vector<Vec3> &&nodes, Elements &&vol_elements, Vector<ElementPatch> &&element_patches)
+        : nodes{move(nodes)}, vol_elements{move(vol_elements)}, element_patches{move(element_patches)}
     {
         cerr << "PrimalGrid existing element constructor called, rank " << NF_MPI::get_rank() << endl;
     }
@@ -48,7 +48,7 @@ namespace geometry
             assert(false);
 
         assert(nodes.capacity() == nodes.size());
-        volume_elements.shrink_to_fit();
+        vol_elements.shrink_to_fit();
         for (auto &element_patch : element_patches)
             element_patch.boundary_elements.shrink_to_fit();
         assert(element_patches.capacity() == element_patches.size());
@@ -173,7 +173,7 @@ namespace geometry
         --------------------------------------------------------------------*/
         ist >> tmp_string >> N_ELEMENTS;
         check_string_correctness(tmp_string, "NELEM=");
-        volume_elements.reserve(N_ELEMENTS, MAX_NODES_VOLUME_ELEMENT);
+        vol_elements.reserve(N_ELEMENTS, MAX_NODES_VOLUME_ELEMENT);
         array<Index, MAX_NODES_VOLUME_ELEMENT> volume_element_nodes;
         for (Index i{0}; i < N_ELEMENTS; i++)
         {
@@ -189,7 +189,7 @@ namespace geometry
             for (ShortIndex k{0}; k < get_num_nodes_in_element(e_type); k++)
                 ist >> volume_element_nodes[k];
             ist.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Skip to the next line
-            volume_elements.add_element(e_type, volume_element_nodes.data());
+            vol_elements.add_element(e_type, volume_element_nodes.data());
         }
 
         /*--------------------------------------------------------------------
@@ -245,7 +245,7 @@ namespace geometry
             }
         }
         /*Converting connectivities to vtk format*/
-        volume_elements.salome_to_vtk_connectivity();
+        vol_elements.salome_to_vtk_connectivity();
         for (auto &patch : element_patches)
             patch.boundary_elements.salome_to_vtk_connectivity();
     }
@@ -258,9 +258,9 @@ namespace geometry
             cout << i << ": " << array_to_string(nodes.at(i).data(), N_DIM) << endl;
         }
         cout << "\n\nVOLUME ELEMENTS:\n";
-        for (Index i{0}; i < volume_elements.size(); i++)
+        for (Index i{0}; i < vol_elements.size(); i++)
         {
-            cout << volume_elements.to_string(i);
+            cout << vol_elements.to_string(i);
         }
         cout << "\n\nPATCH ELEMENTS:\n";
         for (const auto &ep : element_patches)
@@ -277,24 +277,24 @@ namespace geometry
     void PrimalGrid::partial_validity_check()
     {
         cout << "Running some checks on primal mesh..\n";
-        for (Index i{0}; i < volume_elements.size(); i++)
+        for (Index i{0}; i < vol_elements.size(); i++)
         {
             Vec3 centroid;
             Scalar vol;
-            // cerr << "elem " << get_element_string(volume_elements.get_element_type(i))
-            //      << " " << array_to_string(volume_elements.get_element_nodes(i), volume_elements.get_n_element_nodes(i)) << endl;
+            // cerr << "elem " << get_element_string(vol_elements.get_element_type(i))
+            //      << " " << array_to_string(vol_elements.get_element_nodes(i), vol_elements.get_n_element_nodes(i)) << endl;
 
-            volume_element_calc_geometry_properties(volume_elements.get_element_type(i),
-                                                    volume_elements.get_element_nodes(i),
+            volume_element_calc_geometry_properties(vol_elements.get_element_type(i),
+                                                    vol_elements.get_element_nodes(i),
                                                     nodes, vol, centroid);
 
             Vec3 max_coord, min_coord;
             max_coord.setConstant(-std::numeric_limits<double>::infinity());
             min_coord.setConstant(std::numeric_limits<double>::infinity());
 
-            for (ShortIndex k{0}; k < volume_elements.get_n_element_nodes(i); k++)
+            for (ShortIndex k{0}; k < vol_elements.get_n_element_nodes(i); k++)
             {
-                const Vec3 &node = nodes[volume_elements.get_element_nodes(i)[k]];
+                const Vec3 &node = nodes[vol_elements.get_element_nodes(i)[k]];
                 max_coord = max_coord.cwiseMax(centroid.cwiseMax(node));
                 min_coord = min_coord.cwiseMin(centroid.cwiseMin(node));
             }

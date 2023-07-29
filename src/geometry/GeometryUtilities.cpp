@@ -477,9 +477,8 @@ namespace geometry
         centroid_to_face_i.resize(cell_indices.size());
         centroid_to_face_j.resize(cell_indices.size());
     }
-
     /*Sorting all the Vectors from indices begin to end based on the cell_indices*/
-    void Faces::sort(Index begin, Index end, const Elements &face_elements_old, Elements &face_elements_to_sort)
+    void Faces::sort_face_entities(Index begin, Index end, const Elements &face_elements_old, Elements &face_elements_to_sort)
     {
         assert(begin < end && end <= cell_indices.size());
         assert(face_elements_to_sort.size() == begin);
