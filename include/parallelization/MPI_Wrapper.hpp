@@ -49,4 +49,10 @@ public:
     {
         MPI_Recv(data, count, get_MPI_Datatype<T>(), source_rank, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE)
     }
+
+    template <typename T>
+    static void Bcast(const T *data, Index count, ShortIndex source_rank)
+    {
+        MPI_Bcast(data, count, get_MPI_Datatype<T>(), source_rank, MPI_COMM_WORLD);
+    }
 };

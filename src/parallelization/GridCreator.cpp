@@ -395,8 +395,11 @@ namespace geometry
 
         Vector<unique_ptr<PrimalGrid>> primal_grids_loc(num_procs);
         Vector<unique_ptr<FV_Grid>> FV_grids_loc(num_procs);
+
         if (rank == 0)
         {
+            N_TOTAL_CELLS_GLOB, N_INTERIOR_FACES_GLOB, N_TOTAL_FACES_GLOB;
+
             auto primal_grid_glob = make_unique<PrimalGrid>(config);
 
             map<FaceElement, pair<Index, long int>> faces_to_cells_glob;
@@ -421,6 +424,7 @@ namespace geometry
             Build local primal grids from global primal grid (and some addressing
             structures)
             --------------------------------------------------------------------*/
+
             for (Index i_part{0}; i_part < num_procs; i_part++)
             {
                 Elements vol_elements_loc;
@@ -436,8 +440,6 @@ namespace geometry
                                          nID_glob_to_loc_vec[i_part],
                                          nID_loc_to_glob_vec[i_part],
                                          eID_glob_to_loc);
-
-                primal_grids_loc.emplace_back(nodes_loc, vol_elements_loc, element_patches_loc);
             }
             /*--------------------------------------------------------------------
             Build local FV_Grids from local primal grids
@@ -457,8 +459,19 @@ namespace geometry
                                      internal_ghost_faces);
             }
             assert(primal_grids_loc.size() == num_procs && FV_grids_loc.size() == num_procs);
+
+            /*Setting global grid metrics in config for rank 0*/
+            Index N_NODES_GLOB = primal_grid_glob->get_nodes().size();
+            Index N_INTERIOR_CELLS_GLOB = primal_grid_glob->get_vol_elements().size();
+            Index n_ghost_tot = FV_Grid::find_num_ghost_external(primal_grid_glob->get_element_patches());
+            Index N_TOTAL_CELLS_GLOB = primal_grid_glob->get_vol_elements().size() + n_ghost_tot;
+            Index N_TOTAL_FACES_GLOB = primal_grid_glob->get_face_elements().size();
+            Index N_INTERIOR_FACES_GLOB = N_TOTAL_FACES_GLOB - n_ghost_tot;
+            config.set_grid_metrics_global(N_NODES_GLOB, N_INTERIOR_CELLS_GLOB,
+                                           N_TOTAL_CELLS_GLOB, N_INTERIOR_FACES_GLOB, N_TOTAL_FACES_GLOB);
         }
-        scatter_grids(primal_grids_loc, FV_grids_loc, config, primal_grid, FV_grid);
+        send_recv_grids(primal_grids_loc, FV_grids_loc, primal_grid, FV_grid);
+        set_config_grid_data_local(config, primal_grid, FV_grid);
     }
 
     void GridCreator::reorder_faces_enitities(Index num_interior_faces,
@@ -485,11 +498,11 @@ namespace geometry
 
     /*Uses MPI to copy all the local PrimalGrids and FV_Grids from rank 0 to the other ranks, it
     also sets various data in config objects*/
-    void GridCreator::scatter_grids(Vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
-                                    Vector<unique_ptr<FV_Grid>> &FV_grids_loc,
-                                    Config &config,
-                                    unique_ptr<PrimalGrid> &primal_grid,
-                                    unique_ptr<FV_Grid> &FV_grid)
+    void GridCreator::send_recv_grids(Config &config,
+                                      Vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
+                                      Vector<unique_ptr<FV_Grid>> &FV_grids_loc,
+                                      unique_ptr<PrimalGrid> &primal_grid,
+                                      unique_ptr<FV_Grid> &FV_grid)
     {
         ShortIndex rank = NF_MPI::get_rank();
         ShortIndex num_procs = NF_MPI::get_size();
@@ -502,14 +515,14 @@ namespace geometry
             {
                 /*Send primal grid*/
                 string bytes;
-                serialization::serialize(bytes, primal_grids_loc[rank_loc]);
+                serialization::serialize(bytes, *primal_grids_loc[rank_loc]);
                 Index num_bytes = bytes.size();
                 NF_MPI::Send(&num_bytes, 1, rank_loc);
                 NF_MPI::Send(bytes.data(), num_bytes, rank_loc);
 
                 /*Send FV grid */
                 bytes.clear();
-                serialization::serialize(bytes, FV_grids_loc[rank_loc]);
+                serialization::serialize(bytes, *FV_grids_loc[rank_loc]);
                 num_bytes = bytes.size();
                 NF_MPI::Send(&num_bytes, 1, rank_loc);
                 NF_MPI::Send(bytes.data(), num_bytes, rank_loc);
@@ -531,5 +544,44 @@ namespace geometry
             NF_MPI::Recv(bytes.data(), num_bytes, 0);
             serialization::deserialize(bytes, *FV_grid);
         }
+
+        /*Send Config global grid data*/
+        Index N_NODES_GLOB, N_INTERIOR_CELLS_GLOB, N_TOTAL_CELLS_GLOB, N_TOTAL_FACES_GLOB, N_INTERIOR_FACES_GLOB;
+        if (rank == 0)
+        {
+            N_NODES_GLOB = config.get_N_NODES_GLOB();
+            N_INTERIOR_CELLS_GLOB = config.get_N_INTERIOR_CELLS_GLOB();
+            N_TOTAL_CELLS_GLOB = config.get_N_TOTAL_CELLS_GLOB();
+            N_INTERIOR_FACES_GLOB = config.get_N_INTERIOR_FACES_GLOB();
+            N_TOTAL_FACES_GLOB = config.get_N_TOTAL_FACES_GLOB();
+        }
+        NF_MPI::Bcast(&N_NODES_GLOB, 1, 0);
+        NF_MPI::Bcast(&N_INTERIOR_CELLS_GLOB, 1, 0);
+        NF_MPI::Bcast(&N_TOTAL_CELLS_GLOB, 1, 0);
+        NF_MPI::Bcast(&N_INTERIOR_FACES_GLOB, 1, 0);
+        NF_MPI::Bcast(&N_TOTAL_FACES_GLOB, 1, 0);
+        if (rank != 0)
+            config.set_grid_metrics_global(N_NODES_GLOB,
+                                           N_INTERIOR_CELLS_GLOB,
+                                           N_TOTAL_CELLS_GLOB,
+                                           N_INTERIOR_FACES_GLOB,
+                                           N_TOTAL_FACES_GLOB);
+
+        NF_MPI::Barrier();
+
+        set_config_grid_data_local(config, primal_grid, FV_grid);
+    }
+
+    void GridCreator::set_config_grid_data_local(Config &config,
+                                                 unique_ptr<PrimalGrid> &primal_grid,
+                                                 unique_ptr<FV_Grid> &FV_grid)
+    {
+        Index N_NODES_LOC = primal_grid->get_nodes().size();
+        Index N_INTERIOR_CELLS_LOC = primal_grid->get_vol_elements().size();
+        Index N_TOTAL_CELLS_LOC = FV_grid->get_cells().size();
+        Index N_INTERIOR_FACES_LOC = FV_grid->get_faces().size() -
+                                     FV_Grid::find_num_ghost_tot(FV_grid->get_patches(), FV_grid->get_partition_patches());
+        Index N_TOTAL_FACES_LOC = FV_grid->get_faces().size();
+        config.set_grid_metrics_local(N_NODES_LOC, N_INTERIOR_CELLS_LOC, N_TOTAL_CELLS_LOC, N_INTERIOR_FACES_LOC, N_TOTAL_FACES_LOC);
     }
 }

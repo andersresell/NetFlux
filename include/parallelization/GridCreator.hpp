@@ -46,11 +46,14 @@ namespace geometry
                                             Faces &faces,
                                             Elements &face_elements);
 
-        static void scatter_grids(Vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
-                                  Vector<unique_ptr<FV_Grid>> &FV_grids_loc,
-                                  Config &config,
-                                  unique_ptr<PrimalGrid> &primal_grid,
-                                  unique_ptr<FV_Grid> &FV_grid);
+        static void send_recv_grids(Config &config,
+                                    Vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
+                                    Vector<unique_ptr<FV_Grid>> &FV_grids_loc,
+                                    unique_ptr<PrimalGrid> &primal_grid,
+                                    unique_ptr<FV_Grid> &FV_grid);
+        static void set_config_grid_data_local(Config &config,
+                                               unique_ptr<PrimalGrid> &primal_grid,
+                                               unique_ptr<FV_Grid> &FV_grid);
     };
 
     struct GhostDataPartition

@@ -28,8 +28,7 @@ class Config
         N_INTERIOR_FACES_GLOB{0},
         N_TOTAL_FACES_GLOB{0},
         N_CONNECTIVITY_INDICES_GLOB{0}; /*sum of nodes making up elements over all element, used to write vtk file*/
-    bool grid_metrics_set{false};
-
+    bool grid_metrics_loc_set{0}, grid_metrics_glob_set{0};
     /*Options specified by input file*/
 
     string mesh_extension;
@@ -87,11 +86,7 @@ public:
     void start_counter() { timer.start_counter(); }
     string get_elapsed_time() const { return timer.get_elapsed_time(); };
 
-    Index get_N_NODES_LOC() const
-    {
-        return N_NODES_LOC;
-    }
-
+    Index get_N_NODES_LOC() const { return N_NODES_LOC; }
     Index get_N_INTERIOR_CELLS_LOC() const { return N_INTERIOR_CELLS_LOC; }
     Index get_N_TOTAL_CELLS_LOC() const { return N_TOTAL_CELLS_LOC; }
     Index get_N_GHOST_CELLS_LOC() const { return N_TOTAL_CELLS_LOC - N_INTERIOR_CELLS_LOC; }
@@ -99,6 +94,7 @@ public:
     Index get_N_TOTAL_FACES_LOC() const { return N_TOTAL_FACES_LOC; }
     Index get_N_BOUNDARY_FACES_LOC() const { return N_TOTAL_FACES_LOC - N_INTERIOR_FACES_LOC; }
 
+    Index get_N_NODES_GLOB() const { return N_NODES_GLOB; }
     Index get_N_INTERIOR_CELLS_GLOB() const { return N_INTERIOR_CELLS_GLOB; }
     Index get_N_TOTAL_CELLS_GLOB() const { return N_TOTAL_CELLS_GLOB; }
     Index get_N_GHOST_CELLS_GLOB() const { return N_TOTAL_CELLS_GLOB - N_INTERIOR_CELLS_GLOB; }
@@ -107,11 +103,17 @@ public:
     Index get_N_BOUNDARY_FACES_GLOB() const { return N_TOTAL_FACES_GLOB - N_INTERIOR_FACES_GLOB; }
     Index get_N_CONNECTIVITY_INDICES_GLOB() const { return N_CONNECTIVITY_INDICES_GLOB; }
 
-    void set_grid_metrics(Index N_NODES,
-                          Index N_INTERIOR_CELLS,
-                          Index N_TOTAL_CELLS,
-                          Index N_INTERIOR_FACES,
-                          Index N_TOTAL_FACES);
+    void set_grid_metrics_local(Index N_NODES,
+                                Index N_INTERIOR_CELLS,
+                                Index N_TOTAL_CELLS,
+                                Index N_INTERIOR_FACES,
+                                Index N_TOTAL_FACES);
+
+    void set_grid_metrics_global(Index N_NODES,
+                                 Index N_INTERIOR_CELLS,
+                                 Index N_TOTAL_CELLS,
+                                 Index N_INTERIOR_FACES,
+                                 Index N_TOTAL_FACES);
 
     string get_mesh_name() const { return string(MESH_NAME_NO_EXTENSION) + "." + mesh_extension; }
     const string &get_sim_dir() const { return sim_dir; }

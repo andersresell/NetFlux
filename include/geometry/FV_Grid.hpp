@@ -23,6 +23,7 @@ namespace geometry
         const Cells &get_cells() const { return cells; }
         const Faces &get_faces() const { return faces; }
         const Vector<Patch> &get_patches() const { return patches; }
+        const Vector<PartitionPatch> &get_partition_patches() const { return partition_patches; }
 
         template <class Archive>
         void serialize(Archive &ar, const unsigned int version)
