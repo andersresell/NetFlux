@@ -41,9 +41,8 @@ namespace geometry
 
         /*------Helper functions for creating face structure-------*/
 
-        static Index find_num_ghost_external(const Vector<ElementPatch> &element_patches);
-        static Index find_num_ghost_tot(const Vector<Patch> &external_patches,
-                                        const Vector<PartitionPatch> &partition_patches);
+        Index find_num_ghost_external() const;
+        Index find_num_ghost_tot() const;
 
         void calc_face_properties(ElementType e_type,
                                   const Index *element,

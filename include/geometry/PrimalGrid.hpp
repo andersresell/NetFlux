@@ -45,6 +45,8 @@ namespace geometry
         void print_grid() const;
         void partial_validity_check();
 
+        Index find_num_ghost_external() const;
+
         template <class Archive>
         void serialize(Archive &ar, const unsigned int version)
         {

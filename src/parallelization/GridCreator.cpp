@@ -245,12 +245,6 @@ namespace geometry
         Vector<PartitionPatch> part_patches_loc;
 
         /*--------------------------------------------------------------------
-        Step 1: Create all cells from elements.
-        --------------------------------------------------------------------*/
-
-        cells_loc.resize(vol_elements_loc.size() + FV_Grid::find_N_GHOST_cells(element_patches_loc));
-
-        /*--------------------------------------------------------------------
         Adding internal faces first
         --------------------------------------------------------------------*/
         for (const auto &p : faces_to_cells_glob)
@@ -316,6 +310,7 @@ namespace geometry
         boundaries should be accounted for. Adding each domain sequentially so
         that faces are grouped together.
         --------------------------------------------------------------------*/
+        Index num_ghost_part{0};
         for (Index rank_neigbour{0}; rank_neigbour < NF_MPI::get_size(); rank_neigbour++)
         {
             Index num_patch_faces = 0;
@@ -328,6 +323,7 @@ namespace geometry
                     (gd.rank_b == rank_loc && rank_neigbour == gd.rank_a))
                 {
                     num_patch_faces++;
+                    num_ghost_part++;
                     Index i_loc, j_loc;
                     assert(rank_loc == gd.rank_a || rank_loc == gd.rank_b);
                     assert(rank_neigbour == gd.rank_a || rank_neigbour == gd.rank_b);
@@ -359,13 +355,20 @@ namespace geometry
             part_patch.rank_neighbour = rank_neigbour;
             part_patches_loc.emplace_back(part_patch);
         }
+        Index tot_ghost_loc = primal_grid_loc.find_num_ghost_external() + num_ghost_part;
+
+        /*--------------------------------------------------------------------
+        Create all cells.
+        --------------------------------------------------------------------*/
+        cells_loc.resize(vol_elements_loc.size() + tot_ghost_loc);
+
         /*-------------------------------------------------------------------
             Set some grid metrics in the config object
         --------------------------------------------------------------------*/
 
         faces_loc.resize_geometry_properties();
 
-        Index num_interior_faces_loc = faces_loc.size() - FV_Grid::find_num_ghost_tot(patches_loc, part_patches_loc);
+        Index num_interior_faces_loc = faces_loc.size() - tot_ghost_loc;
         reorder_faces_enitities(num_interior_faces_loc, patches_loc, faces_loc, face_elements_loc);
 
         /*--------------------------------------------------------------------
@@ -398,8 +401,6 @@ namespace geometry
 
         if (rank == 0)
         {
-            N_TOTAL_CELLS_GLOB, N_INTERIOR_FACES_GLOB, N_TOTAL_FACES_GLOB;
-
             auto primal_grid_glob = make_unique<PrimalGrid>(config);
 
             map<FaceElement, pair<Index, long int>> faces_to_cells_glob;
@@ -463,14 +464,14 @@ namespace geometry
             /*Setting global grid metrics in config for rank 0*/
             Index N_NODES_GLOB = primal_grid_glob->get_nodes().size();
             Index N_INTERIOR_CELLS_GLOB = primal_grid_glob->get_vol_elements().size();
-            Index n_ghost_tot = FV_Grid::find_num_ghost_external(primal_grid_glob->get_element_patches());
+            Index n_ghost_tot = primal_grid_glob->find_num_ghost_external();
             Index N_TOTAL_CELLS_GLOB = primal_grid_glob->get_vol_elements().size() + n_ghost_tot;
             Index N_TOTAL_FACES_GLOB = primal_grid_glob->get_face_elements().size();
             Index N_INTERIOR_FACES_GLOB = N_TOTAL_FACES_GLOB - n_ghost_tot;
             config.set_grid_metrics_global(N_NODES_GLOB, N_INTERIOR_CELLS_GLOB,
                                            N_TOTAL_CELLS_GLOB, N_INTERIOR_FACES_GLOB, N_TOTAL_FACES_GLOB);
         }
-        send_recv_grids(primal_grids_loc, FV_grids_loc, primal_grid, FV_grid);
+        send_recv_grids(config, primal_grids_loc, FV_grids_loc, primal_grid, FV_grid);
         set_config_grid_data_local(config, primal_grid, FV_grid);
     }
 
@@ -579,8 +580,7 @@ namespace geometry
         Index N_NODES_LOC = primal_grid->get_nodes().size();
         Index N_INTERIOR_CELLS_LOC = primal_grid->get_vol_elements().size();
         Index N_TOTAL_CELLS_LOC = FV_grid->get_cells().size();
-        Index N_INTERIOR_FACES_LOC = FV_grid->get_faces().size() -
-                                     FV_Grid::find_num_ghost_tot(FV_grid->get_patches(), FV_grid->get_partition_patches());
+        Index N_INTERIOR_FACES_LOC = FV_grid->get_faces().size() - FV_grid->find_num_ghost_tot();
         Index N_TOTAL_FACES_LOC = FV_grid->get_faces().size();
         config.set_grid_metrics_local(N_NODES_LOC, N_INTERIOR_CELLS_LOC, N_TOTAL_CELLS_LOC, N_INTERIOR_FACES_LOC, N_TOTAL_FACES_LOC);
     }

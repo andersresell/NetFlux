@@ -218,22 +218,23 @@ namespace geometry
     }
 
     /*Counts the number of external ghost cells (not ghost cells due to partitioning)*/
-    Index FV_Grid::find_num_ghost_external(const Vector<ElementPatch> &element_patches)
+    Index FV_Grid::find_num_ghost_external() const
+    {
+    }
+    Index FV_Grid::find_num_ghost_external() const
     {
         Index N_GHOST{0};
-        for (const auto &element_patch : element_patches)
-            N_GHOST += element_patch.boundary_elements.size();
+        for (const auto &ext_patch : patches)
+            N_GHOST += ext_patch.N_FACES;
+        assert(N_GHOST > 0);
         return N_GHOST;
     }
-
-    Index FV_Grid::find_num_ghost_tot(const Vector<Patch> &external_patches,
-                                      const Vector<PartitionPatch> &partition_patches)
+    Index FV_Grid::find_num_ghost_tot() const
     {
-        Index N_GHOST{0};
-        for (const auto &ext_patch : external_patches)
-            N_GHOST += ext_patch.N_FACES;
-        for (const auto &int_patch : partition_patches)
-            N_GHOST += int_patch.N_FACES;
+        Index N_GHOST{find_num_ghost_external()};
+        for (const auto &part_patch : partition_patches)
+            N_GHOST += part_patch.N_FACES;
+        assert(N_GHOST > 0);
         return N_GHOST;
     }
 
@@ -290,5 +291,4 @@ namespace geometry
             cout << "patch type: " << (int)patch.boundary_type << "\nFIRST FACE: " << patch.FIRST_FACE << "\nN_FACES: " << patch.N_FACES << "\n\n";
         }
     }
-
 }

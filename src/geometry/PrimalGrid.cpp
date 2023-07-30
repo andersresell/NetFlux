@@ -307,4 +307,11 @@ namespace geometry
                     std::runtime_error("Element with centroid outside bounding box detected in primal mesh. (Element " + std::to_string(i) + ")\n");
         }
     }
+    Index PrimalGrid::find_num_ghost_external() const
+    {
+        Index num_ghost{0};
+        for (const auto &ep : element_patches)
+            num_ghost += ep.boundary_elements.size();
+        return num_ghost;
+    }
 }
