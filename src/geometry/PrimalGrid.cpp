@@ -16,8 +16,8 @@ namespace geometry
         }
     }
 
-    PrimalGrid::PrimalGrid(Vector<Vec3> &&nodes, Elements &&vol_elements, Vector<ElementPatch> &&element_patches)
-        : nodes{move(nodes)}, vol_elements{move(vol_elements)}, element_patches{move(element_patches)}
+    PrimalGrid::PrimalGrid(Vector<Vec3> &&nodes, Elements &&vol_elements, Vector<ElementPatch> &&element_patches, Index eID_glob_first)
+        : nodes{move(nodes)}, vol_elements{move(vol_elements)}, element_patches{move(element_patches)}, eID_glob_first{eID_glob_first}
     {
         cerr << "PrimalGrid existing element constructor called, rank " << NF_MPI::get_rank() << endl;
     }

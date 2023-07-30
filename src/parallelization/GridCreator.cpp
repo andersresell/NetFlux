@@ -8,6 +8,43 @@ is used to partition the mesh.
 
 namespace geometry
 {
+    /*Reordering volume elements of primal grid so that the elements within each partition are clustered
+    together*/
+    void GridCreator::reorder_global_grid(const Vector<Index> &part,
+                                          PrimalGrid &primal_grid,
+                                          Vector<pair<Index, Index>> &part_to_element_range,
+                                          Vector<Index> &eID_glob_to_loc)
+    {
+        assert(NF_MPI::get_rank() == 0);
+        ShortIndex num_procs = NF_MPI::get_size();
+        part_to_element_range.resize(num_procs);
+
+        Elements &vol_elements_old = primal_grid.get_vol_elements();
+        Index n_elem = vol_elements_old.size();
+        eID_glob_to_loc.reserve(n_elem);
+        Elements vol_elements_new;
+        vol_elements_new.reserve(n_elem, MAX_NODES_VOLUME_ELEMENT);
+        for (ShortIndex rank_loc{0}; rank_loc < num_procs; rank_loc++)
+        {
+            bool first_element_found = false;
+            for (Index i{0}; i < n_elem; i++)
+            {
+                if (part[i] == rank_loc)
+                {
+                    if (!first_element_found)
+                        part_to_element_range[rank_loc].first = i;
+                    first_element_found = true;
+                    part_to_element_range[rank_loc].second = i + 1;
+                    vol_elements_new.add_element(vol_elements_old.get_element_type(i), vol_elements_old.get_element_nodes(i));
+                    eID_glob_to_loc.push_back(i);
+                }
+            }
+        }
+        assert(vol_elements_new.size() == vol_elements_old.size());
+        assert(eID_glob_to_loc.size() == vol_elements_old.size());
+        vol_elements_new.shrink_to_fit();
+        vol_elements_old = vol_elements_new;
+    }
 
     void GridCreator::create_global_face_entities(const Elements &vol_elements_glob,
                                                   const Vector<ElementPatch> &element_patches,
@@ -16,8 +53,7 @@ namespace geometry
                                                   map<FaceElement, GhostDataPartition> &internal_boundary_faces,
                                                   const Vector<Index> &part)
     {
-        if (NF_MPI::get_rank() != 0)
-            return;
+        assert(NF_MPI::get_rank() == 0);
 
         assert(faces_to_cells_glob.size() == 0);
 
@@ -104,15 +140,16 @@ namespace geometry
                                                const Vector<Vec3> &nodes_glob,
                                                const Vector<ElementPatch> &element_patches_glob,
                                                Index rank_loc,
+                                               const Vector<pair<Index, Index>> &part_to_element_range,
                                                const Vector<Index> &part,
                                                unique_ptr<PrimalGrid> &primal_grid_loc,
+                                               Vector<Index> &eID_glob_to_loc,
                                                map<Index, Index> &nID_glob_to_loc,
-                                               map<Index, Index> &nID_loc_to_glob,
-                                               map<Index, Index> &eID_glob_to_loc)
+                                               map<Index, Index> &nID_loc_to_glob)
     {
 
-        if (NF_MPI::get_rank() != 0)
-            return;
+        assert(NF_MPI::get_rank() == 0);
+
         Vector<Vec3> nodes_loc;
         Elements vol_elements_loc;
         Vector<ElementPatch> element_patches_loc;
@@ -123,11 +160,15 @@ namespace geometry
         assert(element_patches_loc.size() == 0);
         assert(nID_glob_to_loc.size() == 0);
 
-        /*Count num nodes for each rank (only used for preallocation)*/
-        Index num_vol_elements_loc{0};
+        Index num_vol_elements_loc = part_to_element_range[rank_loc].second - part_to_element_range[rank_loc].first;
+#ifndef NDEBUG
+        Index num_vol_elements_loc_test{0};
         for (Index i : part)
             if (i == rank_loc)
-                num_vol_elements_loc++;
+                num_vol_elements_loc_test++;
+        assert(num_vol_elements_loc == num_vol_elements_loc_test);
+#endif
+
         vol_elements_loc.reserve(num_vol_elements_loc, MAX_NODES_VOLUME_ELEMENT);
 
         nodes_loc.reserve(1.5 * nodes_glob.size() / NF_MPI::get_size()); /*Assuming equal partition times a factor as estimate for number of nodes for each processor*/
@@ -136,40 +177,46 @@ namespace geometry
         Looping over volume elements to copy from global elements and nodes
         to local elements and nodes.
         --------------------------------------------------------------------*/
-        for (Index i{0}; i < vol_elements_glob.size(); i++)
+        Index loc_e_begin = part_to_element_range[rank_loc].first;
+        Index loc_e_end = part_to_element_range[rank_loc].second;
+
+#ifndef NDEBUG
+        if (rank_loc == 0)
+            assert(loc_e_begin == 0);
+        else if (rank_loc == NF_MPI::get_size() - 1)
+            assert(loc_e_end == vol_elements_glob.size());
+#endif
+
+        for (Index i{loc_e_begin}; i < loc_e_end; i++)
         {
-            if (part[i] == rank_loc)
+            assert(part[i] == rank_loc);
+
+            const Index *element = vol_elements_glob.get_element_nodes(i);
+            ShortIndex num_nodes = vol_elements_glob.get_n_element_nodes(i);
+            ElementType e_type = vol_elements_glob.get_element_type(i);
+
+            /*--------------------------------------------------------------------
+            Loops over all global node indices of an element. If a new node index is
+            discovered, the point corresponding to the node index is added and the
+            a mapping from global indices are added.
+            --------------------------------------------------------------------*/
+            for (ShortIndex k{0}; k < num_nodes; k++)
             {
-                const Index *element = vol_elements_glob.get_element_nodes(i);
-                ShortIndex num_nodes = vol_elements_glob.get_n_element_nodes(i);
-                ElementType e_type = vol_elements_glob.get_element_type(i);
-
-                /*--------------------------------------------------------------------
-                Loops over all global node indices of an element. If a new node index is
-                discovered, the point corresponding to the node index is added and the
-                a mapping from global indices are added.
-                --------------------------------------------------------------------*/
-                for (ShortIndex k{0}; k < num_nodes; k++)
+                Index node_id_glob = element[k];
+                if (nID_glob_to_loc.count(node_id_glob) == 0)
                 {
-                    Index node_id_glob = element[k];
-                    if (nID_glob_to_loc.count(node_id_glob) == 0)
-                    {
-                        nodes_loc.emplace_back(nodes_glob[node_id_glob]);
-                        Index node_id_loc = nodes_loc.size();
-                        nID_glob_to_loc.emplace(node_id_glob, node_id_loc);
-                        nID_loc_to_glob.emplace(node_id_loc, node_id_glob);
-                    }
+                    nodes_loc.emplace_back(nodes_glob[node_id_glob]);
+                    Index node_id_loc = nodes_loc.size();
+                    nID_glob_to_loc.emplace(node_id_glob, node_id_loc);
+                    nID_loc_to_glob.emplace(node_id_loc, node_id_glob);
                 }
-                /*--------------------------------------------------------------------
-                Copies an element from the global to the local domain, and renumbers
-                the node indices from global to local values.
-                --------------------------------------------------------------------*/
-
-                assert(eID_glob_to_loc.count(i) == 0);
-                eID_glob_to_loc.emplace(vol_elements_loc.size());
-
-                vol_elements_loc.add_element_local(e_type, element, nID_glob_to_loc);
             }
+            /*--------------------------------------------------------------------
+            Copies an element from the global to the local domain, and renumbers
+            the node indices from global to local values.
+            --------------------------------------------------------------------*/
+            vol_elements_loc.add_element_local(e_type, element, nID_glob_to_loc);
+            assert(vol_elements_loc.size() == eID_glob_to_loc[i]);
         }
 
         /*--------------------------------------------------------------------
@@ -221,7 +268,7 @@ namespace geometry
         element_patches_loc.shrink_to_fit();
         vol_elements_loc.shrink_to_fit();
         nodes_loc.shrink_to_fit();
-        primal_grid_loc = make_unique<PrimalGrid>(nodes_loc, vol_elements_loc, element_patches_loc);
+        primal_grid_loc = make_unique<PrimalGrid>(nodes_loc, vol_elements_loc, element_patches_loc, loc_e_begin);
     }
 
     void GridCreator::create_FV_grid_local(const Config &config,
@@ -402,11 +449,13 @@ namespace geometry
         if (rank == 0)
         {
             auto primal_grid_glob = make_unique<PrimalGrid>(config);
+            const Vector<Index> part = NF_METIS::calc_element_partition(*primal_grid_glob, num_procs);
+            Vector<pair<Index, Index>> part_to_element_range;
+            Vector<Index> eID_glob_to_loc;
+            reorder_global_grid(part, *primal_grid_glob, part_to_element_range, eID_glob_to_loc);
 
             map<FaceElement, pair<Index, long int>> faces_to_cells_glob;
             Elements face_elements_glob;
-
-            const Vector<Index> part = NF_METIS::calc_element_partition(*primal_grid_glob, num_procs);
 
             map<FaceElement, GhostDataPartition> internal_ghost_faces;
 
@@ -417,7 +466,6 @@ namespace geometry
                                         internal_ghost_faces,
                                         part);
 
-            map<Index, Index> eID_glob_to_loc;
             Vector<map<Index, Index>> nID_glob_to_loc_vec(num_procs);
             Vector<map<Index, Index>> nID_loc_to_glob_vec(num_procs);
 
@@ -426,7 +474,7 @@ namespace geometry
             structures)
             --------------------------------------------------------------------*/
 
-            for (Index i_part{0}; i_part < num_procs; i_part++)
+            for (Index rank_loc{0}; rank_loc < num_procs; rank_loc++)
             {
                 Elements vol_elements_loc;
                 Vector<Vec3> nodes_loc;
@@ -435,28 +483,30 @@ namespace geometry
                 create_primal_grid_local(primal_grid_glob->get_vol_elements(),
                                          primal_grid_glob->get_nodes(),
                                          primal_grid_glob->get_element_patches(),
-                                         i_part,
+                                         rank_loc,
+                                         part_to_element_range,
                                          part,
-                                         primal_grids_loc[i_part],
-                                         nID_glob_to_loc_vec[i_part],
-                                         nID_loc_to_glob_vec[i_part],
-                                         eID_glob_to_loc);
+                                         primal_grids_loc[rank_loc],
+                                         eID_glob_to_loc,
+                                         nID_glob_to_loc_vec[rank_loc],
+                                         nID_loc_to_glob_vec[rank_loc]);
             }
             /*--------------------------------------------------------------------
             Build local FV_Grids from local primal grids
             --------------------------------------------------------------------*/
 
-            for (Index i_part{0}; i_part < num_procs; i_part++)
+            for (Index rank_loc{0}; rank_loc < num_procs; rank_loc++)
             {
                 PartitionUtils utils{part,
+                                     part_to_element_range,
                                      eID_glob_to_loc,
-                                     nID_glob_to_loc_vec[i_part], nID_loc_to_glob_vec[i_part]};
+                                     nID_glob_to_loc_vec[rank_loc], nID_loc_to_glob_vec[rank_loc]};
                 create_FV_grid_local(config,
                                      faces_to_cells_glob,
                                      utils,
-                                     i_part,
-                                     FV_grids_loc[i_part],
-                                     *primal_grids_loc[i_part],
+                                     rank_loc,
+                                     FV_grids_loc[rank_loc],
+                                     *primal_grids_loc[rank_loc],
                                      internal_ghost_faces);
             }
             assert(primal_grids_loc.size() == num_procs && FV_grids_loc.size() == num_procs);

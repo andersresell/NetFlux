@@ -8,17 +8,17 @@ namespace geometry
     {
         e_ptr.resize(other.e_ptr.size());
         e_ind.resize(other.e_ind.size());
-        element_types.resize(other.element_types.size());
+        e_types.resize(other.e_types.size());
         std::copy(other.e_ptr.begin(), other.e_ptr.end(), e_ptr.begin());
         std::copy(other.e_ind.begin(), other.e_ind.end(), e_ind.begin());
-        std::copy(other.element_types.begin(), other.element_types.end(), element_types.begin());
+        std::copy(other.e_types.begin(), other.e_types.end(), e_types.begin());
     }
 
     Elements &Elements::operator=(Elements other)
     {
         std::swap(this->e_ptr, other.e_ptr);
         std::swap(this->e_ind, other.e_ind);
-        std::swap(this->element_types, other.element_types);
+        std::swap(this->e_types, other.e_types);
         return *this;
     }
 
@@ -26,13 +26,13 @@ namespace geometry
     {
         e_ptr.reserve(n_elements + 1);
         e_ind.reserve(n_elements * max_nodes_per_element); // This will give some redundency if multiple element types are present in the mesh
-        element_types.reserve(n_elements);
+        e_types.reserve(n_elements);
     }
     void Elements::shrink_to_fit()
     {
         e_ptr.shrink_to_fit();
         e_ind.shrink_to_fit();
-        element_types.shrink_to_fit();
+        e_types.shrink_to_fit();
     }
     void Elements::salome_to_vtk_connectivity()
     {

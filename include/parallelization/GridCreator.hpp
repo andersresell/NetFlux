@@ -15,6 +15,11 @@ namespace geometry
                                              unique_ptr<FV_Grid> &FV_grid);
 
     private:
+        static void reorder_global_grid(const Vector<Index> &part,
+                                        PrimalGrid &primal_grid,
+                                        Vector<pair<Index, Index>> &part_to_element_range,
+                                        Vector<Index> &eID_glob_to_loc);
+
         static void create_global_face_entities(const Elements &vol_elements_glob,
                                                 const Vector<ElementPatch> &element_patches,
                                                 map<FaceElement, pair<Index, long int>> &faces_to_cells_glob,
@@ -25,12 +30,13 @@ namespace geometry
         static void create_primal_grid_local(const Elements &vol_elements_glob,
                                              const Vector<Vec3> &nodes_glob,
                                              const Vector<ElementPatch> &element_patches_glob,
-                                             Index i_part,
+                                             Index rank_loc,
+                                             const Vector<pair<Index, Index>> &part_to_element_range,
                                              const Vector<Index> &part,
                                              unique_ptr<PrimalGrid> &primal_grid_loc,
+                                             Vector<Index> &eID_glob_to_loc,
                                              map<Index, Index> &nID_glob_to_loc,
-                                             map<Index, Index> &nID_loc_to_glob,
-                                             map<Index, Index> &eID_glob_to_loc);
+                                             map<Index, Index> &nID_loc_to_glob);
 
         static void create_FV_grid_local(const Config &config,
                                          const map<FaceElement, pair<Index, long int>> &faces_to_cells_glob,
@@ -65,16 +71,18 @@ namespace geometry
     class PartitionUtils
     {
         const Vector<Index> &part;
-        const map<Index, Index> &eID_glob_to_loc;
+        const Vector<pair<Index, Index>> &part_to_e_range;
+        const Vector<Index> &eID_glob_to_loc;
         const map<Index, Index> &nID_glob_to_loc;
         const map<Index, Index> &nID_loc_to_glob;
 
     public:
         PartitionUtils(const Vector<Index> &part,
-                       const map<Index, Index> &eID_glob_to_loc,
+                       const Vector<pair<Index, Index>> &part_to_e_range,
+                       const Vector<Index> &eID_glob_to_loc,
                        const map<Index, Index> &nID_glob_to_loc,
                        const map<Index, Index> &nID_loc_to_glob)
-            : part{part}, eID_glob_to_loc{eID_glob_to_loc},
+            : part{part}, part_to_e_range{part_to_e_range}, eID_glob_to_loc{eID_glob_to_loc},
               nID_glob_to_loc{nID_glob_to_loc}, nID_loc_to_glob{nID_loc_to_glob}
         {
         }
@@ -93,15 +101,14 @@ namespace geometry
             return part[eID_glob];
         }
 
-        Index get_local_element_index(Index eID_glob) const
-        {
-            assert(eID_glob_to_loc.at(eID_glob) == 1);
-            return eID_glob_to_loc.at(eID_glob);
-        }
+        Index get_local_element_index(Index eID_glob) const { return eID_glob_to_loc[eID_glob]; }
+
         Index get_local_node_index(Index nID_glob) const
         {
-            assert(nID_glob_to_loc.at(nID_glob) == 1);
-            return nID_glob_to_loc.at(nID_glob);
+            {
+                assert(nID_glob_to_loc.at(nID_glob) == 1);
+                return nID_glob_to_loc.at(nID_glob);
+            }
         }
     };
 
