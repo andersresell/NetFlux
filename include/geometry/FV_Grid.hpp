@@ -24,6 +24,13 @@ namespace geometry
         const Faces &get_faces() const { return faces; }
         const Vector<Patch> &get_patches() const { return patches; }
 
+        template <class Archive>
+        void serialize(Archive &ar, const unsigned int version)
+        {
+            ar &cells;
+            ar &faces;
+        }
+
     private:
         /*Creates computational grid from native mesh*/
         // void create_face_structure(Config &config, PrimalGrid &primal_grid);

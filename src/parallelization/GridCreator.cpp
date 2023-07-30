@@ -458,7 +458,7 @@ namespace geometry
             }
             assert(primal_grids_loc.size() == num_procs && FV_grids_loc.size() == num_procs);
         }
-        scatter_grids(config, primal_grids_loc, FV_grids_loc);
+        scatter_grids(primal_grids_loc, FV_grids_loc, config, primal_grid, FV_grid);
     }
 
     void GridCreator::reorder_faces_enitities(Index num_interior_faces,
@@ -485,11 +485,51 @@ namespace geometry
 
     /*Uses MPI to copy all the local PrimalGrids and FV_Grids from rank 0 to the other ranks, it
     also sets various data in config objects*/
-    void GridCreator::scatter_grids(Config &config,
-                                    Vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
-                                    Vector<unique_ptr<FV_Grid>> &FV_grids_loc)
+    void GridCreator::scatter_grids(Vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
+                                    Vector<unique_ptr<FV_Grid>> &FV_grids_loc,
+                                    Config &config,
+                                    unique_ptr<PrimalGrid> &primal_grid,
+                                    unique_ptr<FV_Grid> &FV_grid)
     {
         ShortIndex rank = NF_MPI::get_rank();
         ShortIndex num_procs = NF_MPI::get_size();
+
+        if (rank == 0)
+        {
+            primal_grid = move(primal_grids_loc[0]);
+            FV_grid = move(FV_grids_loc[0]);
+            for (ShortIndex rank_loc{1}; rank_loc < num_procs; rank_loc++)
+            {
+                /*Send primal grid*/
+                string bytes;
+                serialization::serialize(bytes, primal_grids_loc[rank_loc]);
+                Index num_bytes = bytes.size();
+                NF_MPI::Send(&num_bytes, 1, rank_loc);
+                NF_MPI::Send(bytes.data(), num_bytes, rank_loc);
+
+                /*Send FV grid */
+                bytes.clear();
+                serialization::serialize(bytes, FV_grids_loc[rank_loc]);
+                num_bytes = bytes.size();
+                NF_MPI::Send(&num_bytes, 1, rank_loc);
+                NF_MPI::Send(bytes.data(), num_bytes, rank_loc);
+            }
         }
+        else
+        {
+            /*Receive primal grid*/
+            Index num_bytes;
+            NF_MPI::Recv(&num_bytes, 1, 0);
+            string bytes;
+            bytes.resize(num_bytes);
+            NF_MPI::Recv(bytes.data(), num_bytes, 0);
+            serialization::deserialize(bytes, *primal_grid);
+
+            /*Receive FV grid*/
+            NF_MPI::Recv(&num_bytes, 1, 0);
+            bytes.resize(num_bytes);
+            NF_MPI::Recv(bytes.data(), num_bytes, 0);
+            serialization::deserialize(bytes, *FV_grid);
+        }
+    }
 }

@@ -1,0 +1,93 @@
+#include <iostream>
+#include <vector>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <mpi.h>
+#include <sstream>
+
+// Define your data structure (example: MyClass)
+class MyClass
+{
+public:
+    int x;
+    double y;
+
+    // Add serialization function for MyClass (you can use Boost Serialization)
+    template <class Archive>
+    void serialize(Archive &ar, const unsigned int version)
+    {
+        ar &x;
+        ar &y;
+    }
+};
+
+int main(int argc, char **argv)
+{
+    int rank, size;
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    if (size < 2)
+    {
+        std::cerr << "This example requires at least 2 processes.\n";
+        MPI_Finalize();
+        return 1;
+    }
+
+    if (rank == 0)
+    {
+        // On rank 0, prepare and serialize the vector of objects into bytes
+        std::vector<MyClass> objects;
+        for (int i = 0; i < size; ++i)
+        {
+            objects.push_back({i, 3.14 * i});
+        }
+
+        std::vector<int> data_sizes(size);        // To store data size for each rank
+        std::vector<std::string> serialized_data; // To store serialized data for each rank
+
+        for (int i = 0; i < size; ++i)
+        {
+            std::ostringstream oss;
+            boost::archive::binary_oarchive oa(oss);
+            oa << objects[i];
+            serialized_data.push_back(oss.str());
+
+            data_sizes[i] = static_cast<int>(serialized_data[i].size());
+        }
+
+        // Broadcast data size information to all ranks
+        MPI_Bcast(data_sizes.data(), size, MPI_INT, 0, MPI_COMM_WORLD);
+
+        // Scatter the serialized data to other ranks (excluding rank 0)
+        MPI_Scatterv(serialized_data.data(), data_sizes.data(), nullptr, MPI_BYTE, nullptr, 0, MPI_BYTE, 0, MPI_COMM_WORLD);
+    }
+    else
+    {
+        // Receive the data size information from rank 0
+        std::vector<int> data_sizes(size);
+        MPI_Bcast(data_sizes.data(), size, MPI_INT, 0, MPI_COMM_WORLD);
+
+        // Allocate memory for receiving serialized data
+        int my_data_size = data_sizes[rank];
+        std::vector<char> buffer(my_data_size);
+
+        // Scatter the serialized data to other ranks
+        MPI_Scatterv(nullptr, data_sizes.data(), nullptr, MPI_BYTE, buffer.data(), my_data_size, MPI_BYTE, 0, MPI_COMM_WORLD);
+
+        // Deserialize the data on each non-root rank
+        std::string serialized_data(buffer.data(), my_data_size);
+        std::istringstream iss(serialized_data);
+        boost::archive::binary_iarchive ia(iss);
+        MyClass myObject;
+        ia >> myObject;
+
+        // Do something with the deserialized data on non-root ranks
+        std::cout << "Rank " << rank << ": x = " << myObject.x << ", y = " << myObject.y << std::endl;
+    }
+
+    MPI_Finalize();
+    return 0;
+}

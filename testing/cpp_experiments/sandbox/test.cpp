@@ -9,11 +9,19 @@
 using namespace std;
 // Define a serialization function for Eigen::Vector3d
 
+using Scalar = double;
+enum class HEHE
+{
+    ja,
+    nei,
+    joa
+};
+
 class PrimalGrid
 {
     friend class boost::serialization::access;
 
-private:
+public:
     std::vector<Eigen::Vector3d> nodes;
 
 public:
@@ -33,10 +41,7 @@ public:
     // Define the serialization function for PrimalGrid
 
     template <class Archive>
-    void serialize(Archive &ar, const unsigned int version)
-    {
-        ar &nodes;
-    }
+    void serialize(Archive &ar, const unsigned int version) { ar &nodes; };
 };
 
 namespace boost
@@ -45,7 +50,7 @@ namespace boost
     {
 
         template <class Archive>
-        void serialize(Archive &ar, const Eigen::Vector3d &v, const unsigned int version)
+        void serialize(Archive &ar, Eigen::Vector3d &v, const unsigned int version)
         {
             ar &v[0];
             ar &v[1];
@@ -67,6 +72,7 @@ int main()
     std::ostringstream oss;
     boost::archive::binary_oarchive oa(oss);
     oa << grid;
+    grid.nodes[0] = {3000, 3000, 3000};
     std::string serialized_data = oss.str();
 
     // Now, 'serialized_data' contains the serialized representation of the PrimalGrid

@@ -24,9 +24,11 @@ int main(int argc, char *argv[])
     {
         std::cerr << "!!!!!!!!!! Exception caught !!!!!!!!!!\n"
                   << e.what() << endl;
+        NF_MPI::Finalize();
         return 1;
     }
 
+    NF_MPI::Finalize();
     return 0;
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "../geometry/FV_Grid.hpp"
 #include "Metis_Wrapper.hpp"
+#include "Serialization.hpp"
 
 namespace geometry
 {
@@ -45,9 +46,11 @@ namespace geometry
                                             Faces &faces,
                                             Elements &face_elements);
 
-        static void scatter_grids(Config &config,
-                                  Vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
-                                  Vector<unique_ptr<FV_Grid>> &FV_grids_loc);
+        static void scatter_grids(Vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
+                                  Vector<unique_ptr<FV_Grid>> &FV_grids_loc,
+                                  Config &config,
+                                  unique_ptr<PrimalGrid> &primal_grid,
+                                  unique_ptr<FV_Grid> &FV_grid);
     };
 
     struct GhostDataPartition

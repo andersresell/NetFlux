@@ -108,7 +108,7 @@ namespace geometry
     protected:
         Vector<Index> e_ptr = {0};
         Vector<Index> e_ind;
-        Vector<ElementType> element_types;
+        Vector<ElementType> e_types;
 
     public:
         Elements() = default;
@@ -118,8 +118,10 @@ namespace geometry
 
         const Vector<Index> &get_e_ptr() const { return e_ptr; }
         const Vector<Index> &get_e_ind() const { return e_ind; }
+        const Vector<ElementType> &get_e_types() const { return e_types; }
         Vector<Index> &get_e_ptr() { return e_ptr; }
         Vector<Index> &get_e_ind() { return e_ind; }
+        Vector<ElementType> &get_e_types() { return e_types; }
 
         void add_element(ElementType e_type, const Index *element)
         {
@@ -127,7 +129,7 @@ namespace geometry
             e_ptr.emplace_back(e_ptr.back() + n_nodes);
             for (ShortIndex k{0}; k < n_nodes; k++)
                 e_ind.emplace_back(element[k]);
-            element_types.emplace_back(e_type);
+            e_types.emplace_back(e_type);
         }
         /*Special function that uses a map to convert from global to local node indices
         when using multiple processors*/
@@ -140,21 +142,21 @@ namespace geometry
                 assert(node_glob_to_loc.count(element[k] == 1));
                 e_ind.emplace_back(node_glob_to_loc.at(element[k]));
             }
-            element_types.emplace_back(e_type);
+            e_types.emplace_back(e_type);
         }
 
         Index sum_nodes_over_all_elements() const { return e_ptr.back(); }
 
         const Index *get_element_nodes(Index i) const
         {
-            assert((e_ptr[i + 1] - e_ptr[i]) == get_num_nodes_in_element(element_types[i]));
+            assert((e_ptr[i + 1] - e_ptr[i]) == get_num_nodes_in_element(e_types[i]));
             return &e_ind[e_ptr[i]];
         }
 
     private:
         Index *get_element_nodes_modifiable(Index i)
         {
-            assert((e_ptr[i + 1] - e_ptr[i]) == get_num_nodes_in_element(element_types[i]));
+            assert((e_ptr[i + 1] - e_ptr[i]) == get_num_nodes_in_element(e_types[i]));
             return &e_ind[e_ptr[i]];
         }
 
@@ -162,13 +164,13 @@ namespace geometry
         const ShortIndex get_n_element_nodes(Index i) const
         {
             Index num_nodes{e_ptr[i + 1] - e_ptr[i]};
-            assert(num_nodes == get_num_nodes_in_element(element_types[i]));
+            assert(num_nodes == get_num_nodes_in_element(e_types[i]));
             return num_nodes;
         }
 
         ElementType get_element_type(Index i) const
         {
-            return element_types[i];
+            return e_types[i];
         }
 
         void reserve(Index n_elements, ShortIndex max_nodes_per_element);
@@ -185,6 +187,9 @@ namespace geometry
         elements from salome to vtk.
         --------------------------------------------------------------------*/
         void salome_to_vtk_connectivity();
+
+        template <class Archive>
+        void serialize(Archive &ar, const unsigned int version) {}
     };
 
     class FaceElement
@@ -327,6 +332,8 @@ namespace geometry
                 assert(j != other.j); // Two faces can't have the same owner and neigbour cells
                 return j < other.j;
             }
+            template <class Archive>
+            void serialize(Archive &ar, const unsigned int version) {}
         };
 
         Vector<CellPair> cell_indices;
@@ -370,6 +377,13 @@ namespace geometry
         Scalar get_cell_volume(Index cell_index) const { return volumes[cell_index]; }
         const Vec3 &get_centroid(Index cell_index) const { return centroids[cell_index]; }
         string to_string(Index i) const;
+
+        template <class Archive>
+        void serialize(Archive &ar, const unsigned int version)
+        {
+            ar &volumes;
+            ar &centroid;
+        }
     };
 
     struct Patch
