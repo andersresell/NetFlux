@@ -40,19 +40,25 @@ public:
     static void Barrier() { MPI_Barrier(MPI_COMM_WORLD); }
 
     template <typename T>
-    static void Send(const T *data, Index count, ShortIndex dest_rank, ShortIndex tag = 0)
+    static void Send(const T *sendbuf, Index count, ShortIndex dest_rank, ShortIndex tag = 0)
     {
-        MPI_Send(data, sizeof(T) * count, get_MPI_Datatype<T>(), dest_rank, tag, MPI_COMM_WORLD);
+        MPI_Send(sendbuf, sizeof(T) * count, get_MPI_Datatype<T>(), dest_rank, tag, MPI_COMM_WORLD);
     }
     template <typename T>
-    static void Recv(const T *data, Index count, ShortIndex source_rank, ShortIndex tag = 0)
+    static void Recv(const T *recvbuf, Index count, ShortIndex source_rank, ShortIndex tag = 0)
     {
-        MPI_Recv(data, count, get_MPI_Datatype<T>(), source_rank, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE)
+        MPI_Recv(recvbuf, count, get_MPI_Datatype<T>(), source_rank, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE)
     }
 
     template <typename T>
-    static void Bcast(const T *data, Index count, ShortIndex source_rank)
+    static void Bcast(const T *sendbuf, Index count, ShortIndex source_rank)
     {
-        MPI_Bcast(data, count, get_MPI_Datatype<T>(), source_rank, MPI_COMM_WORLD);
+        MPI_Bcast(sendbuf, count, get_MPI_Datatype<T>(), source_rank, MPI_COMM_WORLD);
+    }
+
+    template <typename T>
+    static void Gather(const T *sendbuf, Index sendcount, T *recvbuf, Index recvcount, ShortIndex dest_rank)
+    {
+        MPI_Gather(sendbuf, sendcount, get_MPI_Datatype<T>(), recvbuf, recvcount, get_MPI_Datatype<T>(), dest_rank, MPI_COMM_WORLD);
     }
 };

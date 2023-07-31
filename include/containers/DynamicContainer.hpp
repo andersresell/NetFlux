@@ -26,6 +26,9 @@ public:
         data_ = new T[size_ * rows_ * cols_]{0};
     }
 
+    const T *data() const { return data_; }
+    T *data() { return data_; }
+
     T &operator()(Index l, Index i, Index j)
     {
         assert(l < size_ && i < rows_ && j < cols_);

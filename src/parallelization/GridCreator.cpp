@@ -8,6 +8,98 @@ is used to partition the mesh.
 
 namespace geometry
 {
+
+    void GridCreator::create_partitioned_grids(Config &config,
+                                               unique_ptr<PrimalGrid> &primal_grid_glob,
+                                               unique_ptr<PrimalGrid> &primal_grid,
+                                               unique_ptr<FV_Grid> &FV_grid)
+    {
+
+        const ShortIndex num_procs = NF_MPI::get_size();
+        const ShortIndex rank = NF_MPI::get_rank();
+
+        Vector<unique_ptr<PrimalGrid>> primal_grids_loc(num_procs);
+        Vector<unique_ptr<FV_Grid>> FV_grids_loc(num_procs);
+
+        if (rank == 0)
+        {
+            primal_grid_glob = make_unique<PrimalGrid>(config);
+            const Vector<Index> part = NF_METIS::calc_element_partition(*primal_grid_glob, num_procs);
+            Vector<pair<Index, Index>> part_to_element_range;
+            Vector<Index> eID_glob_to_loc;
+            reorder_global_grid(part, *primal_grid_glob, part_to_element_range, eID_glob_to_loc);
+
+            map<FaceElement, pair<Index, long int>> faces_to_cells_glob;
+            Elements face_elements_glob;
+
+            map<FaceElement, GhostDataPartition> internal_ghost_faces;
+
+            create_global_face_entities(primal_grid_glob->get_vol_elements(),
+                                        primal_grid_glob->get_element_patches(),
+                                        faces_to_cells_glob,
+                                        face_elements_glob,
+                                        internal_ghost_faces,
+                                        part);
+
+            Vector<map<Index, Index>> nID_glob_to_loc_vec(num_procs);
+            Vector<map<Index, Index>> nID_loc_to_glob_vec(num_procs);
+
+            /*--------------------------------------------------------------------
+            Build local primal grids from global primal grid (and some addressing
+            structures)
+            --------------------------------------------------------------------*/
+
+            for (Index rank_loc{0}; rank_loc < num_procs; rank_loc++)
+            {
+                Elements vol_elements_loc;
+                Vector<Vec3> nodes_loc;
+                Vector<ElementPatch> element_patches_loc;
+
+                create_primal_grid_local(primal_grid_glob->get_vol_elements(),
+                                         primal_grid_glob->get_nodes(),
+                                         primal_grid_glob->get_element_patches(),
+                                         rank_loc,
+                                         part_to_element_range,
+                                         part,
+                                         primal_grids_loc[rank_loc],
+                                         eID_glob_to_loc,
+                                         nID_glob_to_loc_vec[rank_loc],
+                                         nID_loc_to_glob_vec[rank_loc]);
+            }
+            /*--------------------------------------------------------------------
+            Build local FV_Grids from local primal grids
+            --------------------------------------------------------------------*/
+
+            for (Index rank_loc{0}; rank_loc < num_procs; rank_loc++)
+            {
+                PartitionUtils utils{part,
+                                     part_to_element_range,
+                                     eID_glob_to_loc,
+                                     nID_glob_to_loc_vec[rank_loc], nID_loc_to_glob_vec[rank_loc]};
+                create_FV_grid_local(config,
+                                     faces_to_cells_glob,
+                                     utils,
+                                     rank_loc,
+                                     FV_grids_loc[rank_loc],
+                                     *primal_grids_loc[rank_loc],
+                                     internal_ghost_faces);
+            }
+            assert(primal_grids_loc.size() == num_procs && FV_grids_loc.size() == num_procs);
+
+            /*Setting global grid metrics in config for rank 0*/
+            Index N_NODES_GLOB = primal_grid_glob->get_nodes().size();
+            Index N_INTERIOR_CELLS_GLOB = primal_grid_glob->get_vol_elements().size();
+            Index n_ghost_tot = primal_grid_glob->find_num_ghost_external();
+            Index N_TOTAL_CELLS_GLOB = primal_grid_glob->get_vol_elements().size() + n_ghost_tot;
+            Index N_TOTAL_FACES_GLOB = primal_grid_glob->get_face_elements().size();
+            Index N_INTERIOR_FACES_GLOB = N_TOTAL_FACES_GLOB - n_ghost_tot;
+            config.set_grid_metrics_global(N_NODES_GLOB, N_INTERIOR_CELLS_GLOB,
+                                           N_TOTAL_CELLS_GLOB, N_INTERIOR_FACES_GLOB, N_TOTAL_FACES_GLOB);
+        }
+        send_recv_grids(config, primal_grids_loc, FV_grids_loc, primal_grid, FV_grid);
+        set_config_grid_data_local(config, primal_grid, FV_grid);
+    }
+
     /*Reordering volume elements of primal grid so that the elements within each partition are clustered
     together*/
     void GridCreator::reorder_global_grid(const Vector<Index> &part,
@@ -433,96 +525,6 @@ namespace geometry
         FV_grid_loc = make_unique<FV_Grid>(cells_loc, faces_loc, patches_loc, part_patches_loc);
 
         // cout << "Computational grid has been created.\n";
-    }
-
-    void GridCreator::create_partitioned_grids(Config &config,
-                                               unique_ptr<PrimalGrid> &primal_grid,
-                                               unique_ptr<FV_Grid> &FV_grid)
-    {
-
-        const ShortIndex num_procs = NF_MPI::get_size();
-        const ShortIndex rank = NF_MPI::get_rank();
-
-        Vector<unique_ptr<PrimalGrid>> primal_grids_loc(num_procs);
-        Vector<unique_ptr<FV_Grid>> FV_grids_loc(num_procs);
-
-        if (rank == 0)
-        {
-            auto primal_grid_glob = make_unique<PrimalGrid>(config);
-            const Vector<Index> part = NF_METIS::calc_element_partition(*primal_grid_glob, num_procs);
-            Vector<pair<Index, Index>> part_to_element_range;
-            Vector<Index> eID_glob_to_loc;
-            reorder_global_grid(part, *primal_grid_glob, part_to_element_range, eID_glob_to_loc);
-
-            map<FaceElement, pair<Index, long int>> faces_to_cells_glob;
-            Elements face_elements_glob;
-
-            map<FaceElement, GhostDataPartition> internal_ghost_faces;
-
-            create_global_face_entities(primal_grid_glob->get_vol_elements(),
-                                        primal_grid_glob->get_element_patches(),
-                                        faces_to_cells_glob,
-                                        face_elements_glob,
-                                        internal_ghost_faces,
-                                        part);
-
-            Vector<map<Index, Index>> nID_glob_to_loc_vec(num_procs);
-            Vector<map<Index, Index>> nID_loc_to_glob_vec(num_procs);
-
-            /*--------------------------------------------------------------------
-            Build local primal grids from global primal grid (and some addressing
-            structures)
-            --------------------------------------------------------------------*/
-
-            for (Index rank_loc{0}; rank_loc < num_procs; rank_loc++)
-            {
-                Elements vol_elements_loc;
-                Vector<Vec3> nodes_loc;
-                Vector<ElementPatch> element_patches_loc;
-
-                create_primal_grid_local(primal_grid_glob->get_vol_elements(),
-                                         primal_grid_glob->get_nodes(),
-                                         primal_grid_glob->get_element_patches(),
-                                         rank_loc,
-                                         part_to_element_range,
-                                         part,
-                                         primal_grids_loc[rank_loc],
-                                         eID_glob_to_loc,
-                                         nID_glob_to_loc_vec[rank_loc],
-                                         nID_loc_to_glob_vec[rank_loc]);
-            }
-            /*--------------------------------------------------------------------
-            Build local FV_Grids from local primal grids
-            --------------------------------------------------------------------*/
-
-            for (Index rank_loc{0}; rank_loc < num_procs; rank_loc++)
-            {
-                PartitionUtils utils{part,
-                                     part_to_element_range,
-                                     eID_glob_to_loc,
-                                     nID_glob_to_loc_vec[rank_loc], nID_loc_to_glob_vec[rank_loc]};
-                create_FV_grid_local(config,
-                                     faces_to_cells_glob,
-                                     utils,
-                                     rank_loc,
-                                     FV_grids_loc[rank_loc],
-                                     *primal_grids_loc[rank_loc],
-                                     internal_ghost_faces);
-            }
-            assert(primal_grids_loc.size() == num_procs && FV_grids_loc.size() == num_procs);
-
-            /*Setting global grid metrics in config for rank 0*/
-            Index N_NODES_GLOB = primal_grid_glob->get_nodes().size();
-            Index N_INTERIOR_CELLS_GLOB = primal_grid_glob->get_vol_elements().size();
-            Index n_ghost_tot = primal_grid_glob->find_num_ghost_external();
-            Index N_TOTAL_CELLS_GLOB = primal_grid_glob->get_vol_elements().size() + n_ghost_tot;
-            Index N_TOTAL_FACES_GLOB = primal_grid_glob->get_face_elements().size();
-            Index N_INTERIOR_FACES_GLOB = N_TOTAL_FACES_GLOB - n_ghost_tot;
-            config.set_grid_metrics_global(N_NODES_GLOB, N_INTERIOR_CELLS_GLOB,
-                                           N_TOTAL_CELLS_GLOB, N_INTERIOR_FACES_GLOB, N_TOTAL_FACES_GLOB);
-        }
-        send_recv_grids(config, primal_grids_loc, FV_grids_loc, primal_grid, FV_grid);
-        set_config_grid_data_local(config, primal_grid, FV_grid);
     }
 
     void GridCreator::reorder_faces_enitities(Index num_interior_faces,

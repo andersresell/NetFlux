@@ -1,17 +1,35 @@
 
 #include "../include/Output.hpp"
 
-Output::Output(const geometry::PrimalGrid &primal_grid, const Vector<unique_ptr<Solver>> &solvers, const Config &config)
-    : primal_grid{primal_grid}, solvers{solvers}
+Output::Output(const geometry::PrimalGrid &primal_grid_glob,
+               const geometry::PrimalGrid &primal_grid,
+               const Vector<unique_ptr<Solver>> &solvers,
+               const Config &config)
+    : primal_grid_glob{primal_grid_glob}, primal_grid{primal_grid}, solvers{solvers}
 {
-    string output_dir = config.get_output_dir();
+    if (NF_MPI::get_rank() == 0)
+    {
+        string output_dir = config.get_output_dir();
 
-    if (filesys::exists(output_dir))
-        if (!filesys::remove_all(output_dir))
-            throw(std::runtime_error("Couldn't remove old output directory: " + output_dir));
+        if (filesys::exists(output_dir))
+            if (!filesys::remove_all(output_dir))
+                throw(std::runtime_error("Couldn't remove old output directory: " + output_dir));
 
-    if (!filesys::create_directory(output_dir))
-        throw std::runtime_error("Couldn't create output directory: " + output_dir);
+        if (!filesys::create_directory(output_dir))
+            throw std::runtime_error("Couldn't create output directory: " + output_dir);
+
+        assert(solvers.size() == 1); // fix if adding more solvers
+        for (ShortIndex i{0}; i < solvers.size(); i++)
+        {
+            Index N_CELLS = primal_grid_glob.get_vol_elements().size();
+            Index N_EQS = solvers[i]->get_solver_data().get_N_EQS();
+            consvars_glob[i] = make_unique<VecField>(N_CELLS, N_EQS);
+        }
+    }
+    else
+    {
+        assert(primal_grid_glob.get_vol_elements().size() == 0);
+    }
 }
 
 void Output::write_vtk_ascii(const Config &config)
@@ -24,16 +42,16 @@ void Output::write_vtk_ascii(const Config &config)
 
     write_vtk_ascii_grid(config, filename);
 
-    for (const auto &solver : solvers)
+    for (ShortIndex i{0}; i < solvers.size(); i++)
     {
+        gather_cell_data(i);
+        // const VecField &consvars = solver->get_solver_data().get_solution();
 
-        const VecField &consvars = solver->get_solver_data().get_solution();
-
-        switch (solver->get_solver_type())
+        switch (solvers[i]->get_solver_type())
         {
         case SolverType::Euler:
         {
-            EulerOutput::write_vtk_ascii_cell_data(config, filename, consvars);
+            EulerOutput::write_vtk_ascii_cell_data(config, filename, *consvars_glob[i]);
             break;
         }
         default:
@@ -47,13 +65,15 @@ void Output::write_vtk_ascii(const Config &config)
 
 void Output::write_vtk_ascii_grid(const Config &config, const string &filename)
 {
+    if (NF_MPI::get_rank() != 0)
+        return;
     std::ofstream ost{filename};
     FAIL_IF_MSG(!ost, "Couldn't open file " + filename);
 
-    const Index N_NODES = config.get_N_NODES();
-    const Index N_CELLS = config.get_N_INTERIOR_CELLS();
-    const auto &nodes = primal_grid.get_nodes();
-    const auto &vol_elements = primal_grid.get_vol_elements();
+    const Index N_NODES = config.get_N_NODES_GLOB();
+    const Index N_CELLS = config.get_N_INTERIOR_CELLS_GLOB();
+    const auto &nodes = primal_grid_glob.get_nodes();
+    const auto &vol_elements = primal_grid_glob.get_vol_elements();
     assert(N_CELLS == vol_elements.size());
 
     // const Vector<Index> &n_ptr = vol_elements.get_n_ptr();
@@ -86,6 +106,24 @@ void Output::write_vtk_ascii_grid(const Config &config, const string &filename)
         ost << static_cast<ShortIndex>(vol_elements.get_element_type(i)) << "\n";
 }
 
+void Output::gather_cell_data(ShortIndex i_solver)
+{
+    /*Use mpi gather to copy all local cell data to a global container*/
+    ShortIndex num_procs = NF_MPI::get_size();
+    ShortIndex rank = NF_MPI::get_rank();
+    const VecField &U_loc = solvers[i_solver]->get_solver_data().get_solution();
+    VecField &U_glob = *consvars_glob[i_solver];
+
+    Index eID_glob_first = primal_grid.get_eID_global_first();
+
+    const Scalar *sendbuf = U_loc.data();
+    Index sendcount = U_loc.size() * U_loc.rows();
+    Scalar *recvbuf = U_glob.data();
+    Index recvcount = U_glob.size() * U_glob.rows();
+
+    NF_MPI::Gather(sendbuf, sendcount, recvbuf, recvcount, 0);
+}
+
 void EulerOutput::write_vtk_ascii_cell_data(const Config &config, const string &filename, const VecField &consvars)
 {
     assert(consvars.get_N_EQS() == N_EQS_EULER);
@@ -95,7 +133,7 @@ void EulerOutput::write_vtk_ascii_cell_data(const Config &config, const string &
     if (!ost)
         throw std::runtime_error("Couldn't open file " + filename);
 
-    const Index N_INTERIOR_CELLS = config.get_N_INTERIOR_CELLS();
+    const Index N_INTERIOR_CELLS = config.get_N_INTERIOR_CELLS_GLOB();
 
     ost << "\nCELL_DATA " << N_INTERIOR_CELLS << "\n";
 

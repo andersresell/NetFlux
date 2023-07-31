@@ -10,6 +10,8 @@ class Driver
 
     Config &config;
 
+    unique_ptr<geometry::PrimalGrid> primal_grid_glob;
+
     unique_ptr<geometry::PrimalGrid> primal_grid;
 
     unique_ptr<geometry::FV_Grid> FV_grid;

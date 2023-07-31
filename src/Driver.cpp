@@ -1,5 +1,5 @@
 #include "../include/Driver.hpp"
-#include "../include/parallelization/DomainDecomposition.hpp"
+#include "../include/parallelization/GridCreator.hpp"
 
 Driver::Driver(Config &config) : config{config}
 {
@@ -7,7 +7,7 @@ Driver::Driver(Config &config) : config{config}
          << "////////  ->| NetFlux |->  ////////\n"
          << "///////////////////////////////////\n\n";
 
-    geometry::GridCreator::create_partitioned_grids(config, primal_grid, FV_grid);
+    geometry::GridCreator::create_partitioned_grids(config, primal_grid_glob, primal_grid, FV_grid);
 
     switch (config.get_main_solver_type())
     {
@@ -17,8 +17,8 @@ Driver::Driver(Config &config) : config{config}
     default:
         throw std::runtime_error("Error: Illegal solver type specified");
     }
-
-    output = make_unique<Output>(*primal_grid, solvers, config);
+    if (NF_MPI::get_rank() == 0)
+        output = make_unique<Output>(*primal_grid_glob, *primal_grid, solvers, config);
 }
 
 void Driver::solve()
