@@ -214,12 +214,6 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
             EulerEqs::prim_to_cons(V_L, U_L);
             EulerEqs::prim_to_cons(V_R, U_R);
 
-            // cout << "V_i " << solver_data->get_primvars().get_variable<EulerVec>(i_domain) << endl;
-            // cout << "V_grad_i " << solver_data->get_primvars_gradient().get_variable<EulerGrad>(i_domain) << endl;
-            // cout << "limiter_i " << solver_data->get_primvars_limiter().get_variable<EulerVec>(i_domain) << endl;
-            // cout << "V_L " << V_L << endl;
-            // cout << "V_R " << V_R << endl;
-
             numerical_flux_func(U_L, U_R, S_ij, Flux_inv);
 
             assert(validity_checker->valid_boundary_flux(Flux_inv.data(), patch.boundary_type));
@@ -227,12 +221,13 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
             flux_balance.get_variable<EulerVec>(i_domain) -= Flux_inv;
         }
     }
+    /*Finally interprocessor communication*/
 }
 
 void EulerSolver::calc_timestep(Config &config)
 {
     // --------------------------------------------------------------------
-    // Implementing Method 2 in "Time Step on Unstructured Grids" in Blazek
+    // Implementing Method 2 in "Time Step on Unstructured Grids" from Blazek
     // --------------------------------------------------------------------
 
     /*Delta S only needs updating when the grid is moved*/

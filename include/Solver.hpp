@@ -47,7 +47,20 @@ private:
     virtual void evaluate_gradient(const Config &config) = 0;
 
     virtual void evaluate_limiter(const Config &config) = 0;
+
+    template <ShortIndex N_COLS>
+    void sendrecv_ghost_partition_field(const geometry::PartitionPatch &part_patch, GenericField<N_COLS> &field);
 };
+template <ShortIndex N_COLS>
+inline void Solver::sendrecv_ghost_partition_field(const geometry::PartitionPatch &pp, GenericField<N_COLS> &field)
+{
+    const auto &faces = FV_grid.get_faces();
+    for (Index ij{pp.FIRST_FACE}; ij < pp.FIRST_FACE + pp.N_FACES; ij++)
+    {
+        Index i_domain = faces.get_cell_i();
+        Index j_ghost = faces.get_cell_j();
+    }
+}
 
 class EulerSolver : public Solver
 {

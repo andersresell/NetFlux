@@ -16,17 +16,19 @@ class Config
 
     /*Options specified when reading mesh*/
 
-    Index N_NODES_LOC{0},
-        N_INTERIOR_CELLS_LOC{0},
-        N_TOTAL_CELLS_LOC{0},
-        N_INTERIOR_FACES_LOC{0},
-        N_TOTAL_FACES_LOC{0};
+    Index N_NODES{0},
+        N_CELLS_INT{0},
+        N_CELLS_GHOST_PART{0},
+        N_CELLS_GHOST_EXT{0},
+        N_FACES_INT{0},
+        N_FACES_PART{0},
+        N_FACES_EXT{0};
 
     Index N_NODES_GLOB{0},
-        N_INTERIOR_CELLS_GLOB{0},
-        N_TOTAL_CELLS_GLOB{0},
-        N_INTERIOR_FACES_GLOB{0},
-        N_TOTAL_FACES_GLOB{0},
+        N_CELLS_INT_GLOB{0},
+        N_CELLS_GHOST_GLOB{0},
+        N_FACES_INT_GLOB{0},
+        N_FACES_EXT_GLOB{0},
         N_CONNECTIVITY_INDICES_GLOB{0}; /*sum of nodes making up elements over all element, used to write vtk file*/
     bool grid_metrics_loc_set{0}, grid_metrics_glob_set{0};
     /*Options specified by input file*/
@@ -86,21 +88,23 @@ public:
     void start_counter() { timer.start_counter(); }
     string get_elapsed_time() const { return timer.get_elapsed_time(); };
 
-    Index get_N_NODES_LOC() const { return N_NODES_LOC; }
-    Index get_N_INTERIOR_CELLS_LOC() const { return N_INTERIOR_CELLS_LOC; }
-    Index get_N_TOTAL_CELLS_LOC() const { return N_TOTAL_CELLS_LOC; }
-    Index get_N_GHOST_CELLS_LOC() const { return N_TOTAL_CELLS_LOC - N_INTERIOR_CELLS_LOC; }
-    Index get_N_INTERIOR_FACES_LOC() const { return N_INTERIOR_FACES_LOC; }
-    Index get_N_TOTAL_FACES_LOC() const { return N_TOTAL_FACES_LOC; }
-    Index get_N_BOUNDARY_FACES_LOC() const { return N_TOTAL_FACES_LOC - N_INTERIOR_FACES_LOC; }
+    Index get_N_NODES() const { return N_NODES; }
+    Index get_N_CELLS_INT() const { return N_CELLS_INT; }
+    Index get_N_CELLS_TOT() const { return N_CELLS_INT + N_CELLS_GHOST_PART + N_CELLS_GHOST_EXT; }
+    Index get_N_CELLS_GHOST_PART() const { return N_CELLS_GHOST_PART; }
+    Index get_N_CELLS_DOMAIN() const { return N_CELLS_INT + N_CELLS_GHOST_PART; }
+    Index get_N_FACES_INT() const { return N_FACES_INT; }
+    Index get_N_FACES_TOT() const { return N_FACES_INT + N_FACES_PART + N_FACES_EXT; }
+    Index get_N_FACES_PART() const { return N_FACES_PART; }
+    Index get_N_FACES_EXT() const { return N_FACES_EXT; }
 
     Index get_N_NODES_GLOB() const { return N_NODES_GLOB; }
-    Index get_N_INTERIOR_CELLS_GLOB() const { return N_INTERIOR_CELLS_GLOB; }
-    Index get_N_TOTAL_CELLS_GLOB() const { return N_TOTAL_CELLS_GLOB; }
-    Index get_N_GHOST_CELLS_GLOB() const { return N_TOTAL_CELLS_GLOB - N_INTERIOR_CELLS_GLOB; }
-    Index get_N_INTERIOR_FACES_GLOB() const { return N_INTERIOR_FACES_GLOB; }
-    Index get_N_TOTAL_FACES_GLOB() const { return N_TOTAL_FACES_GLOB; }
-    Index get_N_BOUNDARY_FACES_GLOB() const { return N_TOTAL_FACES_GLOB - N_INTERIOR_FACES_GLOB; }
+    Index get_N_CELLS_INT_GLOB() const { return N_CELLS_INT_GLOB; }
+    Index get_N_CELLS_TOT_GLOB() const { return N_CELLS_INT_GLOB + N_CELLS_GHOST_GLOB; }
+    Index get_N_CELLS_GHOST_GLOB() const { return N_CELLS_GHOST_GLOB; }
+    Index get_N_FACES_INT_GLOB() const { return N_FACES_INT_GLOB; }
+    Index get_N_FACES_TOT_GLOB() const { return N_FACES_INT_GLOB + N_FACES_EXT_GLOB; }
+    Index get_N_FACES_EXT_GLOB() const { return N_FACES_EXT_GLOB; }
     Index get_N_CONNECTIVITY_INDICES_GLOB() const { return N_CONNECTIVITY_INDICES_GLOB; }
 
     void set_grid_metrics_local(Index N_NODES,

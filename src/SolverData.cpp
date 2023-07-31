@@ -2,27 +2,28 @@
 
 SolverData::SolverData(const Config &config, ShortIndex n_eqs)
 {
-    Index N_TOTAL_CELLS = config.get_N_TOTAL_CELLS();
-    Index N_INTERIOR_CELLS = config.get_N_INTERIOR_CELLS();
+    Index N_CELLS_TOT = config.get_N_CELLS_INT();
+    Index N_CELLS_DOMAIN = config.get_N_CELLS_DOMAIN();
+    Index N_CELLS_INT = config.get_N_CELLS_INT();
 
-    solution = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs);
-    solution_old = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs);
-    primvars = make_unique<VecField>(N_TOTAL_CELLS, n_eqs);
-    flux_balance = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs);
+    solution = make_unique<VecField>(N_CELLS_INT, n_eqs);
+    solution_old = make_unique<VecField>(N_CELLS_INT, n_eqs);
+    primvars = make_unique<VecField>(N_CELLS_TOT, n_eqs);
+    flux_balance = make_unique<VecField>(N_CELLS_INT, n_eqs);
 
     if (config.get_spatial_order() == SpatialOrder::Second)
     {
-        primvars_gradient = make_unique<GradField>(N_INTERIOR_CELLS, n_eqs);
-        primvars_limiter = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs);
+        primvars_gradient = make_unique<GradField>(N_CELLS_DOMAIN, n_eqs);
+        primvars_limiter = make_unique<VecField>(N_CELLS_DOMAIN, n_eqs);
         *primvars_limiter = 1.0;
-        primvars_max = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs); //?correct size
-        primvars_min = make_unique<VecField>(N_INTERIOR_CELLS, n_eqs); //?correct size
+        primvars_max = make_unique<VecField>(N_CELLS_DOMAIN, n_eqs); //?correct size
+        primvars_min = make_unique<VecField>(N_CELLS_DOMAIN, n_eqs); //?correct size
     }
 }
 
 EulerSolverData::EulerSolverData(const Config &config) : SolverData(config, N_EQS_EULER)
 {
-    Delta_S.resize(config.get_N_TOTAL_CELLS());
+    Delta_S.resize(config.get_N_CELLS_TOT());
 
     switch (config.get_initial_cond_option())
     {

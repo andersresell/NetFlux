@@ -4,6 +4,9 @@
 #include "containers/StaticContainer.hpp"
 #include "Config.hpp"
 
+template <ShortIndex N_COLS>
+using GenericField = DynamicContainer3D<Scalar, N_COLS>;
+
 struct VecField final : public DynamicContainer2D<Scalar>
 {
     VecField(Index N_CELLS, ShortIndex N_EQS) : DynamicContainer2D(N_CELLS, N_EQS) {}

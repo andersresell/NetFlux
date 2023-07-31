@@ -48,10 +48,11 @@ namespace geometry
                                          map<FaceElement, GhostDataPartition> const &internal_boundary_faces_glob);
 
         /*Sorts faces and face_elements patch-wise after the cell indices of the faces.*/
-        static void reorder_faces_enitities(Index num_interior_faces,
-                                            const Vector<Patch> &patches,
-                                            Faces &faces,
-                                            Elements &face_elements);
+        static void reorder_face_enitities(Index num_interior_faces,
+                                           const Vector<PartitionPatch> &partition_patches,
+                                           const Vector<Patch> &patches,
+                                           Faces &faces,
+                                           Elements &face_elements);
 
         static void send_recv_grids(Config &config,
                                     Vector<unique_ptr<PrimalGrid>> &primal_grids_loc,

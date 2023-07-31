@@ -113,11 +113,14 @@ namespace geometry
 
         Elements &vol_elements_old = primal_grid.get_vol_elements();
         Index n_elem = vol_elements_old.size();
-        eID_glob_to_loc.reserve(n_elem);
+        eID_glob_to_loc.resize(n_elem);
         Elements vol_elements_new;
         vol_elements_new.reserve(n_elem, MAX_NODES_VOLUME_ELEMENT);
         for (ShortIndex rank_loc{0}; rank_loc < num_procs; rank_loc++)
         {
+            /*This loop can be made faster (outermost loop removed) by first creating part_to_element_range
+        (count occurences of each rank) and then using the intervals to insert elements in vol_elements_new*/
+
             bool first_element_found = false;
             for (Index i{0}; i < n_elem; i++)
             {
@@ -128,7 +131,7 @@ namespace geometry
                     first_element_found = true;
                     part_to_element_range[rank_loc].second = i + 1;
                     vol_elements_new.add_element(vol_elements_old.get_element_type(i), vol_elements_old.get_element_nodes(i));
-                    eID_glob_to_loc.push_back(i);
+                    eID_glob_to_loc[i] = //???FIX THIS
                 }
             }
         }
@@ -414,37 +417,7 @@ namespace geometry
         }
 
         /*--------------------------------------------------------------------
-        Step 4: Create the faces at the boundaries and ghost cells.
-        Also add the face elements at the boundaries.
-        --------------------------------------------------------------------*/
-        // cout << "Creating ghost cells..\n";
-        Index j_ghost = vol_elements_loc.size();
-        for (const auto &element_patch : element_patches_loc)
-        {
-            Patch p;
-            p.boundary_type = config.get_boundary_type(element_patch.patch_name);
-            p.FIRST_FACE = faces_loc.size();
-            p.N_FACES = element_patch.boundary_elements.size();
-            patches_loc.push_back(p);
-
-            const Elements &surface_elements_loc = element_patch.boundary_elements;
-            for (Index ij{0}; ij < surface_elements_loc.size(); ij++)
-            {
-                ElementType e_type = surface_elements_loc.get_element_type(ij);
-                FaceElement face_element{e_type, surface_elements_loc.get_element_nodes(ij)};
-                face_element.loc_to_glob(utils.get_map_nodeID_loc_to_glob()); // Switching from local to global indices
-                assert(faces_to_cells_glob.at(face_element).second == CELL_NOT_ASSIGNED);
-                Index i_domain = faces_to_cells_glob.at(face_element).first;
-                assert(i_domain < j_ghost);
-                faces_loc.cell_indices.emplace_back(i_domain, j_ghost);
-                face_elements_loc.add_element(e_type, face_element.nodes.data());
-                j_ghost++;
-            }
-        }
-        assert(face_elements_loc.size() == faces_loc.size());
-
-        /*--------------------------------------------------------------------
-        Step 5: Assign interior ghost cells between domains.
+        Assign interior ghost cells between domains.
         Now all faces except the ones arising from interprocessor domain
         boundaries should be accounted for. Adding each domain sequentially so
         that faces are grouped together.
@@ -494,6 +467,37 @@ namespace geometry
             part_patch.rank_neighbour = rank_neigbour;
             part_patches_loc.emplace_back(part_patch);
         }
+
+        /*--------------------------------------------------------------------
+        Create the faces at the boundaries and ghost cells.
+        Also add the face elements at the boundaries.
+        --------------------------------------------------------------------*/
+
+        Index j_ghost = vol_elements_loc.size();
+        for (const auto &element_patch : element_patches_loc)
+        {
+            Patch p;
+            p.boundary_type = config.get_boundary_type(element_patch.patch_name);
+            p.FIRST_FACE = faces_loc.size();
+            p.N_FACES = element_patch.boundary_elements.size();
+            patches_loc.push_back(p);
+
+            const Elements &surface_elements_loc = element_patch.boundary_elements;
+            for (Index ij{0}; ij < surface_elements_loc.size(); ij++)
+            {
+                ElementType e_type = surface_elements_loc.get_element_type(ij);
+                FaceElement face_element{e_type, surface_elements_loc.get_element_nodes(ij)};
+                face_element.loc_to_glob(utils.get_map_nodeID_loc_to_glob()); // Switching from local to global indices
+                assert(faces_to_cells_glob.at(face_element).second == CELL_NOT_ASSIGNED);
+                Index i_domain = faces_to_cells_glob.at(face_element).first;
+                assert(i_domain < j_ghost);
+                faces_loc.cell_indices.emplace_back(i_domain, j_ghost);
+                face_elements_loc.add_element(e_type, face_element.nodes.data());
+                j_ghost++;
+            }
+        }
+        assert(face_elements_loc.size() == faces_loc.size());
+
         Index tot_ghost_loc = primal_grid_loc.find_num_ghost_external() + num_ghost_part;
 
         /*--------------------------------------------------------------------
@@ -508,7 +512,7 @@ namespace geometry
         faces_loc.resize_geometry_properties();
 
         Index num_interior_faces_loc = faces_loc.size() - tot_ghost_loc;
-        reorder_faces_enitities(num_interior_faces_loc, patches_loc, faces_loc, face_elements_loc);
+        reorder_face_enitities(num_interior_faces_loc, part_patches_loc, patches_loc, faces_loc, face_elements_loc);
 
         /*--------------------------------------------------------------------
         Ensuring that no unneccessary memory isn't used
@@ -527,9 +531,11 @@ namespace geometry
         // cout << "Computational grid has been created.\n";
     }
 
-    void GridCreator::reorder_faces_enitities(Index num_interior_faces,
-                                              const Vector<Patch> &patches,
-                                              Faces &faces, Elements &face_elements)
+    void GridCreator::reorder_face_enitities(Index num_interior_faces,
+                                             const Vector<PartitionPatch> &partition_patches,
+                                             const Vector<Patch> &patches,
+                                             Faces &faces,
+                                             Elements &face_elements)
     {
         /*Sorts the faces based on the indices of the neighbour cells. We want them to be sorted in increasing order,
         with the owner cell i being prioritized first and the neighbour cell j second. As an example,
@@ -541,6 +547,11 @@ namespace geometry
         Elements face_elements_to_sort;
 
         faces.sort_face_entities(0, num_interior_faces, face_elements, face_elements_to_sort);
+
+        for (const PartitionPatch &p_patch : partition_patches)
+        {
+            faces.sort_face_entities(p_patch.FIRST_FACE, p_patch.FIRST_FACE + p_patch.N_FACES, face_elements, face_elements_to_sort);
+        }
 
         for (const Patch &patch : patches)
         {
