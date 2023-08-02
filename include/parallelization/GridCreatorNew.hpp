@@ -15,8 +15,13 @@ namespace geometry
     {
     protected:
         map<Index, Cellpair> cellpairs;
+        Vector<Patch> patches;
 
     public:
+        const Vector<Patch> &get_patches() const { return patches; }
+        void add_patch(Patch p) { patches.emplace_back(p); }
+
+        bool face_is_in_patch(Index fID, Patch p) const { return p.FIRST_FACE <= fID && fID < p.FIRST_FACE + p.N_FACES; }
         const map<Index, Cellpair> &get_cellpairs() const { return cellpairs; }
         Index size() const { return cellpairs.size(); }
         Index get_i(Index fID) const
@@ -38,20 +43,21 @@ namespace geometry
         bool face_is_in_graph(Index fID) const { return cellpairs.count(fID) == 1; }
     };
 
+    /*--------------------------------------------------------------------
+    Contains:
+    All global faces with global cell pairs
+    All external patches
+    Ordering: internal patches first, then each external patch.
+    --------------------------------------------------------------------*/
     class FaceGraphGlob : public FaceGraph
     {
         map<Index, Index> part_faces; /*Pointers to the face ID's that separates two partitions*/
-        Vector<Patch> patches;
+
         const Vector<ShortIndex> &part;
 
     public:
         FaceGraphGlob(const Vector<ShortIndex> &part) : part{part} {}
 
-        const Vector<Patch> &get_patches() const { return patches; }
-
-        void add_patch(Patch p) { patches.emplace_back(p); }
-
-        bool face_is_in_patch(Index fID, Patch p) const { return p.FIRST_FACE <= fID && fID < p.FIRST_FACE + p.N_FACES; }
         bool is_ghost_face(Index fID) const
         {
             assert(cellpairs.count(fID) == 1);
@@ -79,11 +85,19 @@ namespace geometry
             return part[i] == part[j];
         }
     };
-
+    /*--------------------------------------------------------------------
+    Local face graoh for rank r
+    Contains:
+    * All local faces with local cell indices
+    * A vector of partitions for all ranks (size=num_procs),
+      the ones not connecting or its own rank will be empty
+    * All boundary patches of its own rank.
+    --------------------------------------------------------------------*/
     class FaceGraphLoc : public FaceGraph
     {
         Index my_rank;
         Vector<pair<Index, Index>> part_begin_end;
+        Vector<Patch> patches;
 
     public:
         FaceGraphLoc(Index my_rank) : my_rank{my_rank}, part_begin_end{NF_MPI::get_size()} {}
@@ -98,6 +112,18 @@ namespace geometry
             assert(r < NF_MPI::get_size());
             part_begin_end[r].second = end;
         }
+        void add_patch(BoundaryType bt, Index begin)
+        {
+            Patch p;
+            p.boundary_type = bt;
+            p.FIRST_FACE = begin;
+            patches.push_back(p);
+        }
+
+        void set_patch_end(Index end)
+        {
+            patches.back().N_FACES = end - patches.back().FIRST_FACE;
+        }
     };
 
     class GridCreatorNew
@@ -109,29 +135,33 @@ namespace geometry
                                              unique_ptr<FV_Grid> &FV_grid);
 
         // step 1: read native mesh and create primal_grid_glob
-        // step 2: run metis and create part
-        // step 3: reorder primal_grid_glob, grouping each rank's elements together
+        // step 2: run metis and create part. enables eidloc2glob
+        // step 3: reorder primal_grid_glob, grouping each rank's elements together. sets eIDglob2loc
         // step 4: create FaceGraphGlob + FaceElementsGlob
         // details:
         /*{
             Need to include details about ghost cells and boundaries.
             Should contain
         }*/
-        // step 5: create Vector<primal_grid_loc> + vector<Index> eIDglob2loc + vector<Index> eIDloc2glob +
-        //                                          vector<vector<Index>> nIDglob2glob + vector<vector<Index>> nIDloc2glob
-        // step 6: create Vector<FaceGraphLoc> + vector<vector<Index>> fIDglob2glob + vector<vector<Index>> fIDloc2glob
+        // step 5: create Vector<FaceGraphLoc> + vector<vector<Index>> fIDglob2glob + vector<vector<Index>> fIDloc2glob
         // details:
         /*{
             //Need to contain the following: first all internal faces, second all partition faces (grouped), third all
             ghost faces (grouped)
         }*/
-        // step 7: create Vector<FV_grid_loc>. details:
+        // step 6: create Vector<primal_grid_loc> (including surface elements). Input: Primal grid, one of the face graph and utils
+        //(Will need nID conversion)
+        // Also: vector<Index> eIDglob2loc + vector<Index> eIDloc2glob +
+        //                                          vector<vector<Index>> nIDglob2glob + vector<vector<Index>> nIDloc2glob
+        // step 7: create Vector<FV_grid_loc>. Input: FaceGraphLoc and utils. details:
         /*{
             //Create each one simply from FaceGraphLoc, get the correct faces by using e_faces, fIDloc2glob and nIDglob2loc
         }*/
 
         /*Question for later: What is the requirements to the local indices of the patch faces, given that packing is used
         (each patch of each rank has a sendbuf and recvbuf). Conclusion is no requirements, but */
+        /*Comment: I realize that I haven't accounted for the possibility that two ranks can share more than one interface.
+        I will ignore this for now*/
 
     private:
         /*Step 3*/
@@ -143,21 +173,18 @@ namespace geometry
                                                                PrimalGrid &primal_grid,
                                                                FaceGraphGlob &face_graph,
                                                                Utils &utils);
-
         /*Step 5*/
-        static Vector<PrimalGrid> create_local_primal_grids(const PrimalGrid &primal_grid,
-                                                            FaceGraphGlob face_graph,
-                                                            Utils &utils);
-
-        /*Step 6*/
         static Vector<FaceGraphLoc> create_local_face_graphs(FaceGraphGlob face_graph,
                                                              Utils &utils);
-    };
+        /*Step 6*/
+        static Vector<PrimalGrid> create_local_primal_grids(const PrimalGrid &primal_grid,
+                                                            const Vector<FaceGraphLoc> &face_graphs_loc,
+                                                            Utils &utils);
+        };
 
     class Utils
     {
         Vector<Index> eIDglob2loc_;
-        Vector<Vector<Index>> eIDloc2glob_;
         Vector<map<Index, Index>> fIDglob2loc_;
         Vector<map<Index, Index>> fIDloc2glob_;
         Vector<map<Index, Index>> nIDglob2loc_;
@@ -216,8 +243,9 @@ namespace geometry
 
         Vector<pair<Index, Index>> part2e_range_;
 
+        const map<Index, Index> &get_nIDglob2loc(ShortIndex r) const { return nIDglob2loc_[r]; }
+
         void set_eIDglob2loc(Vector<Index> &&eIDglob2loc) { eIDglob2loc_ = move(eIDglob2loc); }
-        void set_eIDloc2glob(Vector<Vector<Index>> &&eIDloc2glob) { eIDloc2glob_ = move(eIDloc2glob); }
         void set_fIDglob2loc(Vector<map<Index, Index>> &&fIDglob2loc) { fIDglob2loc_ = move(fIDglob2loc); }
         void set_fIDloc2glob(Vector<map<Index, Index>> &&fIDloc2glob) { fIDloc2glob_ = move(fIDloc2glob); }
         void set_nIDglob2loc(Vector<map<Index, Index>> &&nIDglob2loc) { nIDglob2loc_ = move(nIDglob2loc); }

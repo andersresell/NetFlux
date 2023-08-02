@@ -171,8 +171,124 @@ namespace geometry
     }
 
     /*Step 5*/
+    Vector<FaceGraphLoc> GridCreatorNew::create_local_face_graphs(FaceGraphGlob face_graph_glob,
+                                                                  Utils &utils)
+    {
+        const ShortIndex size = NF_MPI::get_size();
+        Vector<FaceGraphLoc> face_graphs_loc;
+        for (ShortIndex r{0}; r < size; r++)
+            face_graphs_loc.emplace_back(r);
+
+        Vector<map<Index, Index>> fIDglob2loc(size);
+        Vector<map<Index, Index>> fIDloc2glob(size);
+
+        /*--------------------------------------------------------------------
+        Add internal faces
+        --------------------------------------------------------------------*/
+        for (const auto &kv : face_graph_glob.get_cellpairs())
+        {
+            Index fID = kv.first;
+            if (face_graph_glob.is_internal_face(fID))
+            {
+                Index i = face_graph_glob.get_i(fID);
+                Index j = face_graph_glob.get_j(fID);
+                Index r = utils.e2r(i);
+                face_graphs_loc[r].add_face(i, j);
+                Index loc_size = face_graphs_loc[r].size();
+                assert(fIDglob2loc[r].count(fID) == 0);
+                assert(fIDloc2glob[r].count(loc_size - 1) == 0);
+                fIDglob2loc[r].emplace(fID, loc_size - 1);
+                fIDloc2glob[r].emplace(loc_size - 1, fID);
+                face_graph_glob.remove_face(fID);
+            }
+        }
+
+        /*--------------------------------------------------------------------
+        Add partition faces
+        --------------------------------------------------------------------*/
+        for (ShortIndex r_other{0}; r_other < size; r_other++) /*Outer loop makes sure that faces of each neigbour are grouped together*/
+        {
+            /*For each local graph set where the current neigbour patch (the patch connecting r_other begins)*/
+            for (ShortIndex r{0}; r < size; r++)
+                face_graphs_loc[r].set_part_begin(r_other, face_graphs_loc[r].size());
+
+            for (const auto &kv : face_graph_glob.get_cellpairs())
+            {
+                Index fID = kv.first;
+                if (face_graph_glob.is_part_face(fID))
+                {
+                    Index i = face_graph_glob.get_i(fID);
+                    Index j = face_graph_glob.get_j(fID);
+                    ShortIndex r_i = utils.e2r(i);
+                    ShortIndex r_j = utils.e2r(j);
+
+                    assert(i < j && r_i < r_j);
+
+                    if (r_i == r_other || r_j == r_other)
+                    {
+                        /*Global face should point from rank i to rank j*/
+                        face_graphs_loc[r_i].add_face(i, j);
+                        face_graphs_loc[r_j].add_face(j, i);
+
+                        Index loc_size_i = face_graphs_loc[r_i].size();
+                        Index loc_size_j = face_graphs_loc[r_j].size();
+                        assert(fIDglob2loc[r_i].count(fID) == 0);
+                        assert(fIDglob2loc[r_j].count(fID) == 0);
+                        assert(fIDloc2glob[r_i].count(loc_size_i - 1) == 0);
+                        assert(fIDloc2glob[r_j].count(loc_size_j - 1) == 0);
+                        fIDglob2loc[r_i].emplace(fID, loc_size_i - 1);
+                        fIDloc2glob[r_i].emplace(loc_size_i - 1, fID);
+                        fIDglob2loc[r_j].emplace(fID, loc_size_j - 1);
+                        fIDloc2glob[r_j].emplace(loc_size_j - 1, fID);
+
+                        face_graph_glob.remove_face(fID);
+                    }
+                }
+            }
+            /*For each local graph set where the current neigbour patch (the patch connecting r_other ends)*/
+            for (ShortIndex r{0}; r < size; r++)
+                face_graphs_loc[r].set_part_end(r_other, face_graphs_loc[r].size());
+        }
+
+        /*--------------------------------------------------------------------
+        Add boundary patches
+        --------------------------------------------------------------------*/
+        for (const auto &p : face_graph_glob.get_patches())
+        {
+            Index first = p.FIRST_FACE;
+            Index n_faces = p.N_FACES;
+            BoundaryType bt = p.boundary_type;
+
+            Vector<bool> p_already_in_r(size, false);
+            assert(p_already_in_r.back() == false); // just checking that this is actually a vector of false
+
+            for (Index fID{first}; fID < n_faces; fID++)
+            {
+                if (face_graph_glob.face_is_in_patch(fID, p))
+                {
+                    Index i = face_graph_glob.get_i(fID);
+                    Index j = face_graph_glob.get_j(fID);
+                    assert(j == -1); /*since all other faces are removed, j should now be a ghost cell*/
+                    ShortIndex r = utils.e2r(i);
+                    face_graphs_loc[r].add_face(i, j);
+                    face_graph_glob.remove_face(fID);
+                    if (!p_already_in_r[r])
+                    {
+                        face_graphs_loc[r].add_patch(bt, face_graphs_loc[r].size() - 1);
+                        p_already_in_r[r] = true;
+                    }
+                }
+            }
+            for (ShortIndex r{0}; r < size; r++)
+                if (p_already_in_r[r])
+                    face_graphs_loc[r].set_patch_end(face_graphs_loc[r].size());
+        }
+        assert(face_graph_glob.size() == 0); /*Now all global faces should have been removed*/
+    }
+
+    /*Step 6*/
     Vector<PrimalGrid> GridCreatorNew::create_local_primal_grids(const PrimalGrid &primal_grid,
-                                                                 FaceGraphGlob face_graph,
+                                                                 const Vector<FaceGraphLoc> &face_graphs_loc,
                                                                  Utils &utils)
     {
         assert(NF_MPI::get_rank() == 0);
@@ -221,203 +337,28 @@ namespace geometry
             assert(e_vol_r.size() == utils.eIDglob2loc(i));
         }
 
-        const Elements &e_face = primal_grid.get_face_elements();
-        for (const auto &kv : face_graph.get_cellpairs())
-        {
-            Index fID = kv.first;
-            Index i = kv.second.i;
-            Index j = kv.second.j;
-            Index r = utils.e2r(i);
-
-            Elements &e_face_r = primal_grids_loc[r].get_face_elements();
-
-            for (Patch p : face_graph.get_patches())
-            {
-                ElementPatch &e_patch_r = primal_grids_loc[r].get_element_patches();
-
-                if (face_graph.face_is_in_patch(fID, p) && face_graph.is_ghost_face(fID))
-                {
-
-                    assert(j == -1);
-                }
-            }
-            face_graph.remove_face(fID);
-        }
-
-        const Vector<ElementPatch> &e_patches = primal_grid.get_element_patches();
-        for (const auto &e_patch : e_patches)
-        {
-            const Elements &e_bound = e_patch.boundary_elements;
-            const string &patch_name = e_patch.patch_name;
-            element_patches_loc.emplace_back();
-            element_patches_loc.back().patch_name = patch_name_glob;
-            Elements &boundary_elements_loc = element_patches_loc.back().boundary_elements;
-            boundary_elements_loc.reserve(boundary_elements_glob.size(), MAX_NODES_FACE_ELEMENT);
-
-            /*--------------------------------------------------------------------
-            Looping over all elements of a patch
-            --------------------------------------------------------------------*/
-            for (Index i{0}; i < boundary_elements_glob.size(); i++)
-            {
-                ElementType e_type = boundary_elements_glob.get_element_type(i);
-                const Index *element = boundary_elements_glob.get_element_nodes(i);
-                ShortIndex num_nodes = boundary_elements_glob.get_n_element_nodes(i);
-
-                /*--------------------------------------------------------------------
-                Using the global to local node index map (from the volume element loop)
-                to check wether a boundary face belongs to the local domain. Keep in mind
-                that this map only contains the nodes belonging to the local domain.
-                If all global nodes are common, the global face has to be part of the
-                local domain. In that case, the boundary element is added. Interfaces
-                between local domains are not handled in this step.
-                --------------------------------------------------------------------*/
-                bool shared_face = true;
-                for (ShortIndex k{0}; k < num_nodes; k++)
-                {
-                    Index nID_glob = element[k];
-                    if (nID_glob_to_loc.count(nID_glob) != 1)
-                    {
-                        shared_face = false;
-                        break;
-                    }
-                }
-                if (shared_face)
-                    boundary_elements_loc.add_element_local(e_type, element, nID_glob_to_loc);
-            }
-            boundary_elements_loc.shrink_to_fit();
-        }
-        element_patches_loc.shrink_to_fit();
-        vol_elements_loc.shrink_to_fit();
-        nodes_loc.shrink_to_fit();
-    }
-
-    /*Step 6*/
-    Vector<FaceGraphLoc> GridCreatorNew::create_local_face_graphs(FaceGraphGlob face_graph_glob,
-                                                                  Utils &utils)
-    {
-        const ShortIndex size = NF_MPI::get_size();
-        Vector<FaceGraphLoc> face_graphs_loc;
+        /*--------------------------------------------------------------------
+        Adding the local face elements to each local primal grid
+        --------------------------------------------------------------------*/
+        const Elements &e_faces = primal_grid.get_face_elements();
         for (ShortIndex r{0}; r < size; r++)
-            face_graphs_loc.emplace_back(r);
-
-        Vector<map<Index, Index>> fIDglob2loc(size);
-        Vector<map<Index, Index>> fIDloc2glob(size);
-
-        /*--------------------------------------------------------------------
-        Add internal faces
-        --------------------------------------------------------------------*/
-        for (const auto &kv : face_graph_glob.get_cellpairs())
         {
-            Index fID = kv.first;
-            if (face_graph_glob.is_internal_face(fID))
+            Elements &e_faces_r = primal_grids_loc[r].get_face_elements();
+            const FaceGraphLoc &fg_loc = face_graphs_loc[r];
+            for (const auto &kv : fg_loc.get_cellpairs())
             {
-                Index i = face_graph_glob.get_i(fID);
-                Index j = face_graph_glob.get_j(fID);
-                Index r = utils.e2r(i);
-                face_graphs_loc[r].add_face(i, j);
-                Index loc_size = face_graphs_loc[r].size();
-                assert(fIDglob2loc[r].count(fID) == 0);
-                assert(fIDloc2glob[r].count(loc_size - 1) == 0);
-                fIDglob2loc[r].emplace(fID, loc_size - 1);
-                fIDloc2glob[r].emplace(loc_size - 1, fID);
-                face_graph_glob.remove_face(fID);
+                Index fIDr = kv.first;
+                Index fID = utils.fIDloc2glob(r, fIDr);
+                ElementType e_type = e_faces.get_element_type(fID);
+                const Index *e_nodes = e_faces.get_element_nodes(fID);
+                e_faces_r.add_element_local(e_type, e_nodes, utils.get_nIDglob2loc(r));
             }
         }
-        /*--------------------------------------------------------------------
-        Add partition faces
-        --------------------------------------------------------------------*/
 
-        for (ShortIndex r_other{0}; r_other < size; r_other++) /*Outer loop makes sure that faces of each neigbour are grouped together*/
+        for (ShortIndex r{0}; r < size; r++)
         {
-            /*For each local graph set where the current neigbour patch (the patch connecting r_other begins)*/
-            for (ShortIndex r{0}; r < size; r++)
-                face_graphs_loc[r].set_part_begin(r_other, face_graphs_loc[r].size());
-
-            for (const auto &kv : face_graph_glob.get_cellpairs())
-            {
-                Index fID = kv.first;
-                if (face_graph_glob.is_part_face(fID))
-                {
-                    Index i = face_graph_glob.get_i(fID);
-                    Index j = face_graph_glob.get_j(fID);
-                    ShortIndex r_i = utils.e2r(i);
-                    ShortIndex r_j = utils.e2r(j);
-
-                    assert(i < j && r_i < r_j);
-
-                    if (r_i == r_other || r_j == r_other)
-                    {
-                        /*Global face should point from rank i to rank j*/
-                        face_graphs_loc[r_i].add_face(i, j);
-                        face_graphs_loc[r_j].add_face(j, i);
-
-                        Index loc_size_i = face_graphs_loc[r_i].size();
-                        Index loc_size_j = face_graphs_loc[r_j].size();
-                        assert(fIDglob2loc[r_i].count(fID) == 0);
-                        assert(fIDglob2loc[r_j].count(fID) == 0);
-                        assert(fIDloc2glob[r_i].count(loc_size_i - 1) == 0);
-                        assert(fIDloc2glob[r_j].count(loc_size_j - 1) == 0);
-                        fIDglob2loc[r_i].emplace(fID, loc_size_i - 1);
-                        fIDloc2glob[r_i].emplace(loc_size_i - 1, fID);
-                        fIDglob2loc[r_j].emplace(fID, loc_size_j - 1);
-                        fIDloc2glob[r_j].emplace(loc_size_j - 1, fID);
-
-                        face_graph_glob.remove_face(fID);
-                    }
-                }
-            }
-            /*For each local graph set where the current neigbour patch (the patch connecting r_other ends)*/
-            for (ShortIndex r{0}; r < size; r++)
-                face_graphs_loc[r].set_part_end(r_other, face_graphs_loc[r].size());
+            primal_grids_loc[r].get_nodes().shrink_to_fit();
+            primal_grids_loc[r].get_vol_elements().shrink_to_fit();
+            primal_grids_loc[r].get_face_elements().shrink_to_fit();
         }
-
-        /*--------------------------------------------------------------------
-        Add boundary patches
-        --------------------------------------------------------------------*/
-        for (ShortIndex r_other{0}; r_other < size; r_other++) /*Outer loop makes sure that faces of each neigbour are grouped together*/
-        {
-            /*For each local graph set where the current neigbour patch (the patch connecting r_other begins)*/
-            for (ShortIndex r{0}; r < size; r++)
-                face_graphs_loc[r].set_part_begin(r_other, face_graphs_loc[r].size());
-
-            for (const auto &kv : face_graph_glob.get_cellpairs())
-            {
-                Index fID = kv.first;
-                if (face_graph_glob.is_part_face(fID))
-                {
-                    Index i = face_graph_glob.get_i(fID);
-                    Index j = face_graph_glob.get_j(fID);
-                    ShortIndex r_i = utils.e2r(i);
-                    ShortIndex r_j = utils.e2r(j);
-
-                    assert(i < j && r_i < r_j);
-
-                    if (r_i == r_other || r_j == r_other)
-                    {
-                        /*Global face should point from rank i to rank j*/
-                        face_graphs_loc[r_i].add_face(i, j);
-                        face_graphs_loc[r_j].add_face(j, i);
-
-                        Index loc_size_i = face_graphs_loc[r_i].size();
-                        Index loc_size_j = face_graphs_loc[r_j].size();
-                        assert(fIDglob2loc[r_i].count(fID) == 0);
-                        assert(fIDglob2loc[r_j].count(fID) == 0);
-                        assert(fIDloc2glob[r_i].count(loc_size_i - 1) == 0);
-                        assert(fIDloc2glob[r_j].count(loc_size_j - 1) == 0);
-                        fIDglob2loc[r_i].emplace(fID, loc_size_i - 1);
-                        fIDloc2glob[r_i].emplace(loc_size_i - 1, fID);
-                        fIDglob2loc[r_j].emplace(fID, loc_size_j - 1);
-                        fIDloc2glob[r_j].emplace(loc_size_j - 1, fID);
-
-                        face_graph_glob.remove_face(fID);
-                    }
-                }
-            }
-            /*For each local graph set where the current neigbour patch (the patch connecting r_other ends)*/
-            for (ShortIndex r{0}; r < size; r++)
-                face_graphs_loc[r].set_part_end(r_other, face_graphs_loc[r].size());
-        }
-        utils.set_fIDglob2loc(move(fIDglob2loc));
-        utils.set_fIDloc2glob(move(fIDloc2glob));
     }
-}
