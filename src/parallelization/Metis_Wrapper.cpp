@@ -2,9 +2,10 @@
 
 namespace NF_METIS
 {
-    Vector<Index> calc_element_partition(PrimalGrid &primal_grid,
-                                         Index n_partitions)
+    Vector<ShortIndex> calc_element_partition(PrimalGrid &primal_grid,
+                                              Index n_partitions)
     {
+        assert(NF_MPI::get_rank() == 0);
         static_assert(sizeof(idx_t) == sizeof(Index));
 
         idx_t options[METIS_NOPTIONS];
@@ -45,6 +46,11 @@ namespace NF_METIS
         if (status != 1)
             throw std::runtime_error("Error partitioning mesh using METIS. METIS_PartMeshDual return message: " +
                                      metis_statuses.at(static_cast<rstatus_et>(status)) + "\n");
-        return element_partition;
+        Vector<ShortIndex> e_part_short;
+        e_part_short.reserve(element_partition.size());
+        for (Index rank : element_partition)
+            e_part_short.emplace_back(rank);
+
+        return e_part_short;
     }
 }

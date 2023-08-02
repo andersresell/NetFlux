@@ -31,7 +31,7 @@ namespace geometry
         static void create_primal_grid_local(const Elements &vol_elements_glob,
                                              const Vector<Vec3> &nodes_glob,
                                              const Vector<ElementPatch> &element_patches_glob,
-                                             Index rank_loc,
+                                             Index r_loc,
                                              const Vector<pair<Index, Index>> &part_to_element_range,
                                              const Vector<Index> &part,
                                              unique_ptr<PrimalGrid> &primal_grid_loc,
@@ -42,7 +42,7 @@ namespace geometry
         static void create_FV_grid_local(const Config &config,
                                          const map<FaceElement, pair<Index, long int>> &faces_to_cells_glob,
                                          const PartitionUtils &utils,
-                                         Index rank_loc,
+                                         Index r_loc,
                                          unique_ptr<FV_Grid> &FV_grid_loc,
                                          PrimalGrid &primal_grid_loc,
                                          map<FaceElement, GhostDataPartition> const &internal_boundary_faces_glob);

@@ -49,7 +49,7 @@ namespace geometry
             structures)
             --------------------------------------------------------------------*/
 
-            for (Index rank_loc{0}; rank_loc < num_procs; rank_loc++)
+            for (Index r_loc{0}; r_loc < num_procs; r_loc++)
             {
                 Elements vol_elements_loc;
                 Vector<Vec3> nodes_loc;
@@ -58,30 +58,30 @@ namespace geometry
                 create_primal_grid_local(primal_grid_glob->get_vol_elements(),
                                          primal_grid_glob->get_nodes(),
                                          primal_grid_glob->get_element_patches(),
-                                         rank_loc,
+                                         r_loc,
                                          part_to_element_range,
                                          part,
-                                         primal_grids_loc[rank_loc],
+                                         primal_grids_loc[r_loc],
                                          eID_glob_to_loc,
-                                         nID_glob_to_loc_vec[rank_loc],
-                                         nID_loc_to_glob_vec[rank_loc]);
+                                         nID_glob_to_loc_vec[r_loc],
+                                         nID_loc_to_glob_vec[r_loc]);
             }
             /*--------------------------------------------------------------------
             Build local FV_Grids from local primal grids
             --------------------------------------------------------------------*/
 
-            for (Index rank_loc{0}; rank_loc < num_procs; rank_loc++)
+            for (Index r_loc{0}; r_loc < num_procs; r_loc++)
             {
                 PartitionUtils utils{part,
                                      part_to_element_range,
                                      eID_glob_to_loc,
-                                     nID_glob_to_loc_vec[rank_loc], nID_loc_to_glob_vec[rank_loc]};
+                                     nID_glob_to_loc_vec[r_loc], nID_loc_to_glob_vec[r_loc]};
                 create_FV_grid_local(config,
                                      faces_to_cells_glob,
                                      utils,
-                                     rank_loc,
-                                     FV_grids_loc[rank_loc],
-                                     *primal_grids_loc[rank_loc],
+                                     r_loc,
+                                     FV_grids_loc[r_loc],
+                                     *primal_grids_loc[r_loc],
                                      internal_ghost_faces);
             }
             assert(primal_grids_loc.size() == num_procs && FV_grids_loc.size() == num_procs);
@@ -116,7 +116,7 @@ namespace geometry
         eID_glob_to_loc.resize(n_elem);
         Elements vol_elements_new;
         vol_elements_new.reserve(n_elem, MAX_NODES_VOLUME_ELEMENT);
-        for (ShortIndex rank_loc{0}; rank_loc < num_procs; rank_loc++)
+        for (ShortIndex r_loc{0}; r_loc < num_procs; r_loc++)
         {
             /*This loop can be made faster (outermost loop removed) by first creating part_to_element_range
         (count occurences of each rank) and then using the intervals to insert elements in vol_elements_new*/
@@ -124,12 +124,12 @@ namespace geometry
             bool first_element_found = false;
             for (Index i{0}; i < n_elem; i++)
             {
-                if (part[i] == rank_loc)
+                if (part[i] == r_loc)
                 {
                     if (!first_element_found)
-                        part_to_element_range[rank_loc].first = i;
+                        part_to_element_range[r_loc].first = i;
                     first_element_found = true;
-                    part_to_element_range[rank_loc].second = i + 1;
+                    part_to_element_range[r_loc].second = i + 1;
                     vol_elements_new.add_element(vol_elements_old.get_element_type(i), vol_elements_old.get_element_nodes(i));
                     eID_glob_to_loc[i] = //???FIX THIS
                 }
@@ -234,7 +234,7 @@ namespace geometry
     void GridCreator::create_primal_grid_local(const Elements &vol_elements_glob,
                                                const Vector<Vec3> &nodes_glob,
                                                const Vector<ElementPatch> &element_patches_glob,
-                                               Index rank_loc,
+                                               Index r_loc,
                                                const Vector<pair<Index, Index>> &part_to_element_range,
                                                const Vector<Index> &part,
                                                unique_ptr<PrimalGrid> &primal_grid_loc,
@@ -255,11 +255,11 @@ namespace geometry
         assert(element_patches_loc.size() == 0);
         assert(nID_glob_to_loc.size() == 0);
 
-        Index num_vol_elements_loc = part_to_element_range[rank_loc].second - part_to_element_range[rank_loc].first;
+        Index num_vol_elements_loc = part_to_element_range[r_loc].second - part_to_element_range[r_loc].first;
 #ifndef NDEBUG
         Index num_vol_elements_loc_test{0};
         for (Index i : part)
-            if (i == rank_loc)
+            if (i == r_loc)
                 num_vol_elements_loc_test++;
         assert(num_vol_elements_loc == num_vol_elements_loc_test);
 #endif
@@ -272,19 +272,19 @@ namespace geometry
         Looping over volume elements to copy from global elements and nodes
         to local elements and nodes.
         --------------------------------------------------------------------*/
-        Index loc_e_begin = part_to_element_range[rank_loc].first;
-        Index loc_e_end = part_to_element_range[rank_loc].second;
+        Index loc_e_begin = part_to_element_range[r_loc].first;
+        Index loc_e_end = part_to_element_range[r_loc].second;
 
 #ifndef NDEBUG
-        if (rank_loc == 0)
+        if (r_loc == 0)
             assert(loc_e_begin == 0);
-        else if (rank_loc == NF_MPI::get_size() - 1)
+        else if (r_loc == NF_MPI::get_size() - 1)
             assert(loc_e_end == vol_elements_glob.size());
 #endif
 
         for (Index i{loc_e_begin}; i < loc_e_end; i++)
         {
-            assert(part[i] == rank_loc);
+            assert(part[i] == r_loc);
 
             const Index *element = vol_elements_glob.get_element_nodes(i);
             ShortIndex num_nodes = vol_elements_glob.get_n_element_nodes(i);
@@ -369,7 +369,7 @@ namespace geometry
     void GridCreator::create_FV_grid_local(const Config &config,
                                            const map<FaceElement, pair<Index, long int>> &faces_to_cells_glob,
                                            const PartitionUtils &utils,
-                                           Index rank_loc,
+                                           Index r_loc,
                                            unique_ptr<FV_Grid> &FV_grid_loc,
                                            PrimalGrid &primal_grid_loc,
                                            map<FaceElement, GhostDataPartition> const &internal_boundary_faces_glob)
@@ -395,8 +395,8 @@ namespace geometry
             Index v_glob = p.second.second;
             const FaceElement &fe_glob = p.first;
 
-            bool u_is_in_domain = utils.get_partID_from_global_eID(u_glob) == rank_loc;
-            bool v_is_in_domain = utils.get_partID_from_global_eID(v_glob) == rank_loc;
+            bool u_is_in_domain = utils.get_partID_from_global_eID(u_glob) == r_loc;
+            bool v_is_in_domain = utils.get_partID_from_global_eID(v_glob) == r_loc;
 
             if (u_is_in_domain && v_is_in_domain)
             {
@@ -431,15 +431,15 @@ namespace geometry
 
                 const GhostDataPartition &gd = p.second;
 
-                if ((gd.rank_a == rank_loc && rank_neigbour == gd.rank_b) ||
-                    (gd.rank_b == rank_loc && rank_neigbour == gd.rank_a))
+                if ((gd.rank_a == r_loc && rank_neigbour == gd.rank_b) ||
+                    (gd.rank_b == r_loc && rank_neigbour == gd.rank_a))
                 {
                     num_patch_faces++;
                     num_ghost_part++;
                     Index i_loc, j_loc;
-                    assert(rank_loc == gd.rank_a || rank_loc == gd.rank_b);
+                    assert(r_loc == gd.rank_a || r_loc == gd.rank_b);
                     assert(rank_neigbour == gd.rank_a || rank_neigbour == gd.rank_b);
-                    if (rank_loc == gd.rank_a)
+                    if (r_loc == gd.rank_a)
                     {
                         i_loc = utils.get_local_element_index(gd.cID_a);
                         j_loc = utils.get_local_element_index(gd.cID_b);
@@ -524,7 +524,7 @@ namespace geometry
         assert(faces_loc.centroid_to_face_j.capacity() == faces_loc.size());
         assert(cells_loc.volumes.capacity() == cells_loc.size());
         assert(cells_loc.centroids.capacity() == cells_loc.size());
-        assert(part_patches_loc.size() >= rank_loc && part_patches_loc.size() <= NF_MPI::get_size());
+        assert(part_patches_loc.size() >= r_loc && part_patches_loc.size() <= NF_MPI::get_size());
 
         FV_grid_loc = make_unique<FV_Grid>(cells_loc, faces_loc, patches_loc, part_patches_loc);
 
@@ -575,21 +575,21 @@ namespace geometry
         {
             primal_grid = move(primal_grids_loc[0]);
             FV_grid = move(FV_grids_loc[0]);
-            for (ShortIndex rank_loc{1}; rank_loc < num_procs; rank_loc++)
+            for (ShortIndex r_loc{1}; r_loc < num_procs; r_loc++)
             {
                 /*Send primal grid*/
                 string bytes;
-                serialization::serialize(bytes, *primal_grids_loc[rank_loc]);
+                serialization::serialize(bytes, *primal_grids_loc[r_loc]);
                 Index num_bytes = bytes.size();
-                NF_MPI::Send(&num_bytes, 1, rank_loc);
-                NF_MPI::Send(bytes.data(), num_bytes, rank_loc);
+                NF_MPI::Send(&num_bytes, 1, r_loc);
+                NF_MPI::Send(bytes.data(), num_bytes, r_loc);
 
                 /*Send FV grid */
                 bytes.clear();
-                serialization::serialize(bytes, *FV_grids_loc[rank_loc]);
+                serialization::serialize(bytes, *FV_grids_loc[r_loc]);
                 num_bytes = bytes.size();
-                NF_MPI::Send(&num_bytes, 1, rank_loc);
-                NF_MPI::Send(bytes.data(), num_bytes, rank_loc);
+                NF_MPI::Send(&num_bytes, 1, r_loc);
+                NF_MPI::Send(bytes.data(), num_bytes, r_loc);
             }
         }
         else

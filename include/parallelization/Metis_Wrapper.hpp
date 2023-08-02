@@ -10,7 +10,7 @@ namespace NF_METIS
                                                     {METIS_ERROR_MEMORY, "METIS_ERROR_MEMORY"},
                                                     {METIS_ERROR, "METIS_ERROR"}};
 
-    Vector<Index> calc_element_partition(PrimalGrid &primal_grid,
-                                         Index n_partitions);
+    Vector<ShortIndex> calc_element_partition(PrimalGrid &primal_grid,
+                                              Index n_partitions);
 
 }
