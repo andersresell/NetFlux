@@ -10,10 +10,10 @@ Solver::Solver(const Config &config, const PrimalGrid &primal_grid, const FV_Gri
 
 void Solver::create_BC_container(const Config &config)
 {
-    for (const auto &patch : FV_grid.get_patches())
+    for (const auto &PatchExt : FV_grid.get_PatchExtes())
     {
         unique_ptr<BoundaryCondition> BC;
-        switch (patch.boundary_type)
+        switch (PatchExt.boundary_type)
         {
         case BoundaryType::NoSlipWall:
             BC = make_unique<BC_NoSlipWall>();
@@ -154,7 +154,7 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
 
     Index i, j;
     const auto &faces = FV_grid.get_faces();
-    const auto &patches = FV_grid.get_patches();
+    const auto &PatchExtes = FV_grid.get_PatchExtes();
 
     // InvFluxFunction inv_flux_func = NumericalFlux::get_inviscid_flux_function(config);
 
@@ -192,15 +192,15 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
     }
 
     /*Then boundaries. Here ghost cells has to be assigned based on the boundary conditions.
-    This is handled patch-wise*/
+    This is handled PatchExt-wise*/
 
-    for (Index i_patch{0}; i_patch < patches.size(); i_patch++)
+    for (Index i_PatchExt{0}; i_PatchExt < PatchExtes.size(); i_PatchExt++)
     {
-        const auto &patch = patches[i_patch];
-        auto &boundary_condition = BC_container[i_patch];
-        // BoundaryCondition::BC_function BC_func = BoundaryCondition::get_BC_function(patch.boundary_type);
+        const auto &PatchExt = PatchExtes[i_PatchExt];
+        auto &boundary_condition = BC_container[i_PatchExt];
+        // BoundaryCondition::BC_function BC_func = BoundaryCondition::get_BC_function(PatchExt.boundary_type);
 
-        for (Index ij{patch.FIRST_FACE}; ij < patch.FIRST_FACE + patch.N_FACES; ij++)
+        for (Index ij{PatchExt.FIRST_FACE}; ij < PatchExt.FIRST_FACE + PatchExt.N_FACES; ij++)
         {
 
             Index i_domain = faces.get_cell_i(ij);
@@ -216,7 +216,7 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
 
             numerical_flux_func(U_L, U_R, S_ij, Flux_inv);
 
-            assert(validity_checker->valid_boundary_flux(Flux_inv.data(), patch.boundary_type));
+            assert(validity_checker->valid_boundary_flux(Flux_inv.data(), PatchExt.boundary_type));
 
             flux_balance.get_variable<EulerVec>(i_domain) -= Flux_inv;
         }
@@ -294,18 +294,18 @@ void EulerSolver::calc_Delta_S(const Config &config)
 
 void EulerSolver::set_constant_ghost_values(const Config &config)
 {
-    const auto &patches = FV_grid.get_patches();
+    const auto &PatchExtes = FV_grid.get_PatchExtes();
     const auto &faces = FV_grid.get_faces();
     VecField &primvars = solver_data->get_primvars();
     Index i_domain, j_ghost;
 
-    // for (const auto &patch : patches)
-    for (Index i_patch{0}; i_patch < patches.size(); i_patch++)
+    // for (const auto &PatchExt : PatchExtes)
+    for (Index i_PatchExt{0}; i_PatchExt < PatchExtes.size(); i_PatchExt++)
     {
-        const auto &patch = patches[i_patch];
-        auto &boundary_condition = BC_container[i_patch];
+        const auto &PatchExt = PatchExtes[i_PatchExt];
+        auto &boundary_condition = BC_container[i_PatchExt];
 
-        for (Index ij{patch.FIRST_FACE}; ij < patch.FIRST_FACE + patch.N_FACES; ij++)
+        for (Index ij{PatchExt.FIRST_FACE}; ij < PatchExt.FIRST_FACE + PatchExt.N_FACES; ij++)
         {
             i_domain = faces.get_cell_i(ij);
             j_ghost = faces.get_cell_j(ij);

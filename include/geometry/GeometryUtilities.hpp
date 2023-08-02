@@ -274,10 +274,10 @@ namespace geometry
     //     }
     // };
 
-    /*Holds name and triangles of a boundary patch*/
-    struct ElementPatch
+    /*Holds name and triangles of a boundary PatchExt*/
+    struct ElementPatchExt
     {
-        string patch_name;
+        string PatchExt_name;
         Elements boundary_elements;
     };
 
@@ -386,14 +386,14 @@ namespace geometry
         }
     };
 
-    struct Patch
+    struct PatchExt
     {
         BoundaryType boundary_type;
         Index N_FACES;
         Index FIRST_FACE;
     };
 
-    struct PartitionPatch
+    struct PatchInt
     {
         ShortIndex rank_neighbour;
         Index N_FACES;

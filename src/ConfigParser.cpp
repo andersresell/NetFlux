@@ -79,7 +79,7 @@ void ConfigParser::parse_yaml_file_options(Config &config)
 
     config.write_vtk_debug_ = read_optional_option<bool>("write_vtk_debug", false);
 
-    read_patches(config);
+    read_PatchExtes(config);
 }
 
 void ConfigParser::infer_hidden_options(Config &config)
@@ -95,38 +95,38 @@ void ConfigParser::infer_hidden_options(Config &config)
     }
 }
 
-void ConfigParser::read_patches(Config &config)
+void ConfigParser::read_PatchExtes(Config &config)
 {
-    if (root_node["patches"])
+    if (root_node["PatchExtes"])
     {
-        YAML::Node patches_node = root_node["patches"];
+        YAML::Node PatchExtes_node = root_node["PatchExtes"];
 
-        if (!patches_node.IsSequence())
-            throw std::runtime_error("\"patches\" setting in configuration file is formatted crrectly (not a valid sequence)");
+        if (!PatchExtes_node.IsSequence())
+            throw std::runtime_error("\"PatchExtes\" setting in configuration file is formatted crrectly (not a valid sequence)");
 
-        for (const auto &patch_it : patches_node)
+        for (const auto &PatchExt_it : PatchExtes_node)
         {
 
-            if (!patch_it.IsMap())
-                throw std::runtime_error("Entry in \"patches\" setting in configuration file is not a key-value pair");
+            if (!PatchExt_it.IsMap())
+                throw std::runtime_error("Entry in \"PatchExtes\" setting in configuration file is not a key-value pair");
 
-            const auto &patch_kv = *patch_it.begin();
+            const auto &PatchExt_kv = *PatchExt_it.begin();
 
-            string patch_name = patch_kv.first.as<string>();
+            string PatchExt_name = PatchExt_kv.first.as<string>();
 
-            if (config.map_patch_BC.count(patch_name) > 0)
-                throw std::runtime_error("Duplicate patch name \"" + patch_name + "\" specified in config file");
+            if (config.map_PatchExt_BC.count(PatchExt_name) > 0)
+                throw std::runtime_error("Duplicate PatchExt name \"" + PatchExt_name + "\" specified in config file");
 
-            string boundary_type_key = patch_kv.second.as<string>();
+            string boundary_type_key = PatchExt_kv.second.as<string>();
 
-            BoundaryType bc_type = lookup_enum_option_map(boundary_type_from_string, boundary_type_key, patch_name, "patches");
+            BoundaryType bc_type = lookup_enum_option_map(boundary_type_from_string, boundary_type_key, PatchExt_name, "PatchExtes");
 
-            config.map_patch_BC.emplace(patch_name, bc_type);
+            config.map_PatchExt_BC.emplace(PatchExt_name, bc_type);
         }
     }
     else
     {
-        throw std::runtime_error("\"patches\" option needs to be included in the config file");
+        throw std::runtime_error("\"PatchExtes\" option needs to be included in the config file");
     }
 }
 

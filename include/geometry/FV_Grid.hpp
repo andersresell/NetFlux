@@ -13,17 +13,17 @@ namespace geometry
 
         Cells cells;
         Faces faces;
-        Vector<Patch> patches;
-        Vector<PartitionPatch> partition_patches;
+        Vector<PatchInt> patches_int;
+        Vector<PatchExt> patches_ext;
 
     public:
-        FV_Grid(Cells &&cells, Faces &&faces, Vector<Patch> &&patches, Vector<PartitionPatch> &&partition_patches);
-        // FV_Grid(Config &config, PrimalGrid &primal_grid);
+        // FV_Grid(Cells &&cells, Faces &&faces, Vector<PatchExt> &&PatchExtes, Vector<Patches> &&partition_PatchExtes);
+        //  FV_Grid(Config &config, PrimalGrid &primal_grid);
 
         const Cells &get_cells() const { return cells; }
         const Faces &get_faces() const { return faces; }
-        const Vector<Patch> &get_patches() const { return patches; }
-        const Vector<PartitionPatch> &get_partition_patches() const { return partition_patches; }
+        const Vector<PatchExt> &get_patches_ext() const { return patches_ext; }
+        const Vector<PatchInt> &get_patches_int() const { return patches_int; }
 
         template <class Archive>
         void serialize(Archive &ar, const unsigned int version)
@@ -41,8 +41,8 @@ namespace geometry
 
         /*------Helper functions for creating face structure-------*/
 
-        Index find_num_ghost_external() const;
-        Index find_num_ghost_tot() const;
+        Index find_num_ghost_ext() const;
+        Index find_num_ghost_int() const;
 
         void calc_face_properties(ElementType e_type,
                                   const Index *element,

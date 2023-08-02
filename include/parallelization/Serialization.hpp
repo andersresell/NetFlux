@@ -42,12 +42,12 @@ namespace boost::serialization
     }
 
     template <class Archive>
-    void serialize(Archive &ar, geometry::ElementPatch &obj, const unsigned int version) {}
+    void serialize(Archive &ar, geometry::ElementPatchExt &obj, const unsigned int version) {}
 
     template <class Archive>
-    void serialize(Archive &ar, geometry::Patch &obj, const unsigned int version) {}
+    void serialize(Archive &ar, geometry::PatchExt &obj, const unsigned int version) {}
 
     template <class Archive>
-    void serialize(Archive &ar, geometry::PartitionPatch &obj, const unsigned int version) {}
+    void serialize(Archive &ar, geometry::PatchInt &obj, const unsigned int version) {}
 
 }

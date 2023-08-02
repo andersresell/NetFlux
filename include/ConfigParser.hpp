@@ -136,7 +136,7 @@ private:
         }
     }
 
-    void read_patches(Config &config);
+    void read_PatchExtes(Config &config);
 
     void set_mesh_name(Config &config);
 };

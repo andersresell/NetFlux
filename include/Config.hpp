@@ -36,7 +36,7 @@ class Config
     string mesh_extension;
     string sim_dir;
 
-    map<string, BoundaryType> map_patch_BC; // map from each patch to the bc type applied
+    map<string, BoundaryType> map_PatchExt_BC; // map from each PatchExt to the bc type applied
 
     MainSolverType main_solver_type{0};
 
@@ -109,9 +109,11 @@ public:
 
     void set_grid_metrics_local(Index N_NODES,
                                 Index N_INTERIOR_CELLS,
-                                Index N_TOTAL_CELLS,
+                                Index N_GHOST_CELLS_PART,
+                                Index N_GHOST_CELLS_EXT,
                                 Index N_INTERIOR_FACES,
-                                Index N_TOTAL_FACES);
+                                Index N_PARTITION_FACES,
+                                Index N_EXTERIOR_FACES);
 
     void set_grid_metrics_global(Index N_NODES,
                                  Index N_INTERIOR_CELLS,
@@ -125,9 +127,9 @@ public:
     string get_mesh_filename_path() const { return sim_dir + get_mesh_name(); }
     string get_unsteady_vtk_filename() const { return get_output_dir() + "n=" + std::to_string(timestep) + ".vtk"; }
 
-    BoundaryType get_boundary_type(const string &patch_name) const;
+    BoundaryType get_boundary_type(const string &PatchExt_name) const;
 
-    bool input_file_contains_patch_name(const string &patch_name) const { return map_patch_BC.count(patch_name) == 1; }
+    bool input_file_contains_PatchExt_name(const string &PatchExt_name) const { return map_PatchExt_BC.count(PatchExt_name) == 1; }
 
     MainSolverType get_main_solver_type() const { return main_solver_type; }
     void set_main_solver_type(MainSolverType val) { main_solver_type = val; }

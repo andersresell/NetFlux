@@ -28,7 +28,7 @@ velocity_fs: [600, 0, 0]
 pressure_fs: 100000.0
 
 
-patches:
+PatchExtes:
   - inlet: SlipWall
   - outlet: SlipWall
   - side_walls: SlipWall
