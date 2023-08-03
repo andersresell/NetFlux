@@ -102,7 +102,7 @@ public:
     Index get_N_FACES_INT_GLOB() const { return N_FACES_INT_GLOB; }
     Index get_N_FACES_TOT_GLOB() const { return N_FACES_INT_GLOB + N_FACES_EXT_GLOB; }
     Index get_N_FACES_EXT_GLOB() const { return N_FACES_EXT_GLOB; }
-    // Index get_N_CONNECTIVITY_INDICES_GLOB() const { return N_CONNECTIVITY_INDICES_GLOB; }
+    Index get_N_CONNECTIVITY_INDICES_GLOB() const { return N_CONNECTIVITY_INDICES_GLOB; }
 
     void set_grid_metrics_local(Index N_NODES,
                                 Index N_CELLS_INT,

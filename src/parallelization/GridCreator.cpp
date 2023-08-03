@@ -527,26 +527,26 @@ namespace geometry
         }
 
         /*Send Config global grid data*/
-        Index N_NODES_GLOB, N_INTERIOR_CELLS_GLOB, N_TOTAL_CELLS_GLOB, N_TOTAL_FACES_GLOB, N_INTERIOR_FACES_GLOB;
+        Index n_nodes;
+        Index n_interior_cells;
+        Index n_exterior_faces;
+        Index n_interior_faces;
+        Index n_connecitivty_indices;
         if (rank == 0)
         {
-            N_NODES_GLOB = config.get_N_NODES_GLOB();
-            N_INTERIOR_CELLS_GLOB = config.get_N_CELLS_INT_GLOB();
-            N_TOTAL_CELLS_GLOB = config.get_N_CELLS_TOT_GLOB();
-            N_INTERIOR_FACES_GLOB = config.get_N_FACES_INT_GLOB();
-            N_TOTAL_FACES_GLOB = config.get_N_FACES_TOT_GLOB();
+            n_nodes = config.get_N_NODES_GLOB();
+            n_interior_cells = config.get_N_CELLS_INT_GLOB();
+            n_exterior_faces = config.get_N_FACES_EXT_GLOB();
+            n_interior_faces = config.get_N_FACES_INT_GLOB();
+            n_connecitivty_indices = config.get_N_CONNECTIVITY_INDICES_GLOB();
         }
-        NF_MPI::Bcast(&N_NODES_GLOB, 1, 0);
-        NF_MPI::Bcast(&N_INTERIOR_CELLS_GLOB, 1, 0);
-        NF_MPI::Bcast(&N_TOTAL_CELLS_GLOB, 1, 0);
-        NF_MPI::Bcast(&N_INTERIOR_FACES_GLOB, 1, 0);
-        NF_MPI::Bcast(&N_TOTAL_FACES_GLOB, 1, 0);
+        NF_MPI::Bcast(&n_nodes, 1, 0);
+        NF_MPI::Bcast(&n_interior_cells, 1, 0);
+        NF_MPI::Bcast(&n_exterior_faces, 1, 0);
+        NF_MPI::Bcast(&n_interior_faces, 1, 0);
+        NF_MPI::Bcast(&n_connecitivty_indices, 1, 0);
         if (rank != 0)
-            config.set_grid_metrics_global(N_NODES_GLOB,
-                                           N_INTERIOR_CELLS_GLOB,
-                                           N_TOTAL_CELLS_GLOB,
-                                           N_INTERIOR_FACES_GLOB,
-                                           N_TOTAL_FACES_GLOB);
+            config.set_grid_metrics_global(n_nodes, n_interior_cells, n_interior_faces, n_exterior_faces, n_connecitivty_indices);
 
         NF_MPI::Barrier();
 
