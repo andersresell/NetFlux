@@ -48,7 +48,7 @@ namespace geometry
                                   utils,
                                   FV_grids_loc);
 
-            set_global_config_data(config, primal_grid_glob);
+            set_global_config_data(config, primal_grid_glob, face_graph_glob);
         }
         /*Step 8*/
         send_recv_grids(config,
@@ -57,6 +57,7 @@ namespace geometry
                         primal_grid,
                         FV_grid);
     }
+
     /*Step 3*/
     void GridCreator::reorder_global_grid(PrimalGrid &primal_grid,
                                           Utils &utils)
@@ -109,7 +110,7 @@ namespace geometry
 
         const Vector<Vec3> &nodes = primal_grid.get_nodes();
         const Elements &vol_elements = primal_grid.get_vol_elements();
-        const Vector<ElementPatchExt> &element_PatchExtes = primal_grid.get_element_PatchExtes();
+        const Vector<ElementPatch> &element_patches = primal_grid.get_element_patches();
 
         /*--------------------------------------------------------------------
         Associate the face nodes with its two neighboring cells.
@@ -146,7 +147,7 @@ namespace geometry
 
         /*--------------------------------------------------------------------
         Adding internal faces to the map. (Boundary faces are added
-        later, this is to get the correct grouping of PatchExtes). Face elements
+        later, this is to get the correct grouping of patches). Face elements
         (used for calculating geometry properties) are created simultaneously
         as faces, to get the correct ordering.
         --------------------------------------------------------------------*/
@@ -170,15 +171,15 @@ namespace geometry
         --------------------------------------------------------------------*/
 
         Index j_ghost = vol_elements.size();
-        for (const auto &element_PatchExt : element_PatchExtes)
+        for (const auto &e_patch : element_patches)
         {
             PatchExt p;
-            p.boundary_type = config.get_boundary_type(element_PatchExt.PatchExt_name);
+            p.boundary_type = config.get_boundary_type(e_patch.patch_name);
             p.FIRST_FACE = face_graph.size();
-            p.N_FACES = element_PatchExt.boundary_elements.size();
-            face_graph.add_PatchExt(p);
+            p.N_FACES = e_patch.boundary_elements.size();
+            face_graph.add_patch_ext(p);
 
-            const Elements &surface_elements = element_PatchExt.boundary_elements;
+            const Elements &surface_elements = e_patch.boundary_elements;
             for (Index ij{0}; ij < surface_elements.size(); ij++)
             {
                 ElementType e_type = surface_elements.get_element_type(ij);
@@ -232,11 +233,11 @@ namespace geometry
         /*--------------------------------------------------------------------
         Add partition faces
         --------------------------------------------------------------------*/
-        for (ShortIndex r_other{0}; r_other < size; r_other++) /*Outer loop makes sure that faces of each neigbour are grouped together*/
+        for (ShortIndex r_shared{0}; r_shared < size; r_shared++) /*Outer loop makes sure that faces of each neigbour are grouped together*/
         {
-            /*For each local graph set where the current neigbour PatchExt (the PatchExt connecting r_other begins)*/
-            for (ShortIndex r{0}; r < size; r++)
-                face_graphs_loc[r].set_part_begin(r_other, face_graphs_loc[r].size());
+            Vector<bool> r_shares_r_shared(size, false);
+            assert(r_shares_r_shared.back() == false); // just checking that this is actually a vector of false
+            Vector<PatchPart> patches_part_r(size);
 
             for (const auto &kv : face_graph_glob.get_cellpairs())
             {
@@ -250,7 +251,7 @@ namespace geometry
 
                     assert(i < j && r_i < r_j);
 
-                    if (r_i == r_other || r_j == r_other)
+                    if (r_i == r_shared || r_j == r_shared)
                     {
                         /*Global face should point from rank i to rank j*/
                         face_graphs_loc[r_i].add_face(i, j);
@@ -267,30 +268,44 @@ namespace geometry
                         fIDglob2loc[r_j].emplace(fID, loc_size_j - 1);
                         fIDloc2glob[r_j].emplace(loc_size_j - 1, fID);
 
+                        assert(r_shares_r_shared[r_i] == r_shares_r_shared[r_j]);
+                        if (r_shares_r_shared[r_i] == false)
+                        {
+                            patches_part_r[r_i].FIRST_FACE = face_graphs_loc[r_i].size() - 1;
+                            patches_part_r[r_j].FIRST_FACE = face_graphs_loc[r_j].size() - 1;
+                            patches_part_r[r_i].rank_neighbour = r_j;
+                            patches_part_r[r_j].rank_neighbour = r_i;
+                            r_shares_r_shared[r_i] = true;
+                            r_shares_r_shared[r_j] = true;
+                        }
                         face_graph_glob.remove_face(fID);
                     }
                 }
             }
             /*For each local graph set where the current neigbour PatchExt (the PatchExt connecting r_other ends)*/
             for (ShortIndex r{0}; r < size; r++)
-                face_graphs_loc[r].set_part_end(r_other, face_graphs_loc[r].size());
+                if (r_shares_r_shared[r])
+                {
+                    patches_part_r[r].N_FACES = face_graphs_loc[r].size() - patches_part_r[r].FIRST_FACE;
+                    face_graphs_loc[r].add_patch_part(patches_part_r[r]);
+                }
         }
 
         /*--------------------------------------------------------------------
-        Add boundary PatchExtes
+        Add boundary external patches
         --------------------------------------------------------------------*/
-        for (const auto &p : face_graph_glob.get_PatchExtes())
+        for (const auto &p : face_graph_glob.get_patches_ext())
         {
             Index first = p.FIRST_FACE;
             Index n_faces = p.N_FACES;
-            BoundaryType bt = p.boundary_type;
 
-            Vector<bool> p_already_in_r(size, false);
-            assert(p_already_in_r.back() == false); // just checking that this is actually a vector of false
+            Vector<bool> rank_shares_patch(size, false);
+            assert(rank_shares_patch.back() == false); // just checking that this is actually a vector of false
+            Vector<PatchExt> patches_ext_r(size);
 
             for (Index fID{first}; fID < n_faces; fID++)
             {
-                if (face_graph_glob.face_is_in_PatchExt(fID, p))
+                if (face_graph_glob.face_is_in_patch_ext(fID, p))
                 {
                     Index i = face_graph_glob.get_i(fID);
                     Index j = face_graph_glob.get_j(fID);
@@ -298,16 +313,20 @@ namespace geometry
                     ShortIndex r = utils.e2r(i);
                     face_graphs_loc[r].add_face(i, j);
                     face_graph_glob.remove_face(fID);
-                    if (!p_already_in_r[r])
+                    if (!rank_shares_patch[r])
                     {
-                        face_graphs_loc[r].add_PatchExt(bt, face_graphs_loc[r].size() - 1);
-                        p_already_in_r[r] = true;
+                        patches_ext_r[r].boundary_type = p.boundary_type;
+                        patches_ext_r[r].FIRST_FACE = face_graphs_loc[r].size() - 1;
+                        rank_shares_patch[r] = true;
                     }
                 }
             }
             for (ShortIndex r{0}; r < size; r++)
-                if (p_already_in_r[r])
-                    face_graphs_loc[r].set_PatchExt_end(face_graphs_loc[r].size());
+                if (rank_shares_patch[r])
+                {
+                    patches_ext_r[r].N_FACES = face_graphs_loc[r].size() - patches_ext_r[r].FIRST_FACE;
+                    face_graphs_loc[r].add_patch_ext(patches_ext_r[r]);
+                }
         }
         assert(face_graph_glob.size() == 0); /*Now all global faces should have been removed*/
     }

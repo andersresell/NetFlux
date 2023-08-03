@@ -35,7 +35,7 @@ namespace geometry
             map<FaceElement, GhostDataPartition> internal_ghost_faces;
 
             create_global_face_entities(primal_grid_glob->get_vol_elements(),
-                                        primal_grid_glob->get_element_PatchExtes(),
+                                        primal_grid_glob->get_element_patches(),
                                         faces_to_cells_glob,
                                         face_elements_glob,
                                         internal_ghost_faces,
@@ -53,11 +53,11 @@ namespace geometry
             {
                 Elements vol_elements_loc;
                 Vector<Vec3> nodes_loc;
-                Vector<ElementPatchExt> element_PatchExtes_loc;
+                Vector<ElementPatch> element_patches_loc;
 
                 create_primal_grid_local(primal_grid_glob->get_vol_elements(),
                                          primal_grid_glob->get_nodes(),
-                                         primal_grid_glob->get_element_PatchExtes(),
+                                         primal_grid_glob->get_element_patches(),
                                          r_loc,
                                          part_to_element_range,
                                          part,
@@ -142,7 +142,7 @@ namespace geometry
     }
 
     void GridCreator::create_global_face_entities(const Elements &vol_elements_glob,
-                                                  const Vector<ElementPatchExt> &element_PatchExtes,
+                                                  const Vector<ElementPatch> &element_patches,
                                                   map<FaceElement, pair<Index, long int>> &faces_to_cells_glob,
                                                   Elements &face_elements_glob,
                                                   map<FaceElement, GhostDataPartition> &internal_boundary_faces,
@@ -180,7 +180,7 @@ namespace geometry
 
         /*--------------------------------------------------------------------
         Step 3: Adding internal faces to the map. (Boundary faces are added
-        later, this is to get the correct grouping of PatchExtes). Face elements
+        later, this is to get the correct grouping of patches). Face elements
         (used for calculating geometry properties) are created simultaneously
         as faces, to get the correct ordering.
         --------------------------------------------------------------------*/
@@ -213,7 +213,7 @@ namespace geometry
         --------------------------------------------------------------------*/
 
         // Index j_ghost = vol_elements_glob.size();
-        for (const auto &element_PatchExt : element_PatchExtes)
+        for (const auto &element_PatchExt : element_patches)
         {
 
             const Elements &surface_elements = element_PatchExt.boundary_elements;
@@ -233,7 +233,7 @@ namespace geometry
 
     void GridCreator::create_primal_grid_local(const Elements &vol_elements_glob,
                                                const Vector<Vec3> &nodes_glob,
-                                               const Vector<ElementPatchExt> &element_PatchExtes_glob,
+                                               const Vector<ElementPatch> &element_patches_glob,
                                                Index r_loc,
                                                const Vector<pair<Index, Index>> &part_to_element_range,
                                                const Vector<Index> &part,
@@ -247,12 +247,12 @@ namespace geometry
 
         Vector<Vec3> nodes_loc;
         Elements vol_elements_loc;
-        Vector<ElementPatchExt> element_PatchExtes_loc;
+        Vector<ElementPatch> element_patches_loc;
 
         assert(part.size() == vol_elements_glob.size());
         assert(vol_elements_loc.size() == 0);
         assert(nodes_loc.size() == 0);
-        assert(element_PatchExtes_loc.size() == 0);
+        assert(element_patches_loc.size() == 0);
         assert(nID_glob_to_loc.size() == 0);
 
         Index num_vol_elements_loc = part_to_element_range[r_loc].second - part_to_element_range[r_loc].first;
@@ -315,17 +315,17 @@ namespace geometry
         }
 
         /*--------------------------------------------------------------------
-        Looping over PatchExtes and copying the PatchExt elements and the PatchExt name
+        Looping over patches and copying the PatchExt elements and the PatchExt name
         from global to local.
         --------------------------------------------------------------------*/
 
-        for (const auto &element_PatchExt_glob : element_PatchExtes_glob)
+        for (const auto &element_PatchExt_glob : element_patches_glob)
         {
             const Elements &boundary_elements_glob = element_PatchExt_glob.boundary_elements;
             const string &PatchExt_name_glob = element_PatchExt_glob.PatchExt_name;
-            element_PatchExtes_loc.emplace_back();
-            element_PatchExtes_loc.back().PatchExt_name = PatchExt_name_glob;
-            Elements &boundary_elements_loc = element_PatchExtes_loc.back().boundary_elements;
+            element_patches_loc.emplace_back();
+            element_patches_loc.back().PatchExt_name = PatchExt_name_glob;
+            Elements &boundary_elements_loc = element_patches_loc.back().boundary_elements;
             boundary_elements_loc.reserve(boundary_elements_glob.size(), MAX_NODES_FACE_ELEMENT);
 
             /*--------------------------------------------------------------------
@@ -360,10 +360,10 @@ namespace geometry
             }
             boundary_elements_loc.shrink_to_fit();
         }
-        element_PatchExtes_loc.shrink_to_fit();
+        element_patches_loc.shrink_to_fit();
         vol_elements_loc.shrink_to_fit();
         nodes_loc.shrink_to_fit();
-        primal_grid_loc = make_unique<PrimalGrid>(nodes_loc, vol_elements_loc, element_PatchExtes_loc, loc_e_begin);
+        primal_grid_loc = make_unique<PrimalGrid>(nodes_loc, vol_elements_loc, element_patches_loc, loc_e_begin);
     }
 
     void GridCreator::create_FV_grid_local(const Config &config,
@@ -378,13 +378,13 @@ namespace geometry
         const Elements &vol_elements_loc = primal_grid_loc.get_vol_elements();
         Elements &face_elements_loc = primal_grid_loc.get_face_elements();
         assert(face_elements_loc.size() == 0);
-        const Vector<ElementPatchExt> &element_PatchExtes_loc = primal_grid_loc.get_element_PatchExtes();
+        const Vector<ElementPatch> &element_patches_loc = primal_grid_loc.get_element_patches();
 
         Cells cells_loc;
         Faces faces_loc;
         faces_loc.reserve(1.5 * faces_to_cells_glob.size() / NF_MPI::get_size()); // Guesstimate
-        Vector<PatchExt> PatchExtes_loc;
-        Vector<PartitionPatchExt> part_PatchExtes_loc;
+        Vector<PatchExt> patches_loc;
+        Vector<PartitionPatchExt> part_patches_loc;
 
         /*--------------------------------------------------------------------
         Adding internal faces first
@@ -456,16 +456,16 @@ namespace geometry
                 }
             }
             /*--------------------------------------------------------------------
-            For now I will just create PatchExtes for all neighbour ranks for the local
+            For now I will just create patches for all neighbour ranks for the local
             rank regardless of they share faces or not. This is to avoid potential
             communication locking further down the pipeline. I should look into this
-            and change it in the future, so that only shared PatchExtes are added.
+            and change it in the future, so that only shared patches are added.
             --------------------------------------------------------------------*/
             PartitionPatchExt part_PatchExt;
             part_PatchExt.FIRST_FACE = faces_loc.size();
             part_PatchExt.N_FACES = num_PatchExt_faces;
             part_PatchExt.rank_neighbour = rank_neigbour;
-            part_PatchExtes_loc.emplace_back(part_PatchExt);
+            part_patches_loc.emplace_back(part_PatchExt);
         }
 
         /*--------------------------------------------------------------------
@@ -474,13 +474,13 @@ namespace geometry
         --------------------------------------------------------------------*/
 
         Index j_ghost = vol_elements_loc.size();
-        for (const auto &element_PatchExt : element_PatchExtes_loc)
+        for (const auto &element_PatchExt : element_patches_loc)
         {
             PatchExt p;
             p.boundary_type = config.get_boundary_type(element_PatchExt.PatchExt_name);
             p.FIRST_FACE = faces_loc.size();
             p.N_FACES = element_PatchExt.boundary_elements.size();
-            PatchExtes_loc.push_back(p);
+            patches_loc.push_back(p);
 
             const Elements &surface_elements_loc = element_PatchExt.boundary_elements;
             for (Index ij{0}; ij < surface_elements_loc.size(); ij++)
@@ -512,28 +512,28 @@ namespace geometry
         faces_loc.resize_geometry_properties();
 
         Index num_interior_faces_loc = faces_loc.size() - tot_ghost_loc;
-        reorder_face_enitities(num_interior_faces_loc, part_PatchExtes_loc, PatchExtes_loc, faces_loc, face_elements_loc);
+        reorder_face_enitities(num_interior_faces_loc, part_patches_loc, patches_loc, faces_loc, face_elements_loc);
 
         /*--------------------------------------------------------------------
         Ensuring that no unneccessary memory isn't used
         --------------------------------------------------------------------*/
-        primal_grid_loc.element_PatchExtes.clear(); // element PatchExtes no longer needed.
+        primal_grid_loc.element_patches.clear(); // element patches no longer needed.
         assert(faces_loc.cell_indices.capacity() == faces_loc.size());
         assert(faces_loc.face_normals.capacity() == faces_loc.size());
         assert(faces_loc.centroid_to_face_i.capacity() == faces_loc.size());
         assert(faces_loc.centroid_to_face_j.capacity() == faces_loc.size());
         assert(cells_loc.volumes.capacity() == cells_loc.size());
         assert(cells_loc.centroids.capacity() == cells_loc.size());
-        assert(part_PatchExtes_loc.size() >= r_loc && part_PatchExtes_loc.size() <= NF_MPI::get_size());
+        assert(part_patches_loc.size() >= r_loc && part_patches_loc.size() <= NF_MPI::get_size());
 
-        FV_grid_loc = make_unique<FV_Grid>(cells_loc, faces_loc, PatchExtes_loc, part_PatchExtes_loc);
+        FV_grid_loc = make_unique<FV_Grid>(cells_loc, faces_loc, patches_loc, part_patches_loc);
 
         // cout << "Computational grid has been created.\n";
     }
 
     void GridCreator::reorder_face_enitities(Index num_interior_faces,
-                                             const Vector<PartitionPatchExt> &partition_PatchExtes,
-                                             const Vector<PatchExt> &PatchExtes,
+                                             const Vector<PartitionPatchExt> &partition_patches,
+                                             const Vector<PatchExt> &patches,
                                              Faces &faces,
                                              Elements &face_elements)
     {
@@ -548,12 +548,12 @@ namespace geometry
 
         faces.sort_face_entities(0, num_interior_faces, face_elements, face_elements_to_sort);
 
-        for (const PartitionPatchExt &p_PatchExt : partition_PatchExtes)
+        for (const PartitionPatchExt &p_PatchExt : partition_patches)
         {
             faces.sort_face_entities(p_PatchExt.FIRST_FACE, p_PatchExt.FIRST_FACE + p_PatchExt.N_FACES, face_elements, face_elements_to_sort);
         }
 
-        for (const PatchExt &PatchExt : PatchExtes)
+        for (const PatchExt &PatchExt : patches)
         {
             faces.sort_face_entities(PatchExt.FIRST_FACE, PatchExt.FIRST_FACE + PatchExt.N_FACES, face_elements, face_elements_to_sort);
         }

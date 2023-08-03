@@ -17,7 +17,7 @@ namespace geometry
         Vector<PatchExt> patches_ext;
 
     public:
-        // FV_Grid(Cells &&cells, Faces &&faces, Vector<PatchExt> &&PatchExtes, Vector<Patches> &&partition_PatchExtes);
+        // FV_Grid(Cells &&cells, Faces &&faces, Vector<PatchExt> &&patches, Vector<Patches> &&partition_patches);
         //  FV_Grid(Config &config, PrimalGrid &primal_grid);
 
         const Cells &get_cells() const { return cells; }

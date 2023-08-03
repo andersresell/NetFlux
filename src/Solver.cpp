@@ -10,7 +10,7 @@ Solver::Solver(const Config &config, const PrimalGrid &primal_grid, const FV_Gri
 
 void Solver::create_BC_container(const Config &config)
 {
-    for (const auto &PatchExt : FV_grid.get_PatchExtes())
+    for (const auto &PatchExt : FV_grid.get_patches())
     {
         unique_ptr<BoundaryCondition> BC;
         switch (PatchExt.boundary_type)
@@ -154,7 +154,7 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
 
     Index i, j;
     const auto &faces = FV_grid.get_faces();
-    const auto &PatchExtes = FV_grid.get_PatchExtes();
+    const auto &patches = FV_grid.get_patches();
 
     // InvFluxFunction inv_flux_func = NumericalFlux::get_inviscid_flux_function(config);
 
@@ -194,9 +194,9 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
     /*Then boundaries. Here ghost cells has to be assigned based on the boundary conditions.
     This is handled PatchExt-wise*/
 
-    for (Index i_PatchExt{0}; i_PatchExt < PatchExtes.size(); i_PatchExt++)
+    for (Index i_PatchExt{0}; i_PatchExt < patches.size(); i_PatchExt++)
     {
-        const auto &PatchExt = PatchExtes[i_PatchExt];
+        const auto &PatchExt = patches[i_PatchExt];
         auto &boundary_condition = BC_container[i_PatchExt];
         // BoundaryCondition::BC_function BC_func = BoundaryCondition::get_BC_function(PatchExt.boundary_type);
 
@@ -294,15 +294,15 @@ void EulerSolver::calc_Delta_S(const Config &config)
 
 void EulerSolver::set_constant_ghost_values(const Config &config)
 {
-    const auto &PatchExtes = FV_grid.get_PatchExtes();
+    const auto &patches = FV_grid.get_patches();
     const auto &faces = FV_grid.get_faces();
     VecField &primvars = solver_data->get_primvars();
     Index i_domain, j_ghost;
 
-    // for (const auto &PatchExt : PatchExtes)
-    for (Index i_PatchExt{0}; i_PatchExt < PatchExtes.size(); i_PatchExt++)
+    // for (const auto &PatchExt : patches)
+    for (Index i_PatchExt{0}; i_PatchExt < patches.size(); i_PatchExt++)
     {
-        const auto &PatchExt = PatchExtes[i_PatchExt];
+        const auto &PatchExt = patches[i_PatchExt];
         auto &boundary_condition = BC_container[i_PatchExt];
 
         for (Index ij{PatchExt.FIRST_FACE}; ij < PatchExt.FIRST_FACE + PatchExt.N_FACES; ij++)

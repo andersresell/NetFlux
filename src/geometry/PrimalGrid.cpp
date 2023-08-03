@@ -16,8 +16,8 @@ namespace geometry
         }
     }
 
-    PrimalGrid::PrimalGrid(Vector<Vec3> &&nodes, Elements &&vol_elements, Vector<ElementPatchExt> &&element_PatchExtes, Index eID_glob_first)
-        : nodes{move(nodes)}, vol_elements{move(vol_elements)}, element_PatchExtes{move(element_PatchExtes)}, eID_glob_first{eID_glob_first}
+    PrimalGrid::PrimalGrid(Vector<Vec3> &&nodes, Elements &&vol_elements, Vector<ElementPatch> &&element_patches, Index eID_glob_first)
+        : nodes{move(nodes)}, vol_elements{move(vol_elements)}, element_patches{move(element_patches)}, eID_glob_first{eID_glob_first}
     {
         cerr << "PrimalGrid existing element constructor called, rank " << NF_MPI::get_rank() << endl;
     }
@@ -49,9 +49,9 @@ namespace geometry
 
         assert(nodes.capacity() == nodes.size());
         vol_elements.shrink_to_fit();
-        for (auto &element_PatchExt : element_PatchExtes)
+        for (auto &element_PatchExt : element_patches)
             element_PatchExt.boundary_elements.shrink_to_fit();
-        assert(element_PatchExtes.capacity() == element_PatchExtes.size());
+        assert(element_patches.capacity() == element_patches.size());
 
         if (config.check_grid_validity())
             partial_validity_check();
@@ -119,12 +119,12 @@ namespace geometry
         // {
         //     if (line.size() != 0)
         //     {
-        //         // FAIL_IF(line != "#PatchExtes");
+        //         // FAIL_IF(line != "#patches");
         //         break;
         //     }
         // }
 
-        // // Reading boundary PatchExtes
+        // // Reading boundary patches
         // string PatchExt_name;
         // Index N_surface_elements;
         // while (ist >> PatchExt_name >> N_surface_elements)
@@ -155,7 +155,7 @@ namespace geometry
 
         string tmp_string;
         ShortIndex tmp_int, vtk_e_id_int;
-        Index N_NODES, N_ELEMENTS, N_PatchExtES;
+        Index N_NODES, N_ELEMENTS, N_patches;
 
         auto check_string_correctness = [](string actual_string, string correct_string)
         {
@@ -207,16 +207,16 @@ namespace geometry
         }
 
         /*--------------------------------------------------------------------
-        Reading boundary PatchExtes
+        Reading boundary patches
         --------------------------------------------------------------------*/
-        ist >> tmp_string >> N_PatchExtES;
+        ist >> tmp_string >> N_patches;
         check_string_correctness(tmp_string, "NMARK=");
-        element_PatchExtes.resize(N_PatchExtES);
+        element_patches.resize(N_patches);
         array<Index, MAX_NODES_FACE_ELEMENT> boundary_element_nodes;
-        for (Index i{0}; i < N_PatchExtES; i++)
+        for (Index i{0}; i < N_patches; i++)
         {
-            Elements &boundary_elements = element_PatchExtes[i].boundary_elements;
-            string &PatchExt_name = element_PatchExtes[i].PatchExt_name;
+            Elements &boundary_elements = element_patches[i].boundary_elements;
+            string &PatchExt_name = element_patches[i].PatchExt_name;
 
             ist >> tmp_string >> PatchExt_name;
             check_string_correctness(tmp_string, "MARKER_TAG=");
@@ -246,7 +246,7 @@ namespace geometry
         }
         /*Converting connectivities to vtk format*/
         vol_elements.salome_to_vtk_connectivity();
-        for (auto &PatchExt : element_PatchExtes)
+        for (auto &PatchExt : element_patches)
             PatchExt.boundary_elements.salome_to_vtk_connectivity();
     }
     void PrimalGrid::print_grid() const
@@ -263,7 +263,7 @@ namespace geometry
             cout << vol_elements.to_string(i);
         }
         cout << "\n\nPatchExt ELEMENTS:\n";
-        for (const auto &ep : element_PatchExtes)
+        for (const auto &ep : element_patches)
         {
             cout << "BC type: " << ep.PatchExt_name << endl;
             for (Index i{0}; i < ep.boundary_elements.size(); i++)
@@ -310,7 +310,7 @@ namespace geometry
     Index PrimalGrid::find_num_ghost_external() const
     {
         Index num_ghost{0};
-        for (const auto &ep : element_PatchExtes)
+        for (const auto &ep : element_patches)
             num_ghost += ep.boundary_elements.size();
         return num_ghost;
     }

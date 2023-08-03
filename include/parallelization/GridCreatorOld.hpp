@@ -22,7 +22,7 @@
 //                                         Vector<Index> &eID_glob_to_loc);
 
 //         static void create_global_face_entities(const Elements &vol_elements_glob,
-//                                                 const Vector<ElementPatchExt> &element_PatchExtes,
+//                                                 const Vector<ElementPatch> &element_patches,
 //                                                 map<FaceElement, pair<Index, long int>> &faces_to_cells_glob,
 //                                                 Elements &face_elements_glob,
 //                                                 map<FaceElement, GhostDataPartition> &internal_boundary_faces,
@@ -30,7 +30,7 @@
 
 //         static void create_primal_grid_local(const Elements &vol_elements_glob,
 //                                              const Vector<Vec3> &nodes_glob,
-//                                              const Vector<ElementPatchExt> &element_PatchExtes_glob,
+//                                              const Vector<ElementPatch> &element_patches_glob,
 //                                              Index r_loc,
 //                                              const Vector<pair<Index, Index>> &part_to_element_range,
 //                                              const Vector<Index> &part,
@@ -49,8 +49,8 @@
 
 //         /*Sorts faces and face_elements PatchExt-wise after the cell indices of the faces.*/
 //         static void reorder_face_enitities(Index num_interior_faces,
-//                                            const Vector<PartitionPatchExt> &partition_PatchExtes,
-//                                            const Vector<PatchExt> &PatchExtes,
+//                                            const Vector<PartitionPatchExt> &partition_patches,
+//                                            const Vector<PatchExt> &patches,
 //                                            Faces &faces,
 //                                            Elements &face_elements);
 

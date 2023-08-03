@@ -79,7 +79,7 @@ void ConfigParser::parse_yaml_file_options(Config &config)
 
     config.write_vtk_debug_ = read_optional_option<bool>("write_vtk_debug", false);
 
-    read_PatchExtes(config);
+    read_patches(config);
 }
 
 void ConfigParser::infer_hidden_options(Config &config)
@@ -95,20 +95,20 @@ void ConfigParser::infer_hidden_options(Config &config)
     }
 }
 
-void ConfigParser::read_PatchExtes(Config &config)
+void ConfigParser::read_patches(Config &config)
 {
-    if (root_node["PatchExtes"])
+    if (root_node["patches"])
     {
-        YAML::Node PatchExtes_node = root_node["PatchExtes"];
+        YAML::Node patches_node = root_node["patches"];
 
-        if (!PatchExtes_node.IsSequence())
-            throw std::runtime_error("\"PatchExtes\" setting in configuration file is formatted crrectly (not a valid sequence)");
+        if (!patches_node.IsSequence())
+            throw std::runtime_error("\"patches\" setting in configuration file is formatted crrectly (not a valid sequence)");
 
-        for (const auto &PatchExt_it : PatchExtes_node)
+        for (const auto &PatchExt_it : patches_node)
         {
 
             if (!PatchExt_it.IsMap())
-                throw std::runtime_error("Entry in \"PatchExtes\" setting in configuration file is not a key-value pair");
+                throw std::runtime_error("Entry in \"patches\" setting in configuration file is not a key-value pair");
 
             const auto &PatchExt_kv = *PatchExt_it.begin();
 
@@ -119,14 +119,14 @@ void ConfigParser::read_PatchExtes(Config &config)
 
             string boundary_type_key = PatchExt_kv.second.as<string>();
 
-            BoundaryType bc_type = lookup_enum_option_map(boundary_type_from_string, boundary_type_key, PatchExt_name, "PatchExtes");
+            BoundaryType bc_type = lookup_enum_option_map(boundary_type_from_string, boundary_type_key, PatchExt_name, "patches");
 
             config.map_PatchExt_BC.emplace(PatchExt_name, bc_type);
         }
     }
     else
     {
-        throw std::runtime_error("\"PatchExtes\" option needs to be included in the config file");
+        throw std::runtime_error("\"patches\" option needs to be included in the config file");
     }
 }
 

@@ -19,9 +19,9 @@ namespace geometry
 
     public:
         const Vector<PatchExt> &get_patches_ext() const { return patches_ext; }
-        void add_pacth_ext(PatchExt p) { patches_ext.emplace_back(p); }
+        void add_patch_ext(PatchExt p) { patches_ext.emplace_back(p); }
 
-        bool face_is_in_PatchExt(Index fID, PatchExt p) const { return p.FIRST_FACE <= fID && fID < p.FIRST_FACE + p.N_FACES; }
+        bool face_is_in_patch_ext(Index fID, PatchExt p) const { return p.FIRST_FACE <= fID && fID < p.FIRST_FACE + p.N_FACES; }
         const map<Index, Cellpair> &get_cellpairs() const { return cellpairs; }
         Index size() const { return cellpairs.size(); }
         Index get_i(Index fID) const
@@ -52,19 +52,15 @@ namespace geometry
         }
     };
 
-    /*--------------------------------------------------------------------
-    Contains:
-    All global faces with global cell pairs
-    All external PatchExtes
-    Ordering: internal PatchExtes first, then each external PatchExt.
-    --------------------------------------------------------------------*/
     class FaceGraphGlob : public FaceGraph
     {
-        map<Index, Index> part_faces; /*Pointers to the face ID's that separates two partitions*/
-
         const Vector<ShortIndex> &part;
 
     public:
+        //     /*The outer vector is a list of all partition patches, and the inner vector is
+        //     the global face indices of that patch*/
+        //     Vector<Vector<Index>> contigous_part_faces;
+
         FaceGraphGlob(const Vector<ShortIndex> &part) : part{part} {}
 
         bool is_ghost_face(Index fID) const
@@ -94,48 +90,30 @@ namespace geometry
             return part[i] == part[j];
         }
     };
-    /*--------------------------------------------------------------------
-    Local face graoh for rank r
-    Contains:
-    * All local faces with local cell indices
-    * A vector of partitions for all ranks (size=num_procs),
-      the ones not connecting or its own rank will be empty
-    * All boundary PatchExtes of its own rank.
-    --------------------------------------------------------------------*/
     class FaceGraphLoc : public FaceGraph
     {
         Index my_rank;
-        Vector<PatchPart> patches_int;
+        Vector<PatchPart> patches_part; /*Local partition patches seen by a local grid*/
 
     public:
-        FaceGraphLoc(Index my_rank) : my_rank{my_rank}, part_begin_end{NF_MPI::get_size()} {}
+        FaceGraphLoc(Index my_rank) : my_rank{my_rank} {}
+        void add_patch_part(PatchPart p) { patches_part.emplace_back(p); }
+        //  void add_PatchExt(BoundaryType bt, Index begin)
+        // {
+        //     PatchExt p;
+        //     p.boundary_type = bt;
+        //     p.FIRST_FACE = begin;
+        //     patches.push_back(p);
+        // }
+        // void set_PatchExt_end(Index end)
+        // {
+        //     patches.back().N_FACES = end - patches.back().FIRST_FACE;
+        // }
 
-        void set_part_begin(ShortIndex r, Index begin)
-        {
-            assert(r < NF_MPI::get_size());
-            part_begin_end[r].first = begin;
-        }
-        void set_part_end(ShortIndex r, Index end)
-        {
-            assert(r < NF_MPI::get_size());
-            part_begin_end[r].second = end;
-        }
-        void add_PatchExt(BoundaryType bt, Index begin)
-        {
-            PatchExt p;
-            p.boundary_type = bt;
-            p.FIRST_FACE = begin;
-            PatchExtes.push_back(p);
-        }
-        void set_PatchExt_end(Index end)
-        {
-            PatchExtes.back().N_FACES = end - PatchExtes.back().FIRST_FACE;
-        }
-
-        Index find_num_ghost_int() const
+        Index find_num_ghost_part() const
         {
             Index N_GHOST{0};
-            for (const auto &p : patches_int)
+            for (const auto &p : patches_part)
                 N_GHOST += p.N_FACES;
             assert(N_GHOST > 0);
             return N_GHOST;

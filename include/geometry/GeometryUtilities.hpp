@@ -275,9 +275,9 @@ namespace geometry
     // };
 
     /*Holds name and triangles of a boundary PatchExt*/
-    struct ElementPatchExt
+    struct ElementPatch
     {
-        string PatchExt_name;
+        string patch_name;
         Elements boundary_elements;
     };
 

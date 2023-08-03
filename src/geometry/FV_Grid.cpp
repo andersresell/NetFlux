@@ -3,9 +3,9 @@
 namespace geometry
 {
 
-    FV_Grid::FV_Grid(Cells &&cells, Faces &&faces, Vector<PatchExt> &&PatchExtes, Vector<PartitionPatchExt> &&partition_PatchExtes)
+    FV_Grid::FV_Grid(Cells &&cells, Faces &&faces, Vector<PatchExt> &&patches, Vector<PartitionPatchExt> &&partition_patches)
 
-        : cells{cells}, faces{faces}, PatchExtes{PatchExtes}, partition_PatchExtes{partition_PatchExtes}
+        : cells{cells}, faces{faces}, patches{patches}, partition_patches{partition_patches}
     {
     }
 
@@ -30,13 +30,13 @@ namespace geometry
     //     const Vector<Vec3> &nodes = primal_grid.get_nodes();
     //     const Elements &vol_elements = primal_grid.get_vol_elements();
     //     Elements &face_elements = primal_grid.get_face_elements();
-    //     const Vector<ElementPatchExt> &element_PatchExtes = primal_grid.get_element_PatchExtes();
+    //     const Vector<ElementPatch> &element_patches = primal_grid.get_element_patches();
 
     //     /*--------------------------------------------------------------------
     //     Step 1: Create all cells from elements.
     //     --------------------------------------------------------------------*/
 
-    //     cells.resize(vol_elements.size() + find_N_GHOST_cells(element_PatchExtes));
+    //     cells.resize(vol_elements.size() + find_N_GHOST_cells(element_patches));
 
     //     /*--------------------------------------------------------------------
     //     Step 2: Associate the face nodes with its two neighboring cells.
@@ -74,7 +74,7 @@ namespace geometry
 
     //     /*--------------------------------------------------------------------
     //     Step 3: Adding internal faces to the map. (Boundary faces are added
-    //     later, this is to get the correct grouping of PatchExtes). Face elements
+    //     later, this is to get the correct grouping of patches). Face elements
     //     (used for calculating geometry properties) are created simultaneously
     //     as faces, to get the correct ordering.
     //     --------------------------------------------------------------------*/
@@ -98,13 +98,13 @@ namespace geometry
     //     --------------------------------------------------------------------*/
     //     cout << "Creating ghost cells..\n";
     //     Index j_ghost = vol_elements.size();
-    //     for (const auto &element_PatchExt : element_PatchExtes)
+    //     for (const auto &element_PatchExt : element_patches)
     //     {
     //         PatchExt p;
     //         p.boundary_type = config.get_boundary_type(element_PatchExt.PatchExt_name);
     //         p.FIRST_FACE = faces.size();
     //         p.N_FACES = element_PatchExt.boundary_elements.size();
-    //         PatchExtes.push_back(p);
+    //         patches.push_back(p);
 
     //         const Elements &surface_elements = element_PatchExt.boundary_elements;
     //         for (Index ij{0}; ij < surface_elements.size(); ij++)
@@ -134,7 +134,7 @@ namespace geometry
     //     Index N_NODES = nodes.size();
     //     Index N_INTERIOR_CELLS = vol_elements.size();
     //     Index N_TOTAL_CELLS = cells.size();
-    //     Index N_INTERIOR_FACES = faces.size() - find_N_GHOST_cells(element_PatchExtes);
+    //     Index N_INTERIOR_FACES = faces.size() - find_N_GHOST_cells(element_patches);
     //     Index N_TOTAL_FACES = faces.size();
     //     config.set_grid_metrics(N_NODES, N_INTERIOR_CELLS, N_TOTAL_CELLS, N_INTERIOR_FACES, N_TOTAL_FACES);
 
@@ -152,8 +152,8 @@ namespace geometry
     //     /*--------------------------------------------------------------------
     //     Ensuring that no unneccessary memory isn't used
     //     --------------------------------------------------------------------*/
-    //     primal_grid.element_PatchExtes.clear(); // element PatchExtes no longer needed.
-    //     assert(primal_grid.element_PatchExtes.empty());
+    //     primal_grid.element_patches.clear(); // element patches no longer needed.
+    //     assert(primal_grid.element_patches.empty());
     //     assert(faces.cell_indices.capacity() == N_TOTAL_FACES);
     //     assert(faces.face_normals.capacity() == N_TOTAL_FACES);
     //     assert(faces.centroid_to_face_i.capacity() == N_TOTAL_FACES);
@@ -281,8 +281,8 @@ namespace geometry
         for (Index ij{0}; ij < faces.size(); ij++)
             cout << faces.to_string(ij) << ", Element: " << face_elements.to_string(ij) << endl;
 
-        cout << "\n\nPatchExtES:\n";
-        for (const auto &PatchExt : PatchExtes)
+        cout << "\n\npatches:\n";
+        for (const auto &PatchExt : patches)
         {
             cout << "PatchExt type: " << (int)PatchExt.boundary_type << "\nFIRST FACE: " << PatchExt.FIRST_FACE << "\nN_FACES: " << PatchExt.N_FACES << "\n\n";
         }
