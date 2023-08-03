@@ -225,11 +225,11 @@ namespace geometry
         assert(N_GHOST > 0);
         return N_GHOST;
     }
-    Index FV_Grid::find_num_ghost_int() const
+    Index FV_Grid::find_num_ghost_part() const
     {
         Index N_GHOST{0};
-        for (const auto &p : patches_int)
-            N_GHOST += pacthes_int.N_FACES;
+        for (const auto &p : patches_part)
+            N_GHOST += pacthes_part.N_FACES;
         assert(N_GHOST > 0);
         return N_GHOST;
     }

@@ -13,7 +13,7 @@ namespace geometry
 
         Cells cells;
         Faces faces;
-        Vector<PatchInt> patches_int;
+        Vector<PatchPart> patches_part;
         Vector<PatchExt> patches_ext;
 
     public:
@@ -23,7 +23,7 @@ namespace geometry
         const Cells &get_cells() const { return cells; }
         const Faces &get_faces() const { return faces; }
         const Vector<PatchExt> &get_patches_ext() const { return patches_ext; }
-        const Vector<PatchInt> &get_patches_int() const { return patches_int; }
+        const Vector<PatchPart> &get_patches_part() const { return patches_part; }
 
         template <class Archive>
         void serialize(Archive &ar, const unsigned int version)
@@ -42,7 +42,7 @@ namespace geometry
         /*------Helper functions for creating face structure-------*/
 
         Index find_num_ghost_ext() const;
-        Index find_num_ghost_int() const;
+        Index find_num_ghost_part() const;
 
         void calc_face_properties(ElementType e_type,
                                   const Index *element,

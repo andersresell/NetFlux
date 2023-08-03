@@ -15,11 +15,11 @@ namespace geometry
     {
     protected:
         map<Index, Cellpair> cellpairs;
-        Vector<PatchExt> PatchExtes;
+        Vector<PatchExt> patches_ext;
 
     public:
-        const Vector<PatchExt> &get_PatchExtes() const { return PatchExtes; }
-        void add_PatchExt(PatchExt p) { PatchExtes.emplace_back(p); }
+        const Vector<PatchExt> &get_patches_ext() const { return patches_ext; }
+        void add_pacth_ext(PatchExt p) { patches_ext.emplace_back(p); }
 
         bool face_is_in_PatchExt(Index fID, PatchExt p) const { return p.FIRST_FACE <= fID && fID < p.FIRST_FACE + p.N_FACES; }
         const map<Index, Cellpair> &get_cellpairs() const { return cellpairs; }
@@ -41,6 +41,15 @@ namespace geometry
             cellpairs.erase(fID);
         }
         bool face_is_in_graph(Index fID) const { return cellpairs.count(fID) == 1; }
+
+        Index find_num_ghost_ext() const
+        {
+            Index N_GHOST{0};
+            for (const auto &p : patches_ext)
+                N_GHOST += p.N_FACES;
+            assert(N_GHOST > 0);
+            return N_GHOST;
+        }
     };
 
     /*--------------------------------------------------------------------
@@ -96,8 +105,7 @@ namespace geometry
     class FaceGraphLoc : public FaceGraph
     {
         Index my_rank;
-        Vector<PatchInt> patches_int;
-        Vector<PatchExt> patches_ext;
+        Vector<PatchPart> patches_int;
 
     public:
         FaceGraphLoc(Index my_rank) : my_rank{my_rank}, part_begin_end{NF_MPI::get_size()} {}
@@ -123,14 +131,7 @@ namespace geometry
         {
             PatchExtes.back().N_FACES = end - PatchExtes.back().FIRST_FACE;
         }
-        Index find_num_ghost_ext() const
-        {
-            Index N_GHOST{0};
-            for (const auto &p : patches_ext)
-                N_GHOST += p.N_FACES;
-            assert(N_GHOST > 0);
-            return N_GHOST;
-        }
+
         Index find_num_ghost_int() const
         {
             Index N_GHOST{0};
@@ -216,12 +217,14 @@ namespace geometry
         --------------------------------------------------------------------*/
         /*Reorders faces in a more optimal fashion*/
         static void reorder_face_enitities(Index num_interior_faces,
-                                           const Vector<PatchInt> &patches_int,
+                                           const Vector<PatchPart> &patches_int,
                                            const Vector<PatchExt> &patches_ext,
                                            Faces &faces,
                                            Elements &face_elements);
 
-        static void set_global_config_data(Config &config, unique_ptr<PrimalGrid> &primal_grid_glob);
+        static void set_global_config_data(Config &config,
+                                           unique_ptr<PrimalGrid> &primal_grid_glob,
+                                           const FaceGraphGlob &face_graph_glob);
 
         static void set_config_grid_data_local(Config &config,
                                                unique_ptr<PrimalGrid> &primal_grid,

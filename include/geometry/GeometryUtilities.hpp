@@ -393,7 +393,7 @@ namespace geometry
         Index FIRST_FACE;
     };
 
-    struct PatchInt
+    struct PatchPart
     {
         ShortIndex rank_neighbour;
         Index N_FACES;
