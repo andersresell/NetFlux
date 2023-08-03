@@ -63,6 +63,12 @@ namespace boost
 using namespace std;
 int main()
 {
+    vector<int> a{1, 2, 3};
+    vector<int> b = a;
+    a[1] = 942982323;
+    for (auto e : b)
+        cout << e << endl;
+
     cout << "halla\n";
     // Create a PrimalGrid and add some Eigen::Vector3d objects
     PrimalGrid grid{};

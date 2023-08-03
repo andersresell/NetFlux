@@ -98,6 +98,7 @@ namespace geometry
     public:
         FaceGraphLoc(Index my_rank) : my_rank{my_rank} {}
         void add_patch_part(PatchPart p) { patches_part.emplace_back(p); }
+        const Vector<PatchPart> get_patches_part() const { return patches_part; }
         //  void add_PatchExt(BoundaryType bt, Index begin)
         // {
         //     PatchExt p;

@@ -244,18 +244,20 @@ namespace geometry
                 Index fID = kv.first;
                 if (face_graph_glob.is_part_face(fID))
                 {
-                    Index i = face_graph_glob.get_i(fID);
-                    Index j = face_graph_glob.get_j(fID);
-                    ShortIndex r_i = utils.e2r(i);
-                    ShortIndex r_j = utils.e2r(j);
+                    Index i_glob = face_graph_glob.get_i(fID);
+                    Index j_glob = face_graph_glob.get_j(fID);
+                    ShortIndex r_i = utils.e2r(i_glob);
+                    ShortIndex r_j = utils.e2r(j_glob);
 
-                    assert(i < j && r_i < r_j);
+                    assert(i_glob < j_glob && r_i < r_j);
 
                     if (r_i == r_shared || r_j == r_shared)
                     {
+                        Index i_loc = utils.eIDglob2loc(i_glob);
+                        Index j_loc = utils.eIDglob2loc(j_glob);
                         /*Global face should point from rank i to rank j*/
-                        face_graphs_loc[r_i].add_face(i, j);
-                        face_graphs_loc[r_j].add_face(j, i);
+                        face_graphs_loc[r_i].add_face(i_loc, j_loc);
+                        face_graphs_loc[r_j].add_face(j_loc, i_loc);
 
                         Index loc_size_i = face_graphs_loc[r_i].size();
                         Index loc_size_j = face_graphs_loc[r_j].size();
@@ -429,7 +431,7 @@ namespace geometry
             Cells &cells_r = FV_grid_r.cells;
 
             /*Create cells*/
-            Index num_ghost = face_graph_r.find_num_ghost_int() + face_graph_r.find_num_ghost_ext();
+            Index num_ghost = face_graph_r.find_num_ghost_part() + face_graph_r.find_num_ghost_ext();
             cells_r.resize(e_vol_r.size() + num_ghost);
 
             /*Create faces*/
@@ -442,11 +444,15 @@ namespace geometry
                 faces_r.cell_indices.push_back(geometry::Faces::CellPair{i, j});
             }
 
+            /*Set external and partition patches*/
+            FV_grid_r.patches_part = face_graph_r.get_patches_part();
+            FV_grid_r.patches_ext = face_graph_r.get_patches_ext();
+
             /*Reorder faces and face elements*/
             Elements &e_faces_r = primal_grid_r.get_face_elements();
             Index num_interior_faces = faces_r.size() - num_ghost;
             reorder_face_enitities(num_interior_faces,
-                                   FV_grid_r.get_patches_int(),
+                                   FV_grid_r.get_patches_part(),
                                    FV_grid_r.get_patches_ext(),
                                    faces_r,
                                    e_faces_r);
