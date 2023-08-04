@@ -194,10 +194,10 @@ namespace geometry
 
     class FaceElement
     {
-        std::array<Index, MAX_NODES_FACE_ELEMENT> nodes_sorted;
+        Array<Index, MAX_NODES_FACE_ELEMENT> nodes_sorted;
 
     public:
-        std::array<Index, MAX_NODES_FACE_ELEMENT> nodes;
+        Array<Index, MAX_NODES_FACE_ELEMENT> nodes;
         const ShortIndex n_nodes;
         const ElementType e_type;
 
@@ -239,19 +239,19 @@ namespace geometry
     void get_face_element_k_of_tetrahedron(const Index *ve,
                                            ShortIndex face_k,
                                            ElementType &face_element_type,
-                                           array<Index, MAX_NODES_FACE_ELEMENT> &fe);
+                                           Array<Index, MAX_NODES_FACE_ELEMENT> &fe);
     void get_face_element_k_of_hexahedron(const Index *ve,
                                           ShortIndex face_k,
                                           ElementType &face_element_type,
-                                          array<Index, MAX_NODES_FACE_ELEMENT> &fe);
+                                          Array<Index, MAX_NODES_FACE_ELEMENT> &fe);
     void get_face_element_k_of_pyramid(const Index *ve,
                                        ShortIndex face_k,
                                        ElementType &face_element_type,
-                                       array<Index, MAX_NODES_FACE_ELEMENT> &fe);
+                                       Array<Index, MAX_NODES_FACE_ELEMENT> &fe);
     void get_face_element_k_of_wedge(const Index *ve,
                                      ShortIndex face_k,
                                      ElementType &face_element_type,
-                                     array<Index, MAX_NODES_FACE_ELEMENT> &fe);
+                                     Array<Index, MAX_NODES_FACE_ELEMENT> &fe);
 
     // struct SortedFaceElement : public FaceElement
     // {

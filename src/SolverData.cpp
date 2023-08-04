@@ -2,7 +2,7 @@
 
 SolverData::SolverData(const Config &config, ShortIndex n_eqs)
 {
-    Index N_CELLS_TOT = config.get_N_CELLS_INT();
+    Index N_CELLS_TOT = config.get_N_CELLS_TOT();
     Index N_CELLS_DOMAIN = config.get_N_CELLS_DOMAIN();
     Index N_CELLS_INT = config.get_N_CELLS_INT();
 
@@ -18,6 +18,14 @@ SolverData::SolverData(const Config &config, ShortIndex n_eqs)
         *primvars_limiter = 1.0;
         primvars_max = make_unique<VecField>(N_CELLS_DOMAIN, n_eqs); //?correct size
         primvars_min = make_unique<VecField>(N_CELLS_DOMAIN, n_eqs); //?correct size
+
+        n_vecfields_sendrecv_max = 4;  /*primvars, primvars limiter, primvars max+min*/
+        n_gradfields_sendrecv_max = 1; /*primvars grad*/
+    }
+    else
+    {
+        n_vecfields_sendrecv_max = 1; /*primvars*/
+        n_gradfields_sendrecv_max = 0;
     }
 }
 

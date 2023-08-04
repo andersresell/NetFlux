@@ -174,7 +174,7 @@ namespace geometry
         ist >> tmp_string >> N_ELEMENTS;
         check_string_correctness(tmp_string, "NELEM=");
         vol_elements.reserve(N_ELEMENTS, MAX_NODES_VOLUME_ELEMENT);
-        array<Index, MAX_NODES_VOLUME_ELEMENT> volume_element_nodes;
+        Array<Index, MAX_NODES_VOLUME_ELEMENT> volume_element_nodes;
         for (Index i{0}; i < N_ELEMENTS; i++)
         {
             ist >> vtk_e_id_int;
@@ -212,7 +212,7 @@ namespace geometry
         ist >> tmp_string >> N_patches;
         check_string_correctness(tmp_string, "NMARK=");
         element_patches.resize(N_patches);
-        array<Index, MAX_NODES_FACE_ELEMENT> boundary_element_nodes;
+        Array<Index, MAX_NODES_FACE_ELEMENT> boundary_element_nodes;
         for (Index i{0}; i < N_patches; i++)
         {
             Elements &boundary_elements = element_patches[i].boundary_elements;

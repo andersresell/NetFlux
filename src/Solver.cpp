@@ -139,6 +139,17 @@ EulerSolver::EulerSolver(const Config &config, const geometry::PrimalGrid &prima
     validity_checker = make_unique<EulerValidityChecker>(config);
 
     calc_Delta_S(config);
+
+    /*Creating partition communicators*/
+    for (const geometry::PatchPart &pp : FV_grid.get_patches_part())
+    {
+        part_comms.emplace_back(
+            solver_data->get_n_vecfields_sendrecv_max(),
+            solver_data->get_n_gradfields_sendrecv_max,
+            solver_data->get_N_EQS(),
+            pp,
+            FV_grid.get_faces());
+    }
 }
 
 void EulerSolver::evaluate_inviscid_fluxes(const Config &config)

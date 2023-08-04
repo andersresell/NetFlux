@@ -1,20 +1,21 @@
 #pragma once
 
-#include "../include/Config.hpp"
-#include "../include/geometry/FV_Grid.hpp"
-#include "../include/Utilities.hpp"
-#include "../include/Numerics.hpp"
-#include "../include/SolverData.hpp"
+#include "Config.hpp"
+#include "geometry/FV_Grid.hpp"
+#include "Utilities.hpp"
+#include "Numerics.hpp"
+#include "SolverData.hpp"
+#include "parallelization/PartComm.hpp"
 
 class Solver
 {
 protected:
-    unique_ptr<SolverData> solver_data;
     const geometry::PrimalGrid &primal_grid;
     const geometry::FV_Grid &FV_grid;
-    unique_ptr<ValidityChecker> validity_checker;
-
+    unique_ptr<SolverData> solver_data;
     Vector<unique_ptr<BoundaryCondition>> BC_container;
+    unique_ptr<ValidityChecker> validity_checker;
+    Vector<PartComm> part_comms;
 
 public:
     Solver(const Config &config, const geometry::PrimalGrid &primal_grid, const geometry::FV_Grid &FV_grid);

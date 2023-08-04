@@ -17,7 +17,6 @@
 #include <type_traits>
 #include <filesystem>
 
-using std::array;
 using std::cerr;
 using std::cout;
 using std::endl;
@@ -29,6 +28,7 @@ using std::min;
 using std::move;
 using std::ostringstream;
 using std::pair;
+using std::set;
 using std::string;
 using std::stringstream;
 using std::unique_ptr;
@@ -89,8 +89,36 @@ public:
 #endif
 };
 
+/*Adding range checking to the [] operator for Array in debug mode (NDEBUG not defined)*/
 template <typename T, size_t N>
-inline bool arrays_equal(const array<T, N> &a, const array<T, N> &b)
+class Array final : public std::array<T, N>
+{
+public:
+    using std::array<T, N>::array;
+#ifndef NDEBUG
+
+    _GLIBCXX17_CONSTEXPR reference
+    operator[](size_type __n) noexcept
+    {
+        assert(__n < N);
+        __glibcxx_requires_subscript(__n);
+        return _AT_Type::_S_ref(_M_elems, __n);
+    }
+
+    constexpr const_reference
+    operator[](size_type __n) const noexcept
+    {
+        assert(__n < N);
+#if __cplusplus >= 201402L
+        __glibcxx_requires_subscript(__n);
+#endif
+    };
+
+#endif
+};
+
+template <typename T, size_t N>
+inline bool arrays_equal(const Array<T, N> &a, const Array<T, N> &b)
 {
     for (size_t i{0}; i < N; i++)
         if (a[i] != b[i])

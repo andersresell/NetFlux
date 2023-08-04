@@ -63,10 +63,15 @@ namespace boost
 using namespace std;
 int main()
 {
-    vector<int> a{1, 2, 3};
-    vector<int> b = a;
-    a[1] = 942982323;
-    for (auto e : b)
+    Array<int, 3> arr{1, 2, 3};
+    int a = 1;
+    for (size_t i{0}; i < 10; i++)
+        arr[i] = i * i;
+
+    for (size_t i{0}; i < 5; i++)
+        cout << arr[i] << endl;
+    cout << a << endl;
+    for (int e : arr)
         cout << e << endl;
 
     cout << "halla\n";

@@ -26,6 +26,7 @@ public:
         data_ = new T[size_ * rows_ * cols_]{0};
     }
 
+    /*Access of 3D containers*/
     const T *data() const { return data_; }
     T *data() { return data_; }
 
@@ -39,6 +40,21 @@ public:
     {
         assert(l < size_ && i < rows_ && j < cols_);
         return data_[l * rows_ * cols_ + i * cols_ + j];
+    }
+
+    /*Access of 2d containers*/
+    T &operator()(Index l, Index i)
+    {
+        static_assert(cols_ == 1);
+        assert(l < this->size_ && i < this->rows_);
+        return this->data_[l * this->rows_ + i];
+    }
+    const T &operator()(Index l, Index i) const
+    {
+
+        static_assert(cols_ == 1);
+        assert(l < this->size_ && i < this->rows_);
+        return this->data_[l * this->rows_ + i];
     }
 
     /*Returns pointer to matrix l*/
@@ -124,7 +140,6 @@ public:
         return true;
     }
 
-public:
     Index size() const
     {
         return size_;
@@ -132,38 +147,9 @@ public:
     Index rows() const { return rows_; }
     static constexpr Index cols() { return cols_; }
 
-    ~DynamicContainer3D() { delete[] data_; }
-};
-
-template <typename T>
-class DynamicContainer2D : public DynamicContainer3D<T, 1>
-{
-    using DC2D = DynamicContainer3D<T, 1>;
-
-public:
-    using DC2D::operator=;
-
-    DynamicContainer2D() {}
-
-    DynamicContainer2D(Index size, Index rows) : DynamicContainer3D<T, 1>(size, rows) {}
-
-    T &operator()(Index l, Index i)
-    {
-        assert(l < this->size_ && i < this->rows_);
-        return this->data_[l * this->rows_ + i];
-    }
-
-    const T &operator()(Index l, Index i) const
-    {
-        assert(l < this->size_ && i < this->rows_);
-        return this->data_[l * this->rows_ + i];
-    }
-
-    using DC2D::rows;
-    using DC2D::size;
-
     string to_string() const
     {
+        static_assert(cols_ == 1);
         std::stringstream ss;
         ss << endl
            << endl;
@@ -181,7 +167,60 @@ public:
            << endl;
         return ss.str();
     }
+
+    ~DynamicContainer3D() { delete[] data_; }
 };
+
+// template <typename T>
+// class DynamicContainer2D : public DynamicContainer3D<T, 1>
+// {
+//     using DC2D = DynamicContainer3D<T, 1>;
+
+// public:
+//     using DC2D::operator=;
+
+//     DynamicContainer2D() {}
+
+//     DynamicContainer2D(Index size, Index rows) : DynamicContainer3D<T, 1>(size, rows) {}
+
+//     T &operator()(Index l, Index i)
+//     {
+//         static_assert(cols_==1);
+//         assert(l < this->size_ && i < this->rows_);
+//         return this->data_[l * this->rows_ + i];
+//     }
+
+//     const T &operator()(Index l, Index i) const
+//     {
+
+//         static_assert(cols_==1);
+//         assert(l < this->size_ && i < this->rows_);
+//         return this->data_[l * this->rows_ + i];
+//     }
+
+//     using DC2D::rows;
+//     using DC2D::size;
+
+//     string to_string() const
+//     {
+//         std::stringstream ss;
+//         ss << endl
+//            << endl;
+//         for (Index l{0}; l < size(); l++)
+//         {
+//             for (Index i{0}; i < rows(); i++)
+//             {
+//                 ss << (*this)(l, i);
+//                 if (i < rows())
+//                     ss << ", ";
+//             }
+//             ss << "\n";
+//         }
+//         ss << endl
+//            << endl;
+//         return ss.str();
+//     }
+// };
 
 #define for_all(container2D, i, j)           \
     assert(container2D.cols() == 1);         \

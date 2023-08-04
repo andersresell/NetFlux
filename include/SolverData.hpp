@@ -3,17 +3,15 @@
 #include "containers/DynamicContainer.hpp"
 #include "containers/StaticContainer.hpp"
 #include "Config.hpp"
+#include "parallelization/Communication.hpp"
 
-template <ShortIndex N_COLS>
-using GenericField = DynamicContainer3D<Scalar, N_COLS>;
-
-struct VecField final : public DynamicContainer2D<Scalar>
+struct VecField final : public DynamicContainer3D<Scalar, 1>
 {
-    VecField(Index N_CELLS, ShortIndex N_EQS) : DynamicContainer2D(N_CELLS, N_EQS) {}
+    VecField(Index N_CELLS, ShortIndex N_EQS) : DynamicContainer3D(N_CELLS, N_EQS) {}
 
     ShortIndex get_N_EQS() const { return rows(); }
 
-    using DynamicContainer2D<Scalar>::operator=;
+    using DynamicContainer3D<Scalar, 1>::operator=;
 };
 
 struct GradField final : public DynamicContainer3D<Scalar, N_DIM>
@@ -39,7 +37,7 @@ protected:
         primvars_max,
         primvars_min;
 
-    // SolverData() = default;
+    ShortIndex n_vecfields_sendrecv_max, n_gradfields_sendrecv_max;
 
     SolverData(const Config &config, ShortIndex n_eqs);
 
@@ -71,6 +69,9 @@ public:
     const VecField &get_primvars_min() const { return *primvars_min; }
 
     virtual SolverType get_solver_type() const = 0;
+
+    ShortIndex get_n_vecfields_sendrecv_max() const { return n_vecfields_sendrecv_max; }
+    ShortIndex get_n_gradfields_sendrecv_max() const { return n_gradfields_sendrecv_max; }
 
     virtual void set_primvars(const VecField &cons_vars, const Config &config) = 0;
 };

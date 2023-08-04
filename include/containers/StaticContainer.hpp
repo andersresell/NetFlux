@@ -10,7 +10,7 @@ class StaticContainer2D
     static constexpr size_t SIZE = M * N;
 
 protected:
-    std::array<T, M * N> data;
+    Array<T, M * N> data;
 
 public:
     StaticContainer2D() = default;

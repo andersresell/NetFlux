@@ -77,7 +77,7 @@ namespace geometry
                volume_element_type == ElementType::Wedge);
         assert(face_k <= get_num_faces_volume_element(volume_element_type));
         ElementType face_element_type;
-        array<Index, MAX_NODES_FACE_ELEMENT> face_element;
+        Array<Index, MAX_NODES_FACE_ELEMENT> face_element;
 
         if (volume_element_type == ElementType::Tetrahedron)
             get_face_element_k_of_tetrahedron(volume_element, face_k, face_element_type, face_element);
@@ -94,7 +94,7 @@ namespace geometry
     void get_face_element_k_of_tetrahedron(const Index *ve,
                                            ShortIndex face_k,
                                            ElementType &face_element_type,
-                                           array<Index, MAX_NODES_FACE_ELEMENT> &fe)
+                                           Array<Index, MAX_NODES_FACE_ELEMENT> &fe)
     {
         assert(face_k < N_FACES_TET);
         face_element_type = ElementType::Triangle;
@@ -130,7 +130,7 @@ namespace geometry
     void get_face_element_k_of_hexahedron(const Index *ve,
                                           ShortIndex face_k,
                                           ElementType &face_element_type,
-                                          array<Index, MAX_NODES_FACE_ELEMENT> &fe)
+                                          Array<Index, MAX_NODES_FACE_ELEMENT> &fe)
     {
         assert(face_k < N_FACES_HEX);
         face_element_type = ElementType::Quadrilateral;
@@ -180,7 +180,7 @@ namespace geometry
     void get_face_element_k_of_pyramid(const Index *ve,
                                        ShortIndex face_k,
                                        ElementType &face_element_type,
-                                       array<Index, MAX_NODES_FACE_ELEMENT> &fe)
+                                       Array<Index, MAX_NODES_FACE_ELEMENT> &fe)
     {
         assert(face_k < N_FACES_PYRAMID);
         face_element_type = (face_k == 0) ? ElementType::Quadrilateral : ElementType::Triangle;
@@ -219,7 +219,7 @@ namespace geometry
     void get_face_element_k_of_wedge(const Index *ve,
                                      ShortIndex face_k,
                                      ElementType &face_element_type,
-                                     array<Index, MAX_NODES_FACE_ELEMENT> &fe)
+                                     Array<Index, MAX_NODES_FACE_ELEMENT> &fe)
     {
         assert(face_k < N_FACES_WEDGE);
         if (face_k == 0)
