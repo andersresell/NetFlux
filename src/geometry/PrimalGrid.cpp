@@ -16,7 +16,7 @@ namespace geometry
         }
     }
 
-    PrimalGrid::PrimalGrid(Vector<Vec3> &&nodes, Elements &&vol_elements, Vector<ElementPatch> &&element_patches, Index eID_glob_first)
+    PrimalGrid::PrimalGrid(vector<Vec3> &&nodes, Elements &&vol_elements, vector<ElementPatch> &&element_patches, Index eID_glob_first)
         : nodes{move(nodes)}, vol_elements{move(vol_elements)}, element_patches{move(element_patches)}, eID_glob_first{eID_glob_first}
     {
         cerr << "PrimalGrid existing element constructor called, rank " << NF_MPI::get_rank() << endl;
@@ -174,7 +174,7 @@ namespace geometry
         ist >> tmp_string >> N_ELEMENTS;
         check_string_correctness(tmp_string, "NELEM=");
         vol_elements.reserve(N_ELEMENTS, MAX_NODES_VOLUME_ELEMENT);
-        Array<Index, MAX_NODES_VOLUME_ELEMENT> volume_element_nodes;
+        array<Index, MAX_NODES_VOLUME_ELEMENT> volume_element_nodes;
         for (Index i{0}; i < N_ELEMENTS; i++)
         {
             ist >> vtk_e_id_int;
@@ -212,7 +212,7 @@ namespace geometry
         ist >> tmp_string >> N_patches;
         check_string_correctness(tmp_string, "NMARK=");
         element_patches.resize(N_patches);
-        Array<Index, MAX_NODES_FACE_ELEMENT> boundary_element_nodes;
+        array<Index, MAX_NODES_FACE_ELEMENT> boundary_element_nodes;
         for (Index i{0}; i < N_patches; i++)
         {
             Elements &boundary_elements = element_patches[i].boundary_elements;

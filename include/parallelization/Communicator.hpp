@@ -1,6 +1,7 @@
 #pragma once
 #include "MPI_Wrapper.hpp"
 #include "../geometry/FV_Grid.hpp"
+#include "../containers/DynamicContainer.hpp"
 
 /*Used to send or receive data across a patch. Contains enough storage
 to send all the fields store all the */
@@ -14,8 +15,8 @@ class InterfaceComm
     //                                                          {FieldType::PrimvarsGrad, N_DIM},
     //                                                          {FieldType::Consvars, 1}};
     const ShortIndex N_EQS;
-    Vector<Scalar> sendbuf;
-    Vector<Scalar> recvbuf;
+    vector<Scalar> sendbuf;
+    vector<Scalar> recvbuf;
     const geometry::PatchInterface &patch_part;
     const geometry::Faces &faces;
     Index sendptr, recvptr;
@@ -64,7 +65,7 @@ public:
             Index j_ghost = faces.get_cell_j(ij);
             for (ShortIndex neq{0}; neq < N_EQS; neq++)
                 for (ShortIndex ndim{0}; ndim < N_COLS; ndim++)
-                    recvfield(j_ghost, neq, n_dim) = recvbuf[recvptr++];
+                    recvfield(j_ghost, neq, ndim) = recvbuf[recvptr++];
         }
         assert(recvptr < recvbuf.size());
     }
@@ -74,7 +75,7 @@ public:
 between local domains/partitions.*/
 class PartitionComm
 {
-    Vector<unique_ptr<InterfaceComm>> interf_comms;
+    vector<unique_ptr<InterfaceComm>> interf_comms;
 
     const ShortIndex n_vecfields_max, n_gradfields_max;
 

@@ -13,7 +13,7 @@ protected:
     const geometry::PrimalGrid &primal_grid;
     const geometry::FV_Grid &FV_grid;
     unique_ptr<SolverData> solver_data;
-    Vector<unique_ptr<BoundaryCondition>> BC_container;
+    vector<unique_ptr<BoundaryCondition>> BC_container;
     unique_ptr<PartitionComm> part_comm;
     unique_ptr<ValidityChecker> validity_checker;
 

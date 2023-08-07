@@ -1,6 +1,6 @@
 #pragma once
 #include "../geometry/FV_Grid.hpp"
-#include "Metis_Wrapper.hpp"
+#include "MetisWrapper.hpp"
 #include "Serialization.hpp"
 
 namespace geometry
@@ -14,38 +14,38 @@ namespace geometry
     class FaceGraph
     {
     protected:
-        map<Index, Cellpair> cellpairs;
-        Vector<PatchBoundary> patches_ext;
+        map<Index, Cellpair> Cellpairs;
+        vector<PatchBoundary> patches_bound;
 
     public:
-        const Vector<PatchBoundary> &get_patches_ext() const { return patches_ext; }
-        void add_patch_ext(PatchBoundary p) { patches_ext.emplace_back(p); }
+        const vector<PatchBoundary> &get_patches_ext() const { return patches_bound; }
+        void add_patch_bound(PatchBoundary p) { patches_bound.emplace_back(p); }
 
         bool face_is_in_patch_ext(Index fID, PatchBoundary p) const { return p.FIRST_FACE <= fID && fID < p.FIRST_FACE + p.N_FACES; }
-        const map<Index, Cellpair> &get_cellpairs() const { return cellpairs; }
-        Index size() const { return cellpairs.size(); }
+        const map<Index, Cellpair> &get_Cellpairs() const { return Cellpairs; }
+        Index size() const { return Cellpairs.size(); }
         Index get_i(Index fID) const
         {
-            assert(cellpairs.count(fID) == 1);
-            return cellpairs.at(fID).i;
+            assert(Cellpairs.count(fID) == 1);
+            return Cellpairs.at(fID).i;
         }
         Index get_j(Index fID) const
         {
-            assert(cellpairs.count(fID) == 1);
-            return cellpairs.at(fID).j;
+            assert(Cellpairs.count(fID) == 1);
+            return Cellpairs.at(fID).j;
         }
-        void add_face(Index i, Index j) { cellpairs.emplace(cellpairs.size(), Cellpair{i, j}); }
+        void add_face(Index i, Index j) { Cellpairs.emplace(Cellpairs.size(), Cellpair{i, j}); }
         void remove_face(Index fID)
         {
-            assert(cellpairs.count(fID) == 1);
-            cellpairs.erase(fID);
+            assert(Cellpairs.count(fID) == 1);
+            Cellpairs.erase(fID);
         }
-        bool face_is_in_graph(Index fID) const { return cellpairs.count(fID) == 1; }
+        bool face_is_in_graph(Index fID) const { return Cellpairs.count(fID) == 1; }
 
         Index find_num_ghost_ext() const
         {
             Index N_GHOST{0};
-            for (const auto &p : patches_ext)
+            for (const auto &p : patches_bound)
                 N_GHOST += p.N_FACES;
             assert(N_GHOST > 0);
             return N_GHOST;
@@ -54,20 +54,20 @@ namespace geometry
 
     class FaceGraphGlob : public FaceGraph
     {
-        const Vector<ShortIndex> &part;
+        const vector<ShortIndex> &part;
 
     public:
         //     /*The outer vector is a list of all partition patches, and the inner vector is
         //     the global face indices of that patch*/
-        //     Vector<Vector<Index>> contigous_part_faces;
+        //     vector<vector<Index>> contigous_part_faces;
 
-        FaceGraphGlob(const Vector<ShortIndex> &part) : part{part} {}
+        FaceGraphGlob(const vector<ShortIndex> &part) : part{part} {}
 
         bool is_ghost_face(Index fID) const
         {
-            assert(cellpairs.count(fID) == 1);
-            Index i = cellpairs.at(fID).i;
-            Index j = cellpairs.at(fID).j;
+            assert(Cellpairs.count(fID) == 1);
+            Index i = Cellpairs.at(fID).i;
+            Index j = Cellpairs.at(fID).j;
             return i == -1 || j == -1;
         }
 
@@ -75,30 +75,30 @@ namespace geometry
         {
             if (is_ghost_face(fID))
                 return false;
-            assert(cellpairs.count(fID) == 1);
-            Index i = cellpairs.at(fID).i;
-            Index j = cellpairs.at(fID).j;
+            assert(Cellpairs.count(fID) == 1);
+            Index i = Cellpairs.at(fID).i;
+            Index j = Cellpairs.at(fID).j;
             return part[i] != part[j];
         }
         bool is_internal_face(Index fID) const
         {
             if (is_ghost_face(fID) || is_part_face(fID))
                 return false;
-            assert(cellpairs.count(fID) == 1);
-            Index i = cellpairs.at(fID).i;
-            Index j = cellpairs.at(fID).j;
+            assert(Cellpairs.count(fID) == 1);
+            Index i = Cellpairs.at(fID).i;
+            Index j = Cellpairs.at(fID).j;
             return part[i] == part[j];
         }
     };
     class FaceGraphLoc : public FaceGraph
     {
         Index my_rank;
-        Vector<PatchInterface> patches_int; /*Local partition patches seen by a local grid*/
+        vector<PatchInterface> patches_interf; /*Local partition patches seen by a local grid*/
 
     public:
         FaceGraphLoc(Index my_rank) : my_rank{my_rank} {}
-        void add_patch_part(PatchInterface p) { patches_int.emplace_back(p); }
-        const Vector<PatchInterface> get_patches_int() const { return patches_int; }
+        void add_patch_part(PatchInterface p) { patches_interf.emplace_back(p); }
+        const vector<PatchInterface> get_patches_interf() const { return patches_interf; }
         //  void add_PatchBoundary(BoundaryType bt, Index begin)
         // {
         //     PatchBoundary p;
@@ -114,13 +114,13 @@ namespace geometry
         Index find_num_ghost_part() const
         {
             Index N_GHOST{0};
-            for (const auto &p : patches_int)
+            for (const auto &p : patches_interf)
                 N_GHOST += p.N_FACES;
             assert(N_GHOST > 0);
             return N_GHOST;
         }
     };
-
+    class Utils;
     class GridCreator
     {
     public:
@@ -138,17 +138,17 @@ namespace geometry
             Need to include details about ghost cells and boundaries.
             Should contain
         }*/
-        // step 5: create Vector<FaceGraphLoc> + vector<vector<Index>> fIDglob2glob + vector<vector<Index>> fIDloc2glob
+        // step 5: create vector<FaceGraphLoc> + vector<vector<Index>> fIDglob2glob + vector<vector<Index>> fIDloc2glob
         // details:
         /*{
             //Need to contain the following: first all internal faces, second all partition faces (grouped), third all
             ghost faces (grouped)
         }*/
-        // step 6: create Vector<primal_grid_loc> (including surface elements). Input: Primal grid, one of the face graph and utils
+        // step 6: create vector<primal_grid_loc> (including surface elements). Input: Primal grid, one of the face graph and utils
         //(Will need nID conversion)
         // Also: vector<Index> eIDglob2loc + vector<Index> eIDloc2glob +
         //                                          vector<vector<Index>> nIDglob2glob + vector<vector<Index>> nIDloc2glob
-        // step 7: create Vector<FV_grid_loc>. Input: FaceGraphLoc and utils. details:
+        // step 7: create vector<FV_grid_loc>. Input: FaceGraphLoc and utils. details:
         /*{
             //Create each one simply from FaceGraphLoc, get the correct faces by using e_faces, fIDloc2glob and nIDglob2loc
         }*/
@@ -171,23 +171,23 @@ namespace geometry
                                                                FaceGraphGlob &face_graph,
                                                                Utils &utils);
         /*Step 5*/
-        static Vector<FaceGraphLoc> create_local_face_graphs(FaceGraphGlob face_graph,
+        static vector<FaceGraphLoc> create_local_face_graphs(FaceGraphGlob face_graph,
                                                              Utils &utils);
         /*Step 6*/
         static void create_local_primal_grids(const PrimalGrid &primal_grid,
-                                              const Vector<FaceGraphLoc> &face_graphs_loc,
+                                              const vector<FaceGraphLoc> &face_graphs_loc,
                                               const Utils &utils,
-                                              Vector<unique_ptr<PrimalGrid>> &primal_grids_loc);
+                                              vector<unique_ptr<PrimalGrid>> &primal_grids_loc);
         /*Step 7*/
-        static void create_local_FV_grids(const Vector<FaceGraphLoc> &face_graphs_loc,
-                                          Vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
+        static void create_local_FV_grids(const vector<FaceGraphLoc> &face_graphs_loc,
+                                          vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
                                           const Utils &utils,
-                                          Vector<unique_ptr<FV_Grid>> &FV_grids_loc);
+                                          vector<unique_ptr<FV_Grid>> &FV_grids_loc);
 
         /*Step 8*/
         static void send_recv_grids(Config &config,
-                                    Vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
-                                    Vector<unique_ptr<FV_Grid>> &FV_grids_loc,
+                                    vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
+                                    vector<unique_ptr<FV_Grid>> &FV_grids_loc,
                                     unique_ptr<PrimalGrid> &primal_grid,
                                     unique_ptr<FV_Grid> &FV_grid);
 
@@ -196,8 +196,8 @@ namespace geometry
         --------------------------------------------------------------------*/
         /*Reorders faces in a more optimal fashion*/
         static void reorder_face_enitities(Index num_interior_faces,
-                                           const Vector<PatchInterface> &patches_int,
-                                           const Vector<PatchBoundary> &patches_ext,
+                                           const vector<PatchInterface> &patches_int,
+                                           const vector<PatchBoundary> &patches_ext,
                                            Faces &faces,
                                            Elements &face_elements);
 
@@ -212,16 +212,16 @@ namespace geometry
 
     class Utils
     {
-        Vector<Index> eIDglob2loc_;
-        Vector<map<Index, Index>> fIDglob2loc_;
-        Vector<map<Index, Index>> fIDloc2glob_;
-        Vector<map<Index, Index>> nIDglob2loc_;
-        Vector<map<Index, Index>> nIDloc2glob_;
-        Vector<pair<Index, Index>> part2e_range_;
-        const Vector<ShortIndex> &part;
+        vector<Index> eIDglob2loc_;
+        vector<map<Index, Index>> fIDglob2loc_;
+        vector<map<Index, Index>> fIDloc2glob_;
+        vector<map<Index, Index>> nIDglob2loc_;
+        vector<map<Index, Index>> nIDloc2glob_;
+        vector<pair<Index, Index>> part2e_range_;
+        const vector<ShortIndex> &part;
 
     public:
-        Utils(const Vector<ShortIndex> &part) : part{part} {}
+        Utils(const vector<ShortIndex> &part) : part{part} {}
         Index eIDglob2loc(Index eIDglob) const
         {
             assert(eIDglob2loc_.size() > 0);
@@ -269,15 +269,13 @@ namespace geometry
         }
         ShortIndex e2r(Index eID) const { return part[eID]; }
 
-        Vector<pair<Index, Index>> part2e_range_;
-
         const map<Index, Index> &get_nIDglob2loc(ShortIndex r) const { return nIDglob2loc_[r]; }
 
-        void set_eIDglob2loc(Vector<Index> &&eIDglob2loc) { eIDglob2loc_ = move(eIDglob2loc); }
-        void set_fIDglob2loc(Vector<map<Index, Index>> &&fIDglob2loc) { fIDglob2loc_ = move(fIDglob2loc); }
-        void set_fIDloc2glob(Vector<map<Index, Index>> &&fIDloc2glob) { fIDloc2glob_ = move(fIDloc2glob); }
-        void set_nIDglob2loc(Vector<map<Index, Index>> &&nIDglob2loc) { nIDglob2loc_ = move(nIDglob2loc); }
-        void set_nIDloc2glob(Vector<map<Index, Index>> &&nIDloc2glob) { nIDloc2glob_ = move(nIDloc2glob); }
-        void set_part2e_range(Vector<pair<Index, Index>> &&part2e_range) { part2e_range_ = move(part2e_range); }
+        void set_eIDglob2loc(vector<Index> &&eIDglob2loc) { eIDglob2loc_ = move(eIDglob2loc); }
+        void set_fIDglob2loc(vector<map<Index, Index>> &&fIDglob2loc) { fIDglob2loc_ = move(fIDglob2loc); }
+        void set_fIDloc2glob(vector<map<Index, Index>> &&fIDloc2glob) { fIDloc2glob_ = move(fIDloc2glob); }
+        void set_nIDglob2loc(vector<map<Index, Index>> &&nIDglob2loc) { nIDglob2loc_ = move(nIDglob2loc); }
+        void set_nIDloc2glob(vector<map<Index, Index>> &&nIDloc2glob) { nIDloc2glob_ = move(nIDloc2glob); }
+        void set_part2e_range(vector<pair<Index, Index>> &&part2e_range) { part2e_range_ = move(part2e_range); }
     };
 }

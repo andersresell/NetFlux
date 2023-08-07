@@ -15,9 +15,9 @@ namespace geometry
         friend class FV_Grid;
         friend class GridCreator;
         /*These are read from the input mesh*/
-        Vector<Vec3> nodes;
+        vector<Vec3> nodes;
         Elements vol_elements;
-        Vector<ElementPatch> element_patches;
+        vector<ElementPatch> element_patches;
         Elements face_elements;        /*Storing elements of all faces*/
         const Index eID_glob_first{0}; /*global element index of first element*/
 
@@ -29,10 +29,10 @@ namespace geometry
         /*Reads mesh file*/
         PrimalGrid(const Config &config);
         /*Is constructed from existing mesh properties*/
-        PrimalGrid(Vector<Vec3> &&nodes, Elements &&vol_elements, Vector<ElementPatch> &&element_patches, Index eID_glob_first);
+        PrimalGrid(vector<Vec3> &&nodes, Elements &&vol_elements, vector<ElementPatch> &&element_patches, Index eID_glob_first);
 
-        const Vector<Vec3> &get_nodes() const { return nodes; }
-        Vector<Vec3> &get_nodes() { return nodes; }
+        const vector<Vec3> &get_nodes() const { return nodes; }
+        vector<Vec3> &get_nodes() { return nodes; }
 
         const Elements &get_vol_elements() const { return vol_elements; }
         Elements &get_vol_elements() { return vol_elements; }
@@ -40,8 +40,8 @@ namespace geometry
         const Elements &get_face_elements() const { return face_elements; }
         Elements &get_face_elements() { return face_elements; }
 
-        const Vector<ElementPatch> &get_element_patches() const { return element_patches; }
-        Vector<ElementPatch> &get_element_patches() { return element_patches; }
+        const vector<ElementPatch> &get_element_patches() const { return element_patches; }
+        vector<ElementPatch> &get_element_patches() { return element_patches; }
 
         Index get_eID_global_first() const { return eID_glob_first; }
 

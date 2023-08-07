@@ -77,7 +77,7 @@ namespace geometry
                volume_element_type == ElementType::Wedge);
         assert(face_k <= get_num_faces_volume_element(volume_element_type));
         ElementType face_element_type;
-        Array<Index, MAX_NODES_FACE_ELEMENT> face_element;
+        array<Index, MAX_NODES_FACE_ELEMENT> face_element;
 
         if (volume_element_type == ElementType::Tetrahedron)
             get_face_element_k_of_tetrahedron(volume_element, face_k, face_element_type, face_element);
@@ -94,7 +94,7 @@ namespace geometry
     void get_face_element_k_of_tetrahedron(const Index *ve,
                                            ShortIndex face_k,
                                            ElementType &face_element_type,
-                                           Array<Index, MAX_NODES_FACE_ELEMENT> &fe)
+                                           array<Index, MAX_NODES_FACE_ELEMENT> &fe)
     {
         assert(face_k < N_FACES_TET);
         face_element_type = ElementType::Triangle;
@@ -130,7 +130,7 @@ namespace geometry
     void get_face_element_k_of_hexahedron(const Index *ve,
                                           ShortIndex face_k,
                                           ElementType &face_element_type,
-                                          Array<Index, MAX_NODES_FACE_ELEMENT> &fe)
+                                          array<Index, MAX_NODES_FACE_ELEMENT> &fe)
     {
         assert(face_k < N_FACES_HEX);
         face_element_type = ElementType::Quadrilateral;
@@ -180,7 +180,7 @@ namespace geometry
     void get_face_element_k_of_pyramid(const Index *ve,
                                        ShortIndex face_k,
                                        ElementType &face_element_type,
-                                       Array<Index, MAX_NODES_FACE_ELEMENT> &fe)
+                                       array<Index, MAX_NODES_FACE_ELEMENT> &fe)
     {
         assert(face_k < N_FACES_PYRAMID);
         face_element_type = (face_k == 0) ? ElementType::Quadrilateral : ElementType::Triangle;
@@ -219,7 +219,7 @@ namespace geometry
     void get_face_element_k_of_wedge(const Index *ve,
                                      ShortIndex face_k,
                                      ElementType &face_element_type,
-                                     Array<Index, MAX_NODES_FACE_ELEMENT> &fe)
+                                     array<Index, MAX_NODES_FACE_ELEMENT> &fe)
     {
         assert(face_k < N_FACES_WEDGE);
         if (face_k == 0)
@@ -264,7 +264,7 @@ namespace geometry
 
     void volume_element_calc_geometry_properties(ElementType e_type,
                                                  const Index *element,
-                                                 const Vector<Vec3> &nodes,
+                                                 const vector<Vec3> &nodes,
                                                  Scalar &volume,
                                                  Vec3 &centroid)
     {
@@ -284,7 +284,7 @@ namespace geometry
                                            nodes[element[4]], nodes[element[5]], volume, centroid);
     }
 
-    void face_element_calc_centroid(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &centroid)
+    void face_element_calc_centroid(ElementType e_type, const Index *element, const vector<Vec3> &nodes, Vec3 &centroid)
     {
         assert(e_type == ElementType::Triangle || e_type == ElementType::Quadrilateral);
         if (e_type == ElementType::Triangle)
@@ -293,7 +293,7 @@ namespace geometry
             quadrilateral_calc_centroid(nodes[element[0]], nodes[element[1]], nodes[element[2]], nodes[element[3]], centroid);
     }
 
-    void face_element_calc_face_normal(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &S_ij)
+    void face_element_calc_face_normal(ElementType e_type, const Index *element, const vector<Vec3> &nodes, Vec3 &S_ij)
     {
         assert(e_type == ElementType::Triangle || e_type == ElementType::Quadrilateral);
         if (e_type == ElementType::Triangle)
@@ -483,7 +483,7 @@ namespace geometry
         assert(begin < end && end <= cell_indices.size());
         assert(face_elements_to_sort.size() == begin);
 
-        Vector<Index> indices(end - begin);
+        vector<Index> indices(end - begin);
         for (Index i{begin}; i < end; i++)
             indices[i - begin] = i;
 
@@ -491,10 +491,10 @@ namespace geometry
                   { return cell_indices[a] < cell_indices[b]; });
 
         /*Copying all content of faces in the range [begin, end) */
-        const Vector<CellPair> cell_indices_copy(cell_indices.begin() + begin, cell_indices.begin() + end);
-        const Vector<Vec3> face_normals_copy(face_normals.begin() + begin, face_normals.begin() + end);
-        const Vector<Vec3> centroid_to_face_i_copy(centroid_to_face_i.begin() + begin, centroid_to_face_i.begin() + end);
-        const Vector<Vec3> centroid_to_face_j_copy(centroid_to_face_j.begin() + begin, centroid_to_face_j.begin() + end);
+        const vector<Cellpair> cell_indices_copy(cell_indices.begin() + begin, cell_indices.begin() + end);
+        const vector<Vec3> face_normals_copy(face_normals.begin() + begin, face_normals.begin() + end);
+        const vector<Vec3> centroid_to_face_i_copy(centroid_to_face_i.begin() + begin, centroid_to_face_i.begin() + end);
+        const vector<Vec3> centroid_to_face_j_copy(centroid_to_face_j.begin() + begin, centroid_to_face_j.begin() + end);
 
         for (Index i{begin}; i < end; i++)
         {

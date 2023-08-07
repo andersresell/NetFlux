@@ -2,7 +2,7 @@
 
 clear
 
-FLAGS="-g -Wall -std=c++20  -I/usr/include/x86_64-linux-gnu/openmpi -L/usr/lib/x86_64-linux-gnu/openmpi/lib/ -lmpi -lyaml-cpp -lboost_serialization"
+FLAGS="-g -Wall -lyaml-cpp -lboost_serialization -D_GLIBCXX_DEBUG"
 
 
 g++ -o test test1.cpp $FLAGS

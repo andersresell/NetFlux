@@ -3,11 +3,11 @@
 namespace geometry
 {
 
-    FV_Grid::FV_Grid(Cells &&cells, Faces &&faces, Vector<PatchBoundary> &&patches, Vector<PartitionPatchBoundary> &&partition_patches)
+    // FV_Grid::FV_Grid(Cells &&cells, Faces &&faces, vector<PatchBoundary> &&patches_bound, vector<PatchInterface> &&partition_patchespatches_interf)
 
-        : cells{cells}, faces{faces}, patches{patches}, partition_patches{partition_patches}
-    {
-    }
+    //     : cells{cells}, faces{faces}, patches_bound{patches_bound}, patches_interf{patches_interf}
+    // {
+    // }
 
     // FV_Grid::FV_Grid(Config &config, PrimalGrid &primal_grid)
     // {
@@ -27,10 +27,10 @@ namespace geometry
     to it's two neigbour cells). Additionally it saves the element nodes of each face.*/
     // void FV_Grid::create_face_structure(Config &config, PrimalGrid &primal_grid)
     // {
-    //     const Vector<Vec3> &nodes = primal_grid.get_nodes();
+    //     const vector<Vec3> &nodes = primal_grid.get_nodes();
     //     const Elements &vol_elements = primal_grid.get_vol_elements();
     //     Elements &face_elements = primal_grid.get_face_elements();
-    //     const Vector<ElementPatch> &element_patches = primal_grid.get_element_patches();
+    //     const vector<ElementPatch> &element_patches = primal_grid.get_element_patches();
 
     //     /*--------------------------------------------------------------------
     //     Step 1: Create all cells from elements.
@@ -168,15 +168,15 @@ namespace geometry
     {
         cout << "Assigning geometrical properties to cells and faces.\n";
 
-        const Vector<Vec3> &nodes = primal_grid.get_nodes();
+        const vector<Vec3> &nodes = primal_grid.get_nodes();
         const Elements &vol_elements = primal_grid.get_vol_elements();
         const Elements &face_elements = primal_grid.get_face_elements();
 
-        assert(config.get_N_INTERIOR_CELLS_LOC() == vol_elements.size());
-        assert(config.get_N_TOTAL_FACES_LOC() == face_elements.size());
-        assert(config.get_N_TOTAL_CELLS_LOC() == cells.size());
+        assert(config.get_N_CELLS_INT() == vol_elements.size());
+        assert(config.get_N_FACES_TOT() == face_elements.size());
+        assert(config.get_N_CELLS_TOT() == cells.size());
 
-        Index N_INTERIOR_CELLS = config.get_N_INTERIOR_CELLS_LOC();
+        Index N_INTERIOR_CELLS = config.get_N_CELLS_INT();
 
         /*Calculate properties for the cells*/
         for (Index i{0}; i < N_INTERIOR_CELLS; i++)
@@ -188,7 +188,7 @@ namespace geometry
         Index max_j{0}; // For consistency checking
 
         /*Loop over all faces to assign face normals cell-centroid-to-face-centroid vectors and ghost centroid */
-        for (Index ij{0}; ij < config.get_N_TOTAL_FACES_LOC(); ij++)
+        for (Index ij{0}; ij < config.get_N_FACES_TOT(); ij++)
         {
             Index i = faces.get_cell_i(ij);
             Index j = faces.get_cell_j(ij);
@@ -213,30 +213,30 @@ namespace geometry
                                  faces.centroid_to_face_j[ij]);
         }
         assert(max_j == config.get_N_CELLS_TOT() - 1);
-        /*Remember to never make an assertion like this: max_i == config.get_N_INTERIOR_CELLS() - 1.
+        /*Remember to never make an assertion like this: max_i == config.get_N_CELLS_INT() - 1.
          the max value of i may be lower than N_INTERIOR CELLS-1*/
     }
 
     Index FV_Grid::find_num_ghost_ext() const
     {
         Index N_GHOST{0};
-        for (const auto &p : pacthes_ext)
-            N_GHOST += ext_PatchBoundary.N_FACES;
+        for (const auto &p : patches_bound)
+            N_GHOST += p.N_FACES;
         assert(N_GHOST > 0);
         return N_GHOST;
     }
     Index FV_Grid::find_num_ghost_part() const
     {
         Index N_GHOST{0};
-        for (const auto &p : patches_int)
-            N_GHOST += pacthes_part.N_FACES;
+        for (const auto &p : patches_interf)
+            N_GHOST += p.N_FACES;
         assert(N_GHOST > 0);
         return N_GHOST;
     }
 
     void FV_Grid::calc_face_properties(ElementType e_type,
                                        const Index *element,
-                                       const Vector<Vec3> &nodes,
+                                       const vector<Vec3> &nodes,
                                        const Vec3 &cell_center_i,
                                        const Vec3 &cell_center_j,
                                        Vec3 &S_ij,
@@ -256,7 +256,7 @@ namespace geometry
 
     void FV_Grid::calc_ghost_centroid(ElementType boundary_e_type,
                                       const Index *boundary_element,
-                                      const Vector<Vec3> &nodes,
+                                      const vector<Vec3> &nodes,
                                       const Vec3 &centroid_i,
                                       Vec3 &centroid_ghost)
     {
@@ -272,7 +272,7 @@ namespace geometry
         cout << "CELLS:\n";
         for (Index i{0}; i < cells.size(); i++)
         {
-            if (i >= config.get_N_INTERIOR_CELLS_LOC())
+            if (i >= config.get_N_CELLS_INT())
                 cout << "GHOST, ";
             cout << cells.to_string(i) << endl;
         }
@@ -282,9 +282,9 @@ namespace geometry
             cout << faces.to_string(ij) << ", Element: " << face_elements.to_string(ij) << endl;
 
         cout << "\n\npatches:\n";
-        for (const auto &PatchBoundary : patches)
+        for (const auto &p : patches_bound)
         {
-            cout << "PatchBoundary type: " << (int)PatchBoundary.boundary_type << "\nFIRST FACE: " << PatchBoundary.FIRST_FACE << "\nN_FACES: " << PatchBoundary.N_FACES << "\n\n";
+            cout << "PatchBoundary type: " << (int)p.boundary_type << "\nFIRST FACE: " << p.FIRST_FACE << "\nN_FACES: " << p.N_FACES << "\n\n";
         }
     }
 }

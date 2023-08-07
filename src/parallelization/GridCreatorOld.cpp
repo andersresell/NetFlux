@@ -18,15 +18,15 @@ namespace geometry
         const ShortIndex num_procs = NF_MPI::get_size();
         const ShortIndex rank = NF_MPI::get_rank();
 
-        Vector<unique_ptr<PrimalGrid>> primal_grids_loc(num_procs);
-        Vector<unique_ptr<FV_Grid>> FV_grids_loc(num_procs);
+        vector<unique_ptr<PrimalGrid>> primal_grids_loc(num_procs);
+        vector<unique_ptr<FV_Grid>> FV_grids_loc(num_procs);
 
         if (rank == 0)
         {
             primal_grid_glob = make_unique<PrimalGrid>(config);
-            const Vector<Index> part = NF_METIS::calc_element_partition(*primal_grid_glob, num_procs);
-            Vector<pair<Index, Index>> part_to_element_range;
-            Vector<Index> eID_glob_to_loc;
+            const vector<Index> part = NF_METIS::calc_element_partition(*primal_grid_glob, num_procs);
+            vector<pair<Index, Index>> part_to_element_range;
+            vector<Index> eID_glob_to_loc;
             reorder_global_grid(part, *primal_grid_glob, part_to_element_range, eID_glob_to_loc);
 
             map<FaceElement, pair<Index, long int>> faces_to_cells_glob;
@@ -41,8 +41,8 @@ namespace geometry
                                         internal_ghost_faces,
                                         part);
 
-            Vector<map<Index, Index>> nID_glob_to_loc_vec(num_procs);
-            Vector<map<Index, Index>> nID_loc_to_glob_vec(num_procs);
+            vector<map<Index, Index>> nID_glob_to_loc_vec(num_procs);
+            vector<map<Index, Index>> nID_loc_to_glob_vec(num_procs);
 
             /*--------------------------------------------------------------------
             Build local primal grids from global primal grid (and some addressing
@@ -52,8 +52,8 @@ namespace geometry
             for (Index r_loc{0}; r_loc < num_procs; r_loc++)
             {
                 Elements vol_elements_loc;
-                Vector<Vec3> nodes_loc;
-                Vector<ElementPatch> element_patches_loc;
+                vector<Vec3> nodes_loc;
+                vector<ElementPatch> element_patches_loc;
 
                 create_primal_grid_local(primal_grid_glob->get_vol_elements(),
                                          primal_grid_glob->get_nodes(),
@@ -102,10 +102,10 @@ namespace geometry
 
     /*Reordering volume elements of primal grid so that the elements within each partition are clustered
     together*/
-    void GridCreator::reorder_global_grid(const Vector<Index> &part,
+    void GridCreator::reorder_global_grid(const vector<Index> &part,
                                           PrimalGrid &primal_grid,
-                                          Vector<pair<Index, Index>> &part_to_element_range,
-                                          Vector<Index> &eID_glob_to_loc)
+                                          vector<pair<Index, Index>> &part_to_element_range,
+                                          vector<Index> &eID_glob_to_loc)
     {
         assert(NF_MPI::get_rank() == 0);
         ShortIndex num_procs = NF_MPI::get_size();
@@ -142,11 +142,11 @@ namespace geometry
     }
 
     void GridCreator::create_global_face_entities(const Elements &vol_elements_glob,
-                                                  const Vector<ElementPatch> &element_patches,
+                                                  const vector<ElementPatch> &element_patches,
                                                   map<FaceElement, pair<Index, long int>> &faces_to_cells_glob,
                                                   Elements &face_elements_glob,
                                                   map<FaceElement, GhostDataPartition> &internal_boundary_faces,
-                                                  const Vector<Index> &part)
+                                                  const vector<Index> &part)
     {
         assert(NF_MPI::get_rank() == 0);
 
@@ -232,22 +232,22 @@ namespace geometry
     }
 
     void GridCreator::create_primal_grid_local(const Elements &vol_elements_glob,
-                                               const Vector<Vec3> &nodes_glob,
-                                               const Vector<ElementPatch> &element_patches_glob,
+                                               const vector<Vec3> &nodes_glob,
+                                               const vector<ElementPatch> &element_patches_glob,
                                                Index r_loc,
-                                               const Vector<pair<Index, Index>> &part_to_element_range,
-                                               const Vector<Index> &part,
+                                               const vector<pair<Index, Index>> &part_to_element_range,
+                                               const vector<Index> &part,
                                                unique_ptr<PrimalGrid> &primal_grid_loc,
-                                               Vector<Index> &eID_glob_to_loc,
+                                               vector<Index> &eID_glob_to_loc,
                                                map<Index, Index> &nID_glob_to_loc,
                                                map<Index, Index> &nID_loc_to_glob)
     {
 
         assert(NF_MPI::get_rank() == 0);
 
-        Vector<Vec3> nodes_loc;
+        vector<Vec3> nodes_loc;
         Elements vol_elements_loc;
-        Vector<ElementPatch> element_patches_loc;
+        vector<ElementPatch> element_patches_loc;
 
         assert(part.size() == vol_elements_glob.size());
         assert(vol_elements_loc.size() == 0);
@@ -374,17 +374,17 @@ namespace geometry
                                            PrimalGrid &primal_grid_loc,
                                            map<FaceElement, GhostDataPartition> const &internal_boundary_faces_glob)
     {
-        const Vector<Vec3> &nodes_loc = primal_grid_loc.get_nodes();
+        const vector<Vec3> &nodes_loc = primal_grid_loc.get_nodes();
         const Elements &vol_elements_loc = primal_grid_loc.get_vol_elements();
         Elements &face_elements_loc = primal_grid_loc.get_face_elements();
         assert(face_elements_loc.size() == 0);
-        const Vector<ElementPatch> &element_patches_loc = primal_grid_loc.get_element_patches();
+        const vector<ElementPatch> &element_patches_loc = primal_grid_loc.get_element_patches();
 
         Cells cells_loc;
         Faces faces_loc;
         faces_loc.reserve(1.5 * faces_to_cells_glob.size() / NF_MPI::get_size()); // Guesstimate
-        Vector<PatchBoundary> patches_loc;
-        Vector<PartitionPatchBoundary> part_patches_loc;
+        vector<PatchBoundary> patches_loc;
+        vector<PartitionPatchBoundary> part_patches_loc;
 
         /*--------------------------------------------------------------------
         Adding internal faces first
@@ -532,8 +532,8 @@ namespace geometry
     }
 
     void GridCreator::reorder_face_enitities(Index num_interior_faces,
-                                             const Vector<PartitionPatchBoundary> &partition_patches,
-                                             const Vector<PatchBoundary> &patches,
+                                             const vector<PartitionPatchBoundary> &partition_patches,
+                                             const vector<PatchBoundary> &patches,
                                              Faces &faces,
                                              Elements &face_elements)
     {
@@ -563,8 +563,8 @@ namespace geometry
     /*Uses MPI to copy all the local PrimalGrids and FV_Grids from rank 0 to the other ranks, it
     also sets various data in config objects*/
     void GridCreator::send_recv_grids(Config &config,
-                                      Vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
-                                      Vector<unique_ptr<FV_Grid>> &FV_grids_loc,
+                                      vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
+                                      vector<unique_ptr<FV_Grid>> &FV_grids_loc,
                                       unique_ptr<PrimalGrid> &primal_grid,
                                       unique_ptr<FV_Grid> &FV_grid)
     {

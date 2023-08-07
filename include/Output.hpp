@@ -10,14 +10,14 @@ class Output
 private:
     const geometry::PrimalGrid &primal_grid_glob;
     const geometry::PrimalGrid &primal_grid;
-    const Vector<unique_ptr<Solver>> &solvers;
-    Vector<unique_ptr<VecField>> consvars_glob;
+    const vector<unique_ptr<Solver>> &solvers;
+    vector<unique_ptr<VecField>> consvars_glob;
     void write_vtk_ascii_grid(const Config &config, const string &filename);
 
 public:
     Output(const geometry::PrimalGrid &primal_grid_glob,
            const geometry::PrimalGrid &primal_grid,
-           const Vector<unique_ptr<Solver>> &solvers,
+           const vector<unique_ptr<Solver>> &solvers,
            const Config &config);
     void write_vtk_ascii(const Config &config);
     void write_vtk_ascii_debug(const Config &config, const string &filename);

@@ -63,7 +63,7 @@ namespace boost
 using namespace std;
 int main()
 {
-    Array<int, 3> arr{1, 2, 3};
+    array<int, 3> arr{1, 2, 3};
     int a = 1;
     for (size_t i{0}; i < 10; i++)
         arr[i] = i * i;

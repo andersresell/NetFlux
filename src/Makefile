@@ -9,7 +9,7 @@ CXX = mpic++ #MPI compiler wrapper (automatically includes headers and libraries
 INC_DIR = ../include
 
 CXX_FLAGS_ALL = -Wall -Wno-unused-function -std=c++20 -fmax-errors=1 #-I$(INC_DIR)
-CXX_FLAGS_DEBUG = $(CXX_FLAGS_ALL) -g
+CXX_FLAGS_DEBUG = $(CXX_FLAGS_ALL) -g -D_GLIBCXX_CONCEPT_CHECKS -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC
 CXX_FLAGS_RELEASE = $(CXX_FLAGS_ALL) -DNDEBUG -O3 -flto 
  
 #external libraries
@@ -28,8 +28,10 @@ SRC = NetFlux.cpp \
 	  Driver.cpp \
 	  SolverData.cpp \
 	  Numerics.cpp \
+	  parallelization/GridCreator.cpp \
 	  parallelization/MPI_Wrapper.cpp \
-	  parallelization/DomainDecomposition.cpp
+	  parallelization/MetisWrapper.cpp \
+	  parallelization/Communicator.cpp \
 
 OBJ_DEBUG = $(patsubst %.cpp, $(BUILD_DIR_DEBUG)/%.o, $(SRC)) 
 OBJ_RELEASE = $(patsubst %.cpp, $(BUILD_DIR_RELEASE)/%.o, $(SRC)) 

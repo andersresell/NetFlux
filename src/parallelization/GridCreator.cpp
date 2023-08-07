@@ -10,15 +10,15 @@ namespace geometry
         const ShortIndex size = NF_MPI::get_size();
         const ShortIndex rank = NF_MPI::get_rank();
 
-        Vector<unique_ptr<PrimalGrid>> primal_grids_loc(size);
-        Vector<unique_ptr<FV_Grid>> FV_grids_loc(size);
+        vector<unique_ptr<PrimalGrid>> primal_grids_loc(size);
+        vector<unique_ptr<FV_Grid>> FV_grids_loc(size);
 
         if (rank == 0)
         {
             /*Step 1*/
             primal_grid_glob = make_unique<PrimalGrid>(config);
             /*Step 2*/
-            const Vector<ShortIndex> part = NF_METIS::calc_element_partition(*primal_grid_glob, size);
+            const vector<ShortIndex> part = NF_METIS::calc_element_partition(*primal_grid_glob, size);
             Utils utils{part};
 
             /*Step 3*/
@@ -33,7 +33,7 @@ namespace geometry
                                                        utils);
 
             /*Step 5*/
-            Vector<FaceGraphLoc> face_graphs_loc = create_local_face_graphs(face_graph_glob,
+            vector<FaceGraphLoc> face_graphs_loc = create_local_face_graphs(face_graph_glob,
                                                                             utils);
 
             /*Step 6*/
@@ -64,11 +64,11 @@ namespace geometry
     {
         assert(NF_MPI::get_rank() == 0);
         ShortIndex num_procs = NF_MPI::get_size();
-        Vector<pair<Index, Index>> part2e_range(num_procs);
+        vector<pair<Index, Index>> part2e_range(num_procs);
 
         Elements &vol_elements_old = primal_grid.get_vol_elements();
         Index n_elem = vol_elements_old.size();
-        Vector<Index> eIDglob2loc(n_elem);
+        vector<Index> eIDglob2loc(n_elem);
         Elements vol_elements_new;
         vol_elements_new.reserve(n_elem, MAX_NODES_VOLUME_ELEMENT);
         for (ShortIndex r_loc{0}; r_loc < num_procs; r_loc++)
@@ -108,9 +108,9 @@ namespace geometry
         assert(face_graph.size() == 0);
         assert(face_elements.size() == 0);
 
-        const Vector<Vec3> &nodes = primal_grid.get_nodes();
+        const vector<Vec3> &nodes = primal_grid.get_nodes();
         const Elements &vol_elements = primal_grid.get_vol_elements();
-        const Vector<ElementPatch> &element_patches = primal_grid.get_element_patches();
+        const vector<ElementPatch> &element_patches = primal_grid.get_element_patches();
 
         /*--------------------------------------------------------------------
         Associate the face nodes with its two neighboring cells.
@@ -177,7 +177,7 @@ namespace geometry
             p.boundary_type = config.get_boundary_type(e_patch.patch_name);
             p.FIRST_FACE = face_graph.size();
             p.N_FACES = e_patch.boundary_elements.size();
-            face_graph.add_patch_ext(p);
+            face_graph.add_patch_bound(p);
 
             const Elements &surface_elements = e_patch.boundary_elements;
             for (Index ij{0}; ij < surface_elements.size(); ij++)
@@ -198,21 +198,21 @@ namespace geometry
     }
 
     /*Step 5*/
-    Vector<FaceGraphLoc> GridCreator::create_local_face_graphs(FaceGraphGlob face_graph_glob,
+    vector<FaceGraphLoc> GridCreator::create_local_face_graphs(FaceGraphGlob face_graph_glob,
                                                                Utils &utils)
     {
         const ShortIndex size = NF_MPI::get_size();
-        Vector<FaceGraphLoc> face_graphs_loc;
+        vector<FaceGraphLoc> face_graphs_loc;
         for (ShortIndex r{0}; r < size; r++)
             face_graphs_loc.emplace_back(r);
 
-        Vector<map<Index, Index>> fIDglob2loc(size);
-        Vector<map<Index, Index>> fIDloc2glob(size);
+        vector<map<Index, Index>> fIDglob2loc(size);
+        vector<map<Index, Index>> fIDloc2glob(size);
 
         /*--------------------------------------------------------------------
         Add internal faces
         --------------------------------------------------------------------*/
-        for (const auto &kv : face_graph_glob.get_cellpairs())
+        for (const auto &kv : face_graph_glob.get_Cellpairs())
         {
             Index fID = kv.first;
             if (face_graph_glob.is_internal_face(fID))
@@ -235,11 +235,11 @@ namespace geometry
         --------------------------------------------------------------------*/
         for (ShortIndex r_shared{0}; r_shared < size; r_shared++) /*Outer loop makes sure that faces of each neigbour are grouped together*/
         {
-            Vector<bool> r_shares_r_shared(size, false);
+            vector<bool> r_shares_r_shared(size, false);
             assert(r_shares_r_shared.back() == false); // just checking that this is actually a vector of false
-            Vector<PatchInterface> patches_int_r(size);
+            vector<PatchInterface> patches_int_r(size);
 
-            for (const auto &kv : face_graph_glob.get_cellpairs())
+            for (const auto &kv : face_graph_glob.get_Cellpairs())
             {
                 Index fID = kv.first;
                 if (face_graph_glob.is_part_face(fID))
@@ -301,9 +301,9 @@ namespace geometry
             Index first = p.FIRST_FACE;
             Index n_faces = p.N_FACES;
 
-            Vector<bool> rank_shares_patch(size, false);
+            vector<bool> rank_shares_patch(size, false);
             assert(rank_shares_patch.back() == false); // just checking that this is actually a vector of false
-            Vector<PatchBoundary> patches_ext_r(size);
+            vector<PatchBoundary> patches_ext_r(size);
 
             for (Index fID{first}; fID < n_faces; fID++)
             {
@@ -327,7 +327,7 @@ namespace geometry
                 if (rank_shares_patch[r])
                 {
                     patches_ext_r[r].N_FACES = face_graphs_loc[r].size() - patches_ext_r[r].FIRST_FACE;
-                    face_graphs_loc[r].add_patch_ext(patches_ext_r[r]);
+                    face_graphs_loc[r].add_patch_bound(patches_ext_r[r]);
                 }
         }
         assert(face_graph_glob.size() == 0); /*Now all global faces should have been removed*/
@@ -335,17 +335,17 @@ namespace geometry
 
     /*Step 6*/
     void GridCreator::create_local_primal_grids(const PrimalGrid &primal_grid,
-                                                const Vector<FaceGraphLoc> &face_graphs_loc,
+                                                const vector<FaceGraphLoc> &face_graphs_loc,
                                                 const Utils &utils,
-                                                Vector<unique_ptr<PrimalGrid>> &primal_grids_loc)
+                                                vector<unique_ptr<PrimalGrid>> &primal_grids_loc)
     {
         assert(NF_MPI::get_rank() == 0);
         const ShortIndex size = NF_MPI::get_size();
 
-        Vector<map<Index, Index>> nIDglob2loc(size);
-        Vector<map<Index, Index>> nIDloc2glob(size);
+        vector<map<Index, Index>> nIDglob2loc(size);
+        vector<map<Index, Index>> nIDloc2glob(size);
 
-        const Vector<Vec3> &nodes = primal_grid.get_nodes();
+        const vector<Vec3> &nodes = primal_grid.get_nodes();
 
         const Elements &e_vol = primal_grid.get_vol_elements();
 
@@ -353,7 +353,7 @@ namespace geometry
         {
             Index r = utils.e2r(i);
             Elements &e_vol_r = primal_grids_loc[r]->get_vol_elements();
-            Vector<Vec3> &nodes_r = primal_grids_loc[r]->get_nodes();
+            vector<Vec3> &nodes_r = primal_grids_loc[r]->get_nodes();
 
             const Index *element = e_vol.get_element_nodes(i);
             ShortIndex num_nodes = e_vol.get_n_element_nodes(i);
@@ -392,7 +392,7 @@ namespace geometry
         {
             Elements &e_faces_r = primal_grids_loc[r]->get_face_elements();
             const FaceGraphLoc &fg_loc = face_graphs_loc[r];
-            for (const auto &kv : fg_loc.get_cellpairs())
+            for (const auto &kv : fg_loc.get_Cellpairs())
             {
                 Index fIDr = kv.first;
                 Index fID = utils.fIDloc2glob(r, fIDr);
@@ -411,15 +411,14 @@ namespace geometry
     }
 
     /*Step 7*/
-    void GridCreator::create_local_FV_grids(const Vector<FaceGraphLoc> &face_graphs_loc,
-                                            Vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
+    void GridCreator::create_local_FV_grids(const vector<FaceGraphLoc> &face_graphs_loc,
+                                            vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
                                             const Utils &utils,
-                                            Vector<unique_ptr<FV_Grid>> &FV_grids_loc)
+                                            vector<unique_ptr<FV_Grid>> &FV_grids_loc)
     {
         assert(NF_MPI::get_rank() == 0);
         const ShortIndex size = NF_MPI::get_size();
-
-        Vector<FV_Grid> FV_grids_loc(size);
+        assert(FV_grids_loc.size() == size);
 
         for (ShortIndex r{0}; r < size; r++)
         {
@@ -436,32 +435,32 @@ namespace geometry
 
             /*Create faces*/
             faces_r.reserve(face_graph_r.size());
-            for (const auto &kv : face_graph_r.get_cellpairs())
+            for (const auto &kv : face_graph_r.get_Cellpairs())
             {
                 Index fID = kv.first;
                 Index i = kv.second.i;
                 Index j = kv.second.j;
-                faces_r.cell_indices.push_back(geometry::Faces::CellPair{i, j});
+                faces_r.cell_indices.push_back(geometry::Faces::Cellpair{i, j});
             }
 
             /*Set external and partition patches*/
-            FV_grid_r.patches_int = face_graph_r.get_patches_int();
-            FV_grid_r.patches_ext = face_graph_r.get_patches_ext();
+            FV_grid_r.patches_interf = face_graph_r.get_patches_interf();
+            FV_grid_r.patches_bound = face_graph_r.get_patches_ext();
 
             /*Reorder faces and face elements*/
             Elements &e_faces_r = primal_grid_r.get_face_elements();
             Index num_interior_faces = faces_r.size() - num_ghost;
             reorder_face_enitities(num_interior_faces,
-                                   FV_grid_r.get_patches_int(),
-                                   FV_grid_r.get_patches_ext(),
+                                   FV_grid_r.get_patches_interface(),
+                                   FV_grid_r.get_patches_boundary(),
                                    faces_r,
                                    e_faces_r);
         }
     }
 
     void GridCreator::reorder_face_enitities(Index num_interior_faces,
-                                             const Vector<PatchInterface> &patches_int,
-                                             const Vector<PatchBoundary> &patches_ext,
+                                             const vector<PatchInterface> &patches_int,
+                                             const vector<PatchBoundary> &patches_ext,
                                              Faces &faces,
                                              Elements &face_elements)
     {
@@ -505,8 +504,8 @@ namespace geometry
     /*Uses MPI to copy all the local PrimalGrids and FV_Grids from rank 0 to the other ranks, it
    also sets various data in config objects*/
     void GridCreator::send_recv_grids(Config &config,
-                                      Vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
-                                      Vector<unique_ptr<FV_Grid>> &FV_grids_loc,
+                                      vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
+                                      vector<unique_ptr<FV_Grid>> &FV_grids_loc,
                                       unique_ptr<PrimalGrid> &primal_grid,
                                       unique_ptr<FV_Grid> &FV_grid)
     {

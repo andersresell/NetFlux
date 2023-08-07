@@ -10,10 +10,10 @@ Solver::Solver(const Config &config, const PrimalGrid &primal_grid, const FV_Gri
 
 void Solver::create_BC_container(const Config &config)
 {
-    for (const auto &PatchBoundary : FV_grid.get_patches())
+    for (const auto &p : FV_grid.get_patches_boundary())
     {
         unique_ptr<BoundaryCondition> BC;
-        switch (PatchBoundary.boundary_type)
+        switch (p.boundary_type)
         {
         case BoundaryType::NoSlipWall:
             BC = make_unique<BC_NoSlipWall>();
@@ -98,7 +98,7 @@ void Solver::explicit_euler(const Config &config)
     Index i, n_eq;
 
     assert(U.get_N_EQS() == solver_data->get_N_EQS() && R.get_N_EQS() == solver_data->get_N_EQS());
-    assert(U.size() == config.get_N_INTERIOR_CELLS() && R.size() == config.get_N_INTERIOR_CELLS());
+    assert(U.size() == config.get_N_CELLS_INT() && R.size() == config.get_N_CELLS_INT());
 
     /*--------------------------------------------------------------------
      U_n+1 = U_n + dt /Omega * R(U_n)
@@ -119,8 +119,8 @@ void Solver::TVD_RK3(const Config &config)
     Index i, n_eq;
 
     assert(U.get_N_EQS() == solver_data->get_N_EQS() && U_old.get_N_EQS() == solver_data->get_N_EQS() && R.get_N_EQS() == solver_data->get_N_EQS());
-    assert(U.size() == config.get_N_INTERIOR_CELLS() && U_old.size() == config.get_N_INTERIOR_CELLS());
-    assert(R.size() == config.get_N_INTERIOR_CELLS());
+    assert(U.size() == config.get_N_CELLS_INT() && U_old.size() == config.get_N_CELLS_INT());
+    assert(R.size() == config.get_N_CELLS_INT());
 
     /*--------------------------------------------------------------------
     U_1 = U_n + dt / Omega * R(U_n)
@@ -183,7 +183,7 @@ EulerSolver::EulerSolver(const Config &config, const geometry::PrimalGrid &prima
     calc_Delta_S(config);
 
     part_comm = make_unique<PartitionComm>(solver_data->get_n_vecfields_sendrecv_max(),
-                                           solver_data->get_n_gradfields_sendrecv_max,
+                                           solver_data->get_n_gradfields_sendrecv_max(),
                                            solver_data->get_N_EQS(),
                                            FV_grid);
 }
@@ -196,12 +196,12 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
     // const GradField& primvars_grad = solver_data->get_primvars_gradient();
     // const VecField& primvars_limiter = solver_data->get_primvars_limiter();
 
-    Index N_INTERIOR_FACES = config.get_N_INTERIOR_FACES();
+    Index N_INTERIOR_FACES = config.get_N_FACES_INT();
     SpatialOrder spatial_order = config.get_spatial_order();
 
     Index i, j;
     const auto &faces = FV_grid.get_faces();
-    const auto &patches = FV_grid.get_patches();
+    const auto &patches = FV_grid.get_patches_boundary();
 
     // InvFluxFunction inv_flux_func = NumericalFlux::get_inviscid_flux_function(config);
 
@@ -282,7 +282,7 @@ void EulerSolver::calc_timestep(Config &config)
         calc_Delta_S(config);
 
     const EulerSolverData &euler_data = dynamic_cast<const EulerSolverData &>(*solver_data);
-    const Vector<Vec3> &Delta_S = euler_data.get_Delta_S();
+    const vector<Vec3> &Delta_S = euler_data.get_Delta_S();
 
     const Scalar CFL = config.get_CFL();
     auto cells = FV_grid.get_cells();
@@ -293,7 +293,7 @@ void EulerSolver::calc_timestep(Config &config)
 
     Scalar delta_time = std::numeric_limits<Scalar>::max(); // Large number
 
-    for (Index i{0}; i < config.get_N_INTERIOR_CELLS(); i++)
+    for (Index i{0}; i < config.get_N_CELLS_INT(); i++)
     {
         const EulerVecMap V = primvars.get_variable<EulerVec>(i);
         c = EulerEqs::sound_speed_primitive(V);
@@ -321,12 +321,12 @@ void EulerSolver::calc_Delta_S(const Config &config)
     const auto &faces = FV_grid.get_faces();
     EulerSolverData &euler_data = dynamic_cast<EulerSolverData &>(*solver_data);
 
-    Vector<Vec3> &Delta_S = euler_data.get_Delta_S();
+    vector<Vec3> &Delta_S = euler_data.get_Delta_S();
     std::fill(Delta_S.begin(), Delta_S.end(), Vec3::Zero());
     Index i, j;
     Vec3 tmp;
 
-    for (Index ij{0}; ij < config.get_N_INTERIOR_FACES(); ij++)
+    for (Index ij{0}; ij < config.get_N_FACES_INT(); ij++)
     {
         i = faces.get_cell_i(ij);
         j = faces.get_cell_j(ij);
@@ -341,7 +341,7 @@ void EulerSolver::calc_Delta_S(const Config &config)
 
 void EulerSolver::set_constant_ghost_values(const Config &config)
 {
-    const auto &patches = FV_grid.get_patches();
+    const auto &patches = FV_grid.get_patches_boundary();
     const auto &faces = FV_grid.get_faces();
     VecField &primvars = solver_data->get_primvars();
     Index i_domain, j_ghost;
@@ -356,7 +356,7 @@ void EulerSolver::set_constant_ghost_values(const Config &config)
         {
             i_domain = faces.get_cell_i(ij);
             j_ghost = faces.get_cell_j(ij);
-            assert(i_domain < config.get_N_INTERIOR_CELLS() && j_ghost >= config.get_N_INTERIOR_CELLS());
+            assert(i_domain < config.get_N_CELLS_INT() && j_ghost >= config.get_N_CELLS_INT());
 
             const Vec3 &S_ij = faces.get_face_normal(ij);
             // primvars.map_to_variable<EulerVec>(j) =

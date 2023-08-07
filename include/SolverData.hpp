@@ -95,7 +95,7 @@ class EulerSolverData : public SolverData
     EulerVec U_L, U_R, V_L, V_R;
     EulerVec Flux_inv;
 
-    Vector<Vec3> Delta_S; // Used in time step computation
+    vector<Vec3> Delta_S; // Used in time step computation
 
 public:
     EulerSolverData(const Config &config);
@@ -112,8 +112,8 @@ public:
 
     EulerVecMap get_empty_map() const { return EulerVecMap(nullptr); }
 
-    Vector<Vec3> &get_Delta_S() { return Delta_S; }
-    const Vector<Vec3> &get_Delta_S() const { return Delta_S; }
+    vector<Vec3> &get_Delta_S() { return Delta_S; }
+    const vector<Vec3> &get_Delta_S() const { return Delta_S; }
 
     void set_primvars(const VecField &cons_vars, const Config &config) final;
 

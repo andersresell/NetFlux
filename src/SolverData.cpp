@@ -46,10 +46,10 @@ EulerSolverData::EulerSolverData(const Config &config) : SolverData(config, N_EQ
 
 void EulerSolverData::set_primvars(const VecField &cons_vars, const Config &config)
 {
-    assert(cons_vars.size() == config.get_N_INTERIOR_CELLS() && primvars->size() == config.get_N_TOTAL_CELLS());
+    assert(cons_vars.size() == config.get_N_CELLS_INT() && primvars->size() == config.get_N_CELLS_TOT());
     assert(cons_vars.get_N_EQS() == primvars->get_N_EQS());
 
-    for (Index i{0}; i < config.get_N_INTERIOR_CELLS(); i++)
+    for (Index i{0}; i < config.get_N_CELLS_INT(); i++)
     {
         const EulerVecMap U = cons_vars.get_variable<EulerVec>(i);
         EulerVecMap V = primvars->get_variable<EulerVec>(i);
@@ -61,7 +61,7 @@ void EulerSolverData::set_freestream_values(const Config &config)
 {
     EulerVec V_inf{config.get_primvars_inf()};
     EulerVec U_inf{};
-    Index first{0}, last{config.get_N_INTERIOR_CELLS()};
+    Index first{0}, last{config.get_N_CELLS_INT()};
     EulerEqs::prim_to_cons(V_inf, U_inf);
     primvars->set_constant_field_segment(V_inf, first, last);
     solution->set_constant_field_segment(U_inf, first, last);
@@ -78,7 +78,7 @@ void ValidityChecker::check_flux_balance_validity(const Config &config, const Ve
     if (!config.check_physical_validity())
         return;
 
-    Index invalid_cells = check_field_validity(flux_balance, 0, config.get_N_INTERIOR_CELLS());
+    Index invalid_cells = check_field_validity(flux_balance, 0, config.get_N_CELLS_INT());
 
     if (invalid_cells > 0)
     {
@@ -162,7 +162,7 @@ Index EulerValidityChecker::check_consvars(const VecField &U, Index first, Index
 
 bool ValidityChecker::valid_primvars_interior(const VecField &V) const
 {
-    if (check_primvars(V, 0, config.get_N_INTERIOR_CELLS()) > 0)
+    if (check_primvars(V, 0, config.get_N_CELLS_INT()) > 0)
     {
         write_debug_info(V);
         return false;
@@ -172,7 +172,7 @@ bool ValidityChecker::valid_primvars_interior(const VecField &V) const
 
 bool ValidityChecker::valid_consvars_interior(const VecField &U) const
 {
-    if (check_consvars(U, 0, config.get_N_INTERIOR_CELLS()) > 0)
+    if (check_consvars(U, 0, config.get_N_CELLS_INT()) > 0)
     {
         write_debug_info(U);
         return false;
@@ -182,7 +182,7 @@ bool ValidityChecker::valid_consvars_interior(const VecField &U) const
 
 bool ValidityChecker::valid_primvars_ghost(const VecField &V) const
 {
-    if (check_consvars(V, config.get_N_INTERIOR_CELLS(), V.size()) > 0)
+    if (check_consvars(V, config.get_N_CELLS_INT(), V.size()) > 0)
     {
         write_debug_info(V);
         return false;
@@ -192,7 +192,7 @@ bool ValidityChecker::valid_primvars_ghost(const VecField &V) const
 
 bool ValidityChecker::valid_consvars_ghost(const VecField &U) const
 {
-    if (check_consvars(U, config.get_N_INTERIOR_CELLS(), U.size()) > 0)
+    if (check_consvars(U, config.get_N_CELLS_INT(), U.size()) > 0)
     {
         write_debug_info(U);
         return false;
@@ -202,7 +202,7 @@ bool ValidityChecker::valid_consvars_ghost(const VecField &U) const
 
 bool ValidityChecker::valid_flux_balance(const VecField &R) const
 {
-    if (check_field_validity(R, 0, config.get_N_INTERIOR_CELLS()) > 0)
+    if (check_field_validity(R, 0, config.get_N_CELLS_INT()) > 0)
     {
         write_debug_info(R);
         return false;
@@ -224,7 +224,7 @@ void ValidityChecker::write_debug_info(const VecField &U, string name) const
             if (j < U.get_N_EQS() - 1)
                 ost << ", ";
         }
-        if (i >= config.get_N_INTERIOR_CELLS())
+        if (i >= config.get_N_CELLS_INT())
             ost << " -G";
         ost << "\n";
     }

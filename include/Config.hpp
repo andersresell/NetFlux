@@ -11,7 +11,7 @@ class Config
 
     static constexpr char MESH_NAME_NO_EXTENSION[] = "mesh";
     static constexpr char OUPUT_DIR[] = "output";
-    static constexpr Array<const char *, 2> valid_mesh_extension = {"su2", "nf"};
+    static constexpr array<const char *, 2> valid_mesh_extensions = {"su2", "nf"};
 
     bool valid_mesh_name(const string &name) const;
 

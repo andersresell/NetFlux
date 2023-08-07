@@ -107,9 +107,9 @@ namespace geometry
         friend class Faces;
 
     protected:
-        Vector<Index> e_ptr = {0};
-        Vector<Index> e_ind;
-        Vector<ElementType> e_types;
+        vector<Index> e_ptr = {0};
+        vector<Index> e_ind;
+        vector<ElementType> e_types;
 
     public:
         Elements() = default;
@@ -117,12 +117,12 @@ namespace geometry
         Elements &operator=(Elements other);
         Index size() const { return e_ptr.size() - 1; }
 
-        const Vector<Index> &get_e_ptr() const { return e_ptr; }
-        const Vector<Index> &get_e_ind() const { return e_ind; }
-        const Vector<ElementType> &get_e_types() const { return e_types; }
-        Vector<Index> &get_e_ptr() { return e_ptr; }
-        Vector<Index> &get_e_ind() { return e_ind; }
-        Vector<ElementType> &get_e_types() { return e_types; }
+        const vector<Index> &get_e_ptr() const { return e_ptr; }
+        const vector<Index> &get_e_ind() const { return e_ind; }
+        const vector<ElementType> &get_e_types() const { return e_types; }
+        vector<Index> &get_e_ptr() { return e_ptr; }
+        vector<Index> &get_e_ind() { return e_ind; }
+        vector<ElementType> &get_e_types() { return e_types; }
 
         void add_element(ElementType e_type, const Index *element)
         {
@@ -195,10 +195,10 @@ namespace geometry
 
     class FaceElement
     {
-        Array<Index, MAX_NODES_FACE_ELEMENT> nodes_sorted;
+        array<Index, MAX_NODES_FACE_ELEMENT> nodes_sorted;
 
     public:
-        Array<Index, MAX_NODES_FACE_ELEMENT> nodes;
+        array<Index, MAX_NODES_FACE_ELEMENT> nodes;
         const ShortIndex n_nodes;
         const ElementType e_type;
 
@@ -240,19 +240,19 @@ namespace geometry
     void get_face_element_k_of_tetrahedron(const Index *ve,
                                            ShortIndex face_k,
                                            ElementType &face_element_type,
-                                           Array<Index, MAX_NODES_FACE_ELEMENT> &fe);
+                                           array<Index, MAX_NODES_FACE_ELEMENT> &fe);
     void get_face_element_k_of_hexahedron(const Index *ve,
                                           ShortIndex face_k,
                                           ElementType &face_element_type,
-                                          Array<Index, MAX_NODES_FACE_ELEMENT> &fe);
+                                          array<Index, MAX_NODES_FACE_ELEMENT> &fe);
     void get_face_element_k_of_pyramid(const Index *ve,
                                        ShortIndex face_k,
                                        ElementType &face_element_type,
-                                       Array<Index, MAX_NODES_FACE_ELEMENT> &fe);
+                                       array<Index, MAX_NODES_FACE_ELEMENT> &fe);
     void get_face_element_k_of_wedge(const Index *ve,
                                      ShortIndex face_k,
                                      ElementType &face_element_type,
-                                     Array<Index, MAX_NODES_FACE_ELEMENT> &fe);
+                                     array<Index, MAX_NODES_FACE_ELEMENT> &fe);
 
     // struct SortedFaceElement : public FaceElement
     // {
@@ -287,15 +287,15 @@ namespace geometry
     --------------------------------------------------------------------*/
     void volume_element_calc_geometry_properties(ElementType e_type,
                                                  const Index *element,
-                                                 const Vector<Vec3> &nodes,
+                                                 const vector<Vec3> &nodes,
                                                  Scalar &volume,
                                                  Vec3 &centroid);
 
     void face_element_calc_centroid(ElementType e_type,
                                     const Index *element,
-                                    const Vector<Vec3> &nodes,
+                                    const vector<Vec3> &nodes,
                                     Vec3 &centroid);
-    void face_element_calc_face_normal(ElementType e_type, const Index *element, const Vector<Vec3> &nodes, Vec3 &S_ij);
+    void face_element_calc_face_normal(ElementType e_type, const Index *element, const vector<Vec3> &nodes, Vec3 &S_ij);
     void tetrahedron_calc_geometry_properties(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3,
                                               Scalar &volume, Vec3 &centroid);
     void tetrahedron_calc_volume(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Scalar &volume);
@@ -316,17 +316,18 @@ namespace geometry
     void quadrilateral_calc_centroid(const Vec3 &n0, const Vec3 &n1, const Vec3 &n2, const Vec3 &n3, Vec3 &centroid);
 
     /*A structure of arrays (SoA) containing the faces and their required properties*/
+
     class Faces
     {
+    public:
         friend class FV_Grid;
         friend class GridCreator;
-
-        struct CellPair
+        struct Cellpair
         {
-            CellPair(Index i, Index j) : i{i}, j{j} {} // For some reason I had to define the constructor to make emplace_back work
-            CellPair() = default;
+            Cellpair(Index i, Index j) : i{i}, j{j} {} // For some reason I had to define the constructor to make emplace_back work
+            Cellpair() = default;
             Index i, j;
-            bool operator<(CellPair other) const
+            bool operator<(Cellpair other) const
             {
                 if (i != other.i)
                     return i < other.i;
@@ -337,14 +338,11 @@ namespace geometry
             void serialize(Archive &ar, const unsigned int version) {}
         };
 
-        Vector<CellPair> cell_indices;
-        Vector<Vec3> face_normals;
-        Vector<Vec3> centroid_to_face_i;
-        Vector<Vec3> centroid_to_face_j;
-
-        void reserve(Index size);
-        void resize_geometry_properties();
-        void sort_face_entities(Index begin, Index end, const Elements &face_elements_old, Elements &face_elements_to_sort);
+    private:
+        vector<Cellpair> cell_indices;
+        vector<Vec3> face_normals;
+        vector<Vec3> centroid_to_face_i;
+        vector<Vec3> centroid_to_face_j;
 
     public:
         Index size() const
@@ -358,6 +356,13 @@ namespace geometry
         const Vec3 &get_centroid_to_face_i(Index face_index) const { return centroid_to_face_i[face_index]; }
         const Vec3 &get_centroid_to_face_j(Index face_index) const { return centroid_to_face_j[face_index]; }
         string to_string(Index ij) const;
+        template <class Archive>
+        void serialize(Archive &ar, const unsigned int version) {}
+
+    private:
+        void reserve(Index size);
+        void resize_geometry_properties();
+        void sort_face_entities(Index begin, Index end, const Elements &face_elements_old, Elements &face_elements_to_sort);
     };
 
     void reorder_faces(const Config &config, Elements &face_elements);
@@ -367,8 +372,8 @@ namespace geometry
     {
         friend class FV_Grid;
         friend class GridCreator;
-        Vector<Scalar> volumes;
-        Vector<Vec3> centroids;
+        vector<Scalar> volumes;
+        vector<Vec3> centroids;
 
         void resize(Index size);
         void reserve(Index size);
@@ -380,11 +385,11 @@ namespace geometry
         string to_string(Index i) const;
 
         template <class Archive>
-        void serialize(Archive &ar, const unsigned int version)
-        {
-            ar &volumes;
-            ar &centroid;
-        }
+        void serialize(Archive &ar, const unsigned int version) {}
+        // {
+        //     ar &volumes;
+        //     ar &centroids;
+        // }
     };
 
     struct PatchBoundary

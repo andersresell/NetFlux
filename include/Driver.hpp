@@ -16,7 +16,7 @@ class Driver
 
     unique_ptr<geometry::FV_Grid> FV_grid;
 
-    Vector<unique_ptr<Solver>> solvers;
+    vector<unique_ptr<Solver>> solvers;
 
     unique_ptr<Output> output;
 

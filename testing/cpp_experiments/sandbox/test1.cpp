@@ -6,7 +6,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <eigen3/Eigen/Dense>
-#include <mpi.h>
+#include <array>
 using namespace std;
 // Define a serialization function for Eigen::Vector3d
 
@@ -14,23 +14,13 @@ using Scalar = double;
 
 using namespace std;
 
-template <typename T>
-static MPI_Datatype get_MPI_Datatype()
-{
-    using std::is_same;
-    if constexpr (is_same<T, double>::value)
-        return MPI_DOUBLE;
-    else if constexpr (is_same<T, uint32_t>::value)
-        return MPI_UINT32_T;
-    else if constexpr (is_same<T, char>::value)
-        return MPI_BYTE;
-    else
-    {
-        static_assert(false);
-    }
-}
-
 int main()
 {
     cout << "hello\n";
+
+    // vector<int> v{1, 2, 3};
+    // v[5] = 4;
+
+    array<int, 3> a{1, 2, 3};
+    a[4] = 5;
 }

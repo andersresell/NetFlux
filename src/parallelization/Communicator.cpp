@@ -40,8 +40,8 @@ PartitionComm::PartitionComm(const ShortIndex n_vecfields_max,
 void PartitionComm::communicate_ghost_fields()
 {
 
-	Vector<MPI_Request> send_requests(num_patches());
-	Vector<MPI_Request> recv_requests(num_patches());
+	vector<MPI_Request> send_requests(num_patches());
+	vector<MPI_Request> recv_requests(num_patches());
 
 	for (ShortIndex i{0}; i < interf_comms.size(); i++)
 	{

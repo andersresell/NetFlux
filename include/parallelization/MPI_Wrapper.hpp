@@ -48,7 +48,7 @@ public:
         MPI_Send(sendbuf, sizeof(T) * count, get_MPI_Datatype<T>(), dest_rank, tag, MPI_COMM_WORLD);
     }
     template <typename T>
-    static void Recv(const T *recvbuf, Index count, ShortIndex source_rank, ShortIndex tag = 0)
+    static void Recv(T *recvbuf, Index count, ShortIndex source_rank, ShortIndex tag = 0)
     {
         MPI_Recv(recvbuf, count, get_MPI_Datatype<T>(), source_rank, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
@@ -60,13 +60,13 @@ public:
     }
 
     template <typename T>
-    static void IRecv(const T *recvbuf, Index count, ShortIndex source_rank, MPI_Request &req, ShortIndex tag = 0)
+    static void IRecv(T *recvbuf, Index count, ShortIndex source_rank, MPI_Request &req, ShortIndex tag = 0)
     {
-        MPI_Irecv(recvbuf, count, get_MPI_Datatype<T>(), source_rank, tag, MPI_COMM_WORLD, req);
+        MPI_Irecv(recvbuf, count, get_MPI_Datatype<T>(), source_rank, tag, MPI_COMM_WORLD, &req);
     }
 
     template <typename T>
-    static void Bcast(const T *sendbuf, Index count, ShortIndex source_rank)
+    static void Bcast(T *sendbuf, Index count, ShortIndex source_rank)
     {
         MPI_Bcast(sendbuf, count, get_MPI_Datatype<T>(), source_rank, MPI_COMM_WORLD);
     }

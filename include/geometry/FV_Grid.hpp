@@ -13,17 +13,17 @@ namespace geometry
 
         Cells cells;
         Faces faces;
-        Vector<PatchInterface> patches_interf;
-        Vector<PatchBoundary> patches_bound;
+        vector<PatchInterface> patches_interf;
+        vector<PatchBoundary> patches_bound;
 
     public:
-        // FV_Grid(Cells &&cells, Faces &&faces, Vector<PatchBoundary> &&patches, Vector<Patches> &&partition_patches);
+        // FV_Grid(Cells &&cells, Faces &&faces, vector<PatchBoundary> &&patches, vector<Patches> &&partition_patches);
         //  FV_Grid(Config &config, PrimalGrid &primal_grid);
 
         const Cells &get_cells() const { return cells; }
         const Faces &get_faces() const { return faces; }
-        const Vector<PatchBoundary> &get_patches_boundary() const { return patches_bound; }
-        const Vector<PatchInterface> &get_patches_interface() const { return patches_interf; }
+        const vector<PatchBoundary> &get_patches_boundary() const { return patches_bound; }
+        const vector<PatchInterface> &get_patches_interface() const { return patches_interf; }
 
         template <class Archive>
         void serialize(Archive &ar, const unsigned int version)
@@ -46,7 +46,7 @@ namespace geometry
 
         void calc_face_properties(ElementType e_type,
                                   const Index *element,
-                                  const Vector<Vec3> &nodes,
+                                  const vector<Vec3> &nodes,
                                   const Vec3 &cell_center_i,
                                   const Vec3 &cell_center_j,
                                   Vec3 &S_ij,
@@ -55,7 +55,7 @@ namespace geometry
 
         void calc_ghost_centroid(ElementType boundary_e_type,
                                  const Index *boundary_element,
-                                 const Vector<Vec3> &nodes,
+                                 const vector<Vec3> &nodes,
                                  const Vec3 &centroid_i,
                                  Vec3 &centroid_ghost);
         void print_grid(const Config &config, const Elements &face_elements) const;

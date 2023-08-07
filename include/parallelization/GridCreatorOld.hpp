@@ -16,26 +16,26 @@
 //                                              unique_ptr<FV_Grid> &FV_grid);
 
 //     private:
-//         static void reorder_global_grid(const Vector<Index> &part,
+//         static void reorder_global_grid(const vector<Index> &part,
 //                                         PrimalGrid &primal_grid,
-//                                         Vector<pair<Index, Index>> &part_to_element_range,
-//                                         Vector<Index> &eID_glob_to_loc);
+//                                         vector<pair<Index, Index>> &part_to_element_range,
+//                                         vector<Index> &eID_glob_to_loc);
 
 //         static void create_global_face_entities(const Elements &vol_elements_glob,
-//                                                 const Vector<ElementPatch> &element_patches,
+//                                                 const vector<ElementPatch> &element_patches,
 //                                                 map<FaceElement, pair<Index, long int>> &faces_to_cells_glob,
 //                                                 Elements &face_elements_glob,
 //                                                 map<FaceElement, GhostDataPartition> &internal_boundary_faces,
-//                                                 const Vector<Index> &part);
+//                                                 const vector<Index> &part);
 
 //         static void create_primal_grid_local(const Elements &vol_elements_glob,
-//                                              const Vector<Vec3> &nodes_glob,
-//                                              const Vector<ElementPatch> &element_patches_glob,
+//                                              const vector<Vec3> &nodes_glob,
+//                                              const vector<ElementPatch> &element_patches_glob,
 //                                              Index r_loc,
-//                                              const Vector<pair<Index, Index>> &part_to_element_range,
-//                                              const Vector<Index> &part,
+//                                              const vector<pair<Index, Index>> &part_to_element_range,
+//                                              const vector<Index> &part,
 //                                              unique_ptr<PrimalGrid> &primal_grid_loc,
-//                                              Vector<Index> &eID_glob_to_loc,
+//                                              vector<Index> &eID_glob_to_loc,
 //                                              map<Index, Index> &nID_glob_to_loc,
 //                                              map<Index, Index> &nID_loc_to_glob);
 
@@ -49,14 +49,14 @@
 
 //         /*Sorts faces and face_elements PatchBoundary-wise after the cell indices of the faces.*/
 //         static void reorder_face_enitities(Index num_interior_faces,
-//                                            const Vector<PartitionPatchBoundary> &partition_patches,
-//                                            const Vector<PatchBoundary> &patches,
+//                                            const vector<PartitionPatchBoundary> &partition_patches,
+//                                            const vector<PatchBoundary> &patches,
 //                                            Faces &faces,
 //                                            Elements &face_elements);
 
 //         static void send_recv_grids(Config &config,
-//                                     Vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
-//                                     Vector<unique_ptr<FV_Grid>> &FV_grids_loc,
+//                                     vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
+//                                     vector<unique_ptr<FV_Grid>> &FV_grids_loc,
 //                                     unique_ptr<PrimalGrid> &primal_grid,
 //                                     unique_ptr<FV_Grid> &FV_grid);
 //         static void set_config_grid_data_local(Config &config,
@@ -72,16 +72,16 @@
 
 //     class PartitionUtils
 //     {
-//         const Vector<Index> &part;
-//         const Vector<pair<Index, Index>> &part_to_e_range;
-//         const Vector<Index> &eID_glob_to_loc;
+//         const vector<Index> &part;
+//         const vector<pair<Index, Index>> &part_to_e_range;
+//         const vector<Index> &eID_glob_to_loc;
 //         const map<Index, Index> &nID_glob_to_loc;
 //         const map<Index, Index> &nID_loc_to_glob;
 
 //     public:
-//         PartitionUtils(const Vector<Index> &part,
-//                        const Vector<pair<Index, Index>> &part_to_e_range,
-//                        const Vector<Index> &eID_glob_to_loc,
+//         PartitionUtils(const vector<Index> &part,
+//                        const vector<pair<Index, Index>> &part_to_e_range,
+//                        const vector<Index> &eID_glob_to_loc,
 //                        const map<Index, Index> &nID_glob_to_loc,
 //                        const map<Index, Index> &nID_loc_to_glob)
 //             : part{part}, part_to_e_range{part_to_e_range}, eID_glob_to_loc{eID_glob_to_loc},

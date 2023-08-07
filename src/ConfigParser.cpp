@@ -133,7 +133,7 @@ void ConfigParser::read_patches(Config &config)
 /*Scans the sim-dir and sets the name of a valid mesh if such a file is found*/
 void ConfigParser::set_mesh_name(Config &config)
 {
-    Vector<string> valid_mesh_files_found;
+    vector<string> valid_mesh_files_found;
 
     for (const auto &entry : std::filesystem::directory_iterator(config.get_sim_dir()))
     {

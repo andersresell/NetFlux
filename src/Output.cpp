@@ -3,7 +3,7 @@
 
 Output::Output(const geometry::PrimalGrid &primal_grid_glob,
                const geometry::PrimalGrid &primal_grid,
-               const Vector<unique_ptr<Solver>> &solvers,
+               const vector<unique_ptr<Solver>> &solvers,
                const Config &config)
     : primal_grid_glob{primal_grid_glob}, primal_grid{primal_grid}, solvers{solvers}
 {
@@ -71,13 +71,13 @@ void Output::write_vtk_ascii_grid(const Config &config, const string &filename)
     FAIL_IF_MSG(!ost, "Couldn't open file " + filename);
 
     const Index N_NODES = config.get_N_NODES_GLOB();
-    const Index N_CELLS = config.get_N_INTERIOR_CELLS_GLOB();
+    const Index N_CELLS = config.get_N_CELLS_INT_GLOB();
     const auto &nodes = primal_grid_glob.get_nodes();
     const auto &vol_elements = primal_grid_glob.get_vol_elements();
     assert(N_CELLS == vol_elements.size());
 
-    // const Vector<Index> &n_ptr = vol_elements.get_n_ptr();
-    // const Vector<Index> &n_ind = vol_elements.get_n_ind();
+    // const vector<Index> &n_ptr = vol_elements.get_n_ptr();
+    // const vector<Index> &n_ind = vol_elements.get_n_ind();
     const Index SUM_NODES_OVER_ALL_ELEMENTS = vol_elements.sum_nodes_over_all_elements();
 
     ost << "# vtk DataFile Version 3.0\n"
@@ -133,7 +133,7 @@ void EulerOutput::write_vtk_ascii_cell_data(const Config &config, const string &
     if (!ost)
         throw std::runtime_error("Couldn't open file " + filename);
 
-    const Index N_INTERIOR_CELLS = config.get_N_INTERIOR_CELLS_GLOB();
+    const Index N_INTERIOR_CELLS = config.get_N_CELLS_INT_GLOB();
 
     ost << "\nCELL_DATA " << N_INTERIOR_CELLS << "\n";
 
