@@ -109,12 +109,8 @@ void Output::write_vtk_ascii_grid(const Config &config, const string &filename)
 void Output::gather_cell_data(ShortIndex i_solver)
 {
     /*Use mpi gather to copy all local cell data to a global container*/
-    ShortIndex num_procs = NF_MPI::get_size();
-    ShortIndex rank = NF_MPI::get_rank();
     const VecField &U_loc = solvers[i_solver]->get_solver_data().get_solution();
     VecField &U_glob = *consvars_glob[i_solver];
-
-    Index eID_glob_first = primal_grid.get_eID_global_first();
 
     const Scalar *sendbuf = U_loc.data();
     Index sendcount = U_loc.size() * U_loc.rows();

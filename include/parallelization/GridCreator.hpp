@@ -8,7 +8,7 @@ namespace geometry
     struct Cellpair
     {
         Index i;
-        long int j;
+        SignedIndex j;
     };
 
     class FaceGraph
@@ -34,7 +34,7 @@ namespace geometry
             assert(Cellpairs.count(fID) == 1);
             return Cellpairs.at(fID).j;
         }
-        void add_face(Index i, Index j) { Cellpairs.emplace(Cellpairs.size(), Cellpair{i, j}); }
+        void add_face(Index i, SignedIndex j) { Cellpairs.emplace(Cellpairs.size(), Cellpair{i, j}); }
         void remove_face(Index fID)
         {
             assert(Cellpairs.count(fID) == 1);
@@ -66,9 +66,8 @@ namespace geometry
         bool is_ghost_face(Index fID) const
         {
             assert(Cellpairs.count(fID) == 1);
-            Index i = Cellpairs.at(fID).i;
-            Index j = Cellpairs.at(fID).j;
-            return i == -1 || j == -1;
+            SignedIndex j = Cellpairs.at(fID).j;
+            return j == -1;
         }
 
         bool is_part_face(Index fID) const
@@ -77,7 +76,7 @@ namespace geometry
                 return false;
             assert(Cellpairs.count(fID) == 1);
             Index i = Cellpairs.at(fID).i;
-            Index j = Cellpairs.at(fID).j;
+            SignedIndex j = Cellpairs.at(fID).j;
             return part[i] != part[j];
         }
         bool is_internal_face(Index fID) const
@@ -86,7 +85,7 @@ namespace geometry
                 return false;
             assert(Cellpairs.count(fID) == 1);
             Index i = Cellpairs.at(fID).i;
-            Index j = Cellpairs.at(fID).j;
+            SignedIndex j = Cellpairs.at(fID).j;
             return part[i] == part[j];
         }
     };

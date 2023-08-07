@@ -13,7 +13,7 @@ CXX_FLAGS_DEBUG = $(CXX_FLAGS_ALL) -g -D_GLIBCXX_CONCEPT_CHECKS -D_GLIBCXX_DEBUG
 CXX_FLAGS_RELEASE = $(CXX_FLAGS_ALL) -DNDEBUG -O3 -flto 
  
 #external libraries
-LDLIBS = -lyaml-cpp -lmetis
+LDLIBS = -lyaml-cpp -lmetis -lboost_serialization
 
 #add source files here
 SRC = NetFlux.cpp \

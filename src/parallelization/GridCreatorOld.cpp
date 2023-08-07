@@ -29,7 +29,7 @@ namespace geometry
             vector<Index> eID_glob_to_loc;
             reorder_global_grid(part, *primal_grid_glob, part_to_element_range, eID_glob_to_loc);
 
-            map<FaceElement, pair<Index, long int>> faces_to_cells_glob;
+            map<FaceElement, pair<Index, SignedIndex>> faces_to_cells_glob;
             Elements face_elements_glob;
 
             map<FaceElement, GhostDataPartition> internal_ghost_faces;
@@ -143,7 +143,7 @@ namespace geometry
 
     void GridCreator::create_global_face_entities(const Elements &vol_elements_glob,
                                                   const vector<ElementPatch> &element_patches,
-                                                  map<FaceElement, pair<Index, long int>> &faces_to_cells_glob,
+                                                  map<FaceElement, pair<Index, SignedIndex>> &faces_to_cells_glob,
                                                   Elements &face_elements_glob,
                                                   map<FaceElement, GhostDataPartition> &internal_boundary_faces,
                                                   const vector<Index> &part)
@@ -188,7 +188,7 @@ namespace geometry
         for (const auto &face : faces_to_cells_glob)
         {
             Index cell_i = face.second.first;
-            long int cell_j = face.second.second;
+            SignedIndex cell_j = face.second.second;
             if (cell_j != CELL_NOT_ASSIGNED)
             { // Only add internal faces
                 assert(cell_i < cell_j);
@@ -367,7 +367,7 @@ namespace geometry
     }
 
     void GridCreator::create_FV_grid_local(const Config &config,
-                                           const map<FaceElement, pair<Index, long int>> &faces_to_cells_glob,
+                                           const map<FaceElement, pair<Index, SignedIndex>> &faces_to_cells_glob,
                                            const PartitionUtils &utils,
                                            Index r_loc,
                                            unique_ptr<FV_Grid> &FV_grid_loc,

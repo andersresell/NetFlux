@@ -38,6 +38,7 @@ namespace filesys = std::filesystem;
 
 using Index = uint32_t;      // Used for accessing cell indices, etc
 using ShortIndex = uint16_t; // Used for looping over shorter numbers as spatial dimensions, etc
+using SignedIndex = int32_t;
 
 #ifdef USE_SINGLE_PRECISION
 using Scalar = float;
@@ -103,7 +104,7 @@ inline bool arrays_equal(const array<T, N> &a, const array<T, N> &b)
 template <typename T>
 inline int sign(T val)
 {
-    return (val > 0.0) ? 1 : ((val < 0.0) ? -1 : 0);
+    return (val > 0.0) - (val < 0.0);
 }
 
 template <typename EigenTypeOrScalar>

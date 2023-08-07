@@ -108,7 +108,6 @@ namespace geometry
         assert(face_graph.size() == 0);
         assert(face_elements.size() == 0);
 
-        const vector<Vec3> &nodes = primal_grid.get_nodes();
         const Elements &vol_elements = primal_grid.get_vol_elements();
         const vector<ElementPatch> &element_patches = primal_grid.get_element_patches();
 
@@ -116,8 +115,8 @@ namespace geometry
         Associate the face nodes with its two neighboring cells.
         --------------------------------------------------------------------*/
 
-        map<FaceElement, pair<Index, long int>> faces_to_cells;
-        constexpr int CELL_NOT_YET_ASSIGNED{-1};
+        map<FaceElement, pair<Index, SignedIndex>> faces_to_cells;
+        constexpr SignedIndex CELL_NOT_YET_ASSIGNED{-1};
 
         for (Index cell_index{0}; cell_index < vol_elements.size(); cell_index++)
         {
@@ -310,7 +309,7 @@ namespace geometry
                 if (face_graph_glob.face_is_in_patch_ext(fID, p))
                 {
                     Index i = face_graph_glob.get_i(fID);
-                    Index j = face_graph_glob.get_j(fID);
+                    SignedIndex j = face_graph_glob.get_j(fID);
                     assert(j == -1); /*since all other faces are removed, j should now be a ghost cell*/
                     ShortIndex r = utils.e2r(i);
                     face_graphs_loc[r].add_face(i, j);
@@ -331,6 +330,8 @@ namespace geometry
                 }
         }
         assert(face_graph_glob.size() == 0); /*Now all global faces should have been removed*/
+
+        return face_graphs_loc;
     }
 
     /*Step 6*/
@@ -437,7 +438,6 @@ namespace geometry
             faces_r.reserve(face_graph_r.size());
             for (const auto &kv : face_graph_r.get_Cellpairs())
             {
-                Index fID = kv.first;
                 Index i = kv.second.i;
                 Index j = kv.second.j;
                 faces_r.cell_indices.push_back(geometry::Faces::Cellpair{i, j});

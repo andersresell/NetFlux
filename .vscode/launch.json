@@ -2,6 +2,32 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "C/C++: g++ build and debug active file",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${fileDirname}/${fileBasenameNoExtension}",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "C/C++: g++ build active file",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
             "name": "mpirun_NetFluxBrickSmall",
             "type": "cppdbg",
             "request": "launch",
@@ -59,13 +85,18 @@
             "preLaunchTask": "build debug NetFlux"
         },
         {
-            "name": "C/C++: g++ build and debug active file",
+            "name": "mpirun_NetFlux_10x10x100_ll1",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${fileDirname}/${fileBasenameNoExtension}",
-            "args": [],
+            "program": "/usr/bin/mpirun",
+            "args": [
+                "-np",
+                "1",
+                "${workspaceFolder}/build_debug/NetFlux",
+                "${workspaceFolder}/testing/netflux_tests/brick_10x10x100_ll1"
+            ],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+            "cwd": "${workspaceFolder}/src/",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
@@ -81,8 +112,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "C/C++: g++ build active file",
-            "miDebuggerPath": "/usr/bin/gdb"
-        }
+            "preLaunchTask": "build debug NetFlux"
+        },
     ]
 }

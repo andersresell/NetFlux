@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 
 void read_args(int argc, char **argv, string &sim_dir_path)
 {
-    if (argc != 23)
+    if (argc != 2)
         throw std::runtime_error(string("Specify config file to run NetFlux. ") +
                                  "Usage: $ mpirun -np <n_procs> ./NetFlux <path-to-sim-directory>\n");
     sim_dir_path = argv[1];
