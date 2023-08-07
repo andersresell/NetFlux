@@ -5,7 +5,7 @@
 #include "Utilities.hpp"
 #include "Numerics.hpp"
 #include "SolverData.hpp"
-#include "parallelization/PartComm.hpp"
+#include "parallelization/Communicator.hpp"
 
 class Solver
 {
@@ -14,8 +14,8 @@ protected:
     const geometry::FV_Grid &FV_grid;
     unique_ptr<SolverData> solver_data;
     Vector<unique_ptr<BoundaryCondition>> BC_container;
+    unique_ptr<PartitionComm> part_comm;
     unique_ptr<ValidityChecker> validity_checker;
-    Vector<PartComm> part_comms;
 
 public:
     Solver(const Config &config, const geometry::PrimalGrid &primal_grid, const geometry::FV_Grid &FV_grid);
@@ -49,19 +49,12 @@ private:
 
     virtual void evaluate_limiter(const Config &config) = 0;
 
-    template <ShortIndex N_COLS>
-    void sendrecv_ghost_partition_field(const geometry::PartitionPatchExt &part_PatchExt, GenericField<N_COLS> &field);
+protected:
+    void communicate_primvars();
+    void communicate_primvars_and_gradient();
+    void communicate_max_and_min();
+    void communicate_limiter();
 };
-template <ShortIndex N_COLS>
-inline void Solver::sendrecv_ghost_partition_field(const geometry::PartitionPatchExt &pp, GenericField<N_COLS> &field)
-{
-    const auto &faces = FV_grid.get_faces();
-    for (Index ij{pp.FIRST_FACE}; ij < pp.FIRST_FACE + pp.N_FACES; ij++)
-    {
-        Index i_domain = faces.get_cell_i();
-        Index j_ghost = faces.get_cell_j();
-    }
-}
 
 class EulerSolver : public Solver
 {

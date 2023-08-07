@@ -173,7 +173,7 @@ namespace geometry
         Index j_ghost = vol_elements.size();
         for (const auto &e_patch : element_patches)
         {
-            PatchExt p;
+            PatchBoundary p;
             p.boundary_type = config.get_boundary_type(e_patch.patch_name);
             p.FIRST_FACE = face_graph.size();
             p.N_FACES = e_patch.boundary_elements.size();
@@ -237,7 +237,7 @@ namespace geometry
         {
             Vector<bool> r_shares_r_shared(size, false);
             assert(r_shares_r_shared.back() == false); // just checking that this is actually a vector of false
-            Vector<PatchPart> patches_part_r(size);
+            Vector<PatchInterface> patches_int_r(size);
 
             for (const auto &kv : face_graph_glob.get_cellpairs())
             {
@@ -273,10 +273,10 @@ namespace geometry
                         assert(r_shares_r_shared[r_i] == r_shares_r_shared[r_j]);
                         if (r_shares_r_shared[r_i] == false)
                         {
-                            patches_part_r[r_i].FIRST_FACE = face_graphs_loc[r_i].size() - 1;
-                            patches_part_r[r_j].FIRST_FACE = face_graphs_loc[r_j].size() - 1;
-                            patches_part_r[r_i].rank_neighbour = r_j;
-                            patches_part_r[r_j].rank_neighbour = r_i;
+                            patches_int_r[r_i].FIRST_FACE = face_graphs_loc[r_i].size() - 1;
+                            patches_int_r[r_j].FIRST_FACE = face_graphs_loc[r_j].size() - 1;
+                            patches_int_r[r_i].rank_neighbour = r_j;
+                            patches_int_r[r_j].rank_neighbour = r_i;
                             r_shares_r_shared[r_i] = true;
                             r_shares_r_shared[r_j] = true;
                         }
@@ -284,12 +284,12 @@ namespace geometry
                     }
                 }
             }
-            /*For each local graph set where the current neigbour PatchExt (the PatchExt connecting r_other ends)*/
+            /*For each local graph set where the current neigbour PatchBoundary (the PatchBoundary connecting r_other ends)*/
             for (ShortIndex r{0}; r < size; r++)
                 if (r_shares_r_shared[r])
                 {
-                    patches_part_r[r].N_FACES = face_graphs_loc[r].size() - patches_part_r[r].FIRST_FACE;
-                    face_graphs_loc[r].add_patch_part(patches_part_r[r]);
+                    patches_int_r[r].N_FACES = face_graphs_loc[r].size() - patches_int_r[r].FIRST_FACE;
+                    face_graphs_loc[r].add_patch_part(patches_int_r[r]);
                 }
         }
 
@@ -303,7 +303,7 @@ namespace geometry
 
             Vector<bool> rank_shares_patch(size, false);
             assert(rank_shares_patch.back() == false); // just checking that this is actually a vector of false
-            Vector<PatchExt> patches_ext_r(size);
+            Vector<PatchBoundary> patches_ext_r(size);
 
             for (Index fID{first}; fID < n_faces; fID++)
             {
@@ -445,14 +445,14 @@ namespace geometry
             }
 
             /*Set external and partition patches*/
-            FV_grid_r.patches_part = face_graph_r.get_patches_part();
+            FV_grid_r.patches_int = face_graph_r.get_patches_int();
             FV_grid_r.patches_ext = face_graph_r.get_patches_ext();
 
             /*Reorder faces and face elements*/
             Elements &e_faces_r = primal_grid_r.get_face_elements();
             Index num_interior_faces = faces_r.size() - num_ghost;
             reorder_face_enitities(num_interior_faces,
-                                   FV_grid_r.get_patches_part(),
+                                   FV_grid_r.get_patches_int(),
                                    FV_grid_r.get_patches_ext(),
                                    faces_r,
                                    e_faces_r);
@@ -460,8 +460,8 @@ namespace geometry
     }
 
     void GridCreator::reorder_face_enitities(Index num_interior_faces,
-                                             const Vector<PatchPart> &patches_int,
-                                             const Vector<PatchExt> &patches_ext,
+                                             const Vector<PatchInterface> &patches_int,
+                                             const Vector<PatchBoundary> &patches_ext,
                                              Faces &faces,
                                              Elements &face_elements)
     {
@@ -470,18 +470,18 @@ namespace geometry
         the ordering {(0,1), (0,3), (0,2), (1,1)} should be changed to {(0,1), (0,2), (0,3), (1,1)}
         The way the grid is constructed this is allready achieved for the owner cell i. However j might need sorting.
         The comparison operator < for Face is defined for this purpose.
-        The interior and each boundary PatchExt is sorted separately. The face elements are sorted accordingly*/
+        The interior and each boundary PatchBoundary is sorted separately. The face elements are sorted accordingly*/
 
         Elements face_elements_to_sort;
 
         faces.sort_face_entities(0, num_interior_faces, face_elements, face_elements_to_sort);
 
-        for (const PatchPart &p : patches_int)
+        for (const PatchInterface &p : patches_int)
         {
             faces.sort_face_entities(p.FIRST_FACE, p.FIRST_FACE + p.N_FACES, face_elements, face_elements_to_sort);
         }
 
-        for (const PatchExt &p : patches_ext)
+        for (const PatchBoundary &p : patches_ext)
         {
             faces.sort_face_entities(p.FIRST_FACE, p.FIRST_FACE + p.N_FACES, face_elements, face_elements_to_sort);
         }

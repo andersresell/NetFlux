@@ -3,7 +3,7 @@
 #include "containers/DynamicContainer.hpp"
 #include "containers/StaticContainer.hpp"
 #include "Config.hpp"
-#include "parallelization/Communication.hpp"
+#include "parallelization/Communicator.hpp"
 
 struct VecField final : public DynamicContainer3D<Scalar, 1>
 {

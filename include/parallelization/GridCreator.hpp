@@ -15,13 +15,13 @@ namespace geometry
     {
     protected:
         map<Index, Cellpair> cellpairs;
-        Vector<PatchExt> patches_ext;
+        Vector<PatchBoundary> patches_ext;
 
     public:
-        const Vector<PatchExt> &get_patches_ext() const { return patches_ext; }
-        void add_patch_ext(PatchExt p) { patches_ext.emplace_back(p); }
+        const Vector<PatchBoundary> &get_patches_ext() const { return patches_ext; }
+        void add_patch_ext(PatchBoundary p) { patches_ext.emplace_back(p); }
 
-        bool face_is_in_patch_ext(Index fID, PatchExt p) const { return p.FIRST_FACE <= fID && fID < p.FIRST_FACE + p.N_FACES; }
+        bool face_is_in_patch_ext(Index fID, PatchBoundary p) const { return p.FIRST_FACE <= fID && fID < p.FIRST_FACE + p.N_FACES; }
         const map<Index, Cellpair> &get_cellpairs() const { return cellpairs; }
         Index size() const { return cellpairs.size(); }
         Index get_i(Index fID) const
@@ -93,20 +93,20 @@ namespace geometry
     class FaceGraphLoc : public FaceGraph
     {
         Index my_rank;
-        Vector<PatchPart> patches_part; /*Local partition patches seen by a local grid*/
+        Vector<PatchInterface> patches_int; /*Local partition patches seen by a local grid*/
 
     public:
         FaceGraphLoc(Index my_rank) : my_rank{my_rank} {}
-        void add_patch_part(PatchPart p) { patches_part.emplace_back(p); }
-        const Vector<PatchPart> get_patches_part() const { return patches_part; }
-        //  void add_PatchExt(BoundaryType bt, Index begin)
+        void add_patch_part(PatchInterface p) { patches_int.emplace_back(p); }
+        const Vector<PatchInterface> get_patches_int() const { return patches_int; }
+        //  void add_PatchBoundary(BoundaryType bt, Index begin)
         // {
-        //     PatchExt p;
+        //     PatchBoundary p;
         //     p.boundary_type = bt;
         //     p.FIRST_FACE = begin;
         //     patches.push_back(p);
         // }
-        // void set_PatchExt_end(Index end)
+        // void set_PatchBoundary_end(Index end)
         // {
         //     patches.back().N_FACES = end - patches.back().FIRST_FACE;
         // }
@@ -114,7 +114,7 @@ namespace geometry
         Index find_num_ghost_part() const
         {
             Index N_GHOST{0};
-            for (const auto &p : patches_part)
+            for (const auto &p : patches_int)
                 N_GHOST += p.N_FACES;
             assert(N_GHOST > 0);
             return N_GHOST;
@@ -155,8 +155,8 @@ namespace geometry
 
         // Step 8: Send and receive all grids from rank 0 to the other procs
 
-        /*Question for later: What is the requirements to the local indices of the PatchExt faces, given that packing is used
-        (each PatchExt of each rank has a sendbuf and recvbuf). Conclusion is no requirements, but */
+        /*Question for later: What is the requirements to the local indices of the PatchBoundary faces, given that packing is used
+        (each PatchBoundary of each rank has a sendbuf and recvbuf). Conclusion is no requirements, but */
         /*Comment: I realize that I haven't accounted for the possibility that two ranks can share more than one interface.
         I will ignore this for now*/
 
@@ -196,8 +196,8 @@ namespace geometry
         --------------------------------------------------------------------*/
         /*Reorders faces in a more optimal fashion*/
         static void reorder_face_enitities(Index num_interior_faces,
-                                           const Vector<PatchPart> &patches_int,
-                                           const Vector<PatchExt> &patches_ext,
+                                           const Vector<PatchInterface> &patches_int,
+                                           const Vector<PatchBoundary> &patches_ext,
                                            Faces &faces,
                                            Elements &face_elements);
 

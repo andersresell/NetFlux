@@ -15,14 +15,16 @@ class NF_MPI
     static MPI_Datatype get_MPI_Datatype()
     {
         using std::is_same;
-        if (is_same<T, double>::value)
+        if constexpr (is_same<T, double>::value)
             return MPI_DOUBLE;
-        else if (is_same<T, uint32_t>::value)
+        else if constexpr (is_same<T, uint32_t>::value)
             return MPI_UINT32_T;
-        else if (is_same<T, char>::value)
+        else if constexpr (is_same<T, char>::value)
             return MPI_BYTE;
         else
-            static_assert(false);
+        {
+            assert(false);
+        }
     }
 
 public:
@@ -48,7 +50,7 @@ public:
     template <typename T>
     static void Recv(const T *recvbuf, Index count, ShortIndex source_rank, ShortIndex tag = 0)
     {
-        MPI_Recv(recvbuf, count, get_MPI_Datatype<T>(), source_rank, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE)
+        MPI_Recv(recvbuf, count, get_MPI_Datatype<T>(), source_rank, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
 
     template <typename T>
@@ -74,71 +76,9 @@ public:
     {
         MPI_Gather(sendbuf, sendcount, get_MPI_Datatype<T>(), recvbuf, recvcount, get_MPI_Datatype<T>(), dest_rank, MPI_COMM_WORLD);
     }
+
+    static void Wait(MPI_Request &req)
+    {
+        MPI_Wait(&req, MPI_STATUS_IGNORE);
+    }
 };
-
-#include <mpi.h>
-#include <iostream>
-
-int main(int argc, char *argv[])
-{
-    int rank, size;
-    int send_data = 42;
-    int recv_data = 0;
-
-    MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-    if (size < 2)
-    {
-        std::cerr << "This example requires at least two processes.\n";
-        MPI_Finalize();
-        return 1;
-    }
-
-    if (rank == 0)
-    {
-        MPI_Request request;
-        // Process 0 initiates non-blocking send to process 1.
-        MPI_Isend(&send_data, 1, MPI_INT, 1, 0, MPI_COMM_WORLD, &request);
-
-        // Perform some computation while the communication is ongoing.
-        for (int i = 0; i < 100000; ++i)
-        {
-            // Do some computation.
-        }
-
-        // Wait for the send operation to complete before continuing.
-        MPI_Wait(&request, MPI_STATUS_IGNORE);
-    }
-    else if (rank == 1)
-    {
-        MPI_Request request;
-        // Process 1 initiates non-blocking receive from process 0.
-        MPI_Irecv(&recv_data, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &request);
-
-        // Perform some computation while the communication is ongoing.
-        for (int i = 0; i < 100000; ++i)
-        {
-            // Do some computation.
-        }
-
-        // Wait for the receive operation to complete before continuing.
-        MPI_Wait(&request, MPI_STATUS_IGNORE);
-    }
-
-    // Both processes have completed their respective communication and computation tasks.
-    // Now, they can continue with the rest of the code.
-
-    if (rank == 0)
-    {
-        std::cout << "Process " << rank << " sent data: " << send_data << std::endl;
-    }
-    else if (rank == 1)
-    {
-        std::cout << "Process " << rank << " received data: " << recv_data << std::endl;
-    }
-
-    MPI_Finalize();
-    return 0;
-}

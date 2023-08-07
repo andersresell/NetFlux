@@ -3,7 +3,7 @@
 namespace geometry
 {
 
-    FV_Grid::FV_Grid(Cells &&cells, Faces &&faces, Vector<PatchExt> &&patches, Vector<PartitionPatchExt> &&partition_patches)
+    FV_Grid::FV_Grid(Cells &&cells, Faces &&faces, Vector<PatchBoundary> &&patches, Vector<PartitionPatchBoundary> &&partition_patches)
 
         : cells{cells}, faces{faces}, patches{patches}, partition_patches{partition_patches}
     {
@@ -98,15 +98,15 @@ namespace geometry
     //     --------------------------------------------------------------------*/
     //     cout << "Creating ghost cells..\n";
     //     Index j_ghost = vol_elements.size();
-    //     for (const auto &element_PatchExt : element_patches)
+    //     for (const auto &element_PatchBoundary : element_patches)
     //     {
-    //         PatchExt p;
-    //         p.boundary_type = config.get_boundary_type(element_PatchExt.PatchExt_name);
+    //         PatchBoundary p;
+    //         p.boundary_type = config.get_boundary_type(element_PatchBoundary.PatchBoundary_name);
     //         p.FIRST_FACE = faces.size();
-    //         p.N_FACES = element_PatchExt.boundary_elements.size();
+    //         p.N_FACES = element_PatchBoundary.boundary_elements.size();
     //         patches.push_back(p);
 
-    //         const Elements &surface_elements = element_PatchExt.boundary_elements;
+    //         const Elements &surface_elements = element_PatchBoundary.boundary_elements;
     //         for (Index ij{0}; ij < surface_elements.size(); ij++)
     //         {
     //             ElementType e_type = surface_elements.get_element_type(ij);
@@ -141,7 +141,7 @@ namespace geometry
     //     /*--------------------------------------------------------------------
     //     Sort faces so that the interior faces appear first with the owner index
     //     i allways being less than neigbour index j. The same logic is applied
-    //     PatchExt-wise to the boundaries
+    //     PatchBoundary-wise to the boundaries
     //     --------------------------------------------------------------------*/
 
     //     /*All Vectors within faces and cells must have the correct size before reordering*/
@@ -221,14 +221,14 @@ namespace geometry
     {
         Index N_GHOST{0};
         for (const auto &p : pacthes_ext)
-            N_GHOST += ext_PatchExt.N_FACES;
+            N_GHOST += ext_PatchBoundary.N_FACES;
         assert(N_GHOST > 0);
         return N_GHOST;
     }
     Index FV_Grid::find_num_ghost_part() const
     {
         Index N_GHOST{0};
-        for (const auto &p : patches_part)
+        for (const auto &p : patches_int)
             N_GHOST += pacthes_part.N_FACES;
         assert(N_GHOST > 0);
         return N_GHOST;
@@ -282,9 +282,9 @@ namespace geometry
             cout << faces.to_string(ij) << ", Element: " << face_elements.to_string(ij) << endl;
 
         cout << "\n\npatches:\n";
-        for (const auto &PatchExt : patches)
+        for (const auto &PatchBoundary : patches)
         {
-            cout << "PatchExt type: " << (int)PatchExt.boundary_type << "\nFIRST FACE: " << PatchExt.FIRST_FACE << "\nN_FACES: " << PatchExt.N_FACES << "\n\n";
+            cout << "PatchBoundary type: " << (int)PatchBoundary.boundary_type << "\nFIRST FACE: " << PatchBoundary.FIRST_FACE << "\nN_FACES: " << PatchBoundary.N_FACES << "\n\n";
         }
     }
 }

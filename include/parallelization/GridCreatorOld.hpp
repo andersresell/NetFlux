@@ -47,10 +47,10 @@
 //                                          PrimalGrid &primal_grid_loc,
 //                                          map<FaceElement, GhostDataPartition> const &internal_boundary_faces_glob);
 
-//         /*Sorts faces and face_elements PatchExt-wise after the cell indices of the faces.*/
+//         /*Sorts faces and face_elements PatchBoundary-wise after the cell indices of the faces.*/
 //         static void reorder_face_enitities(Index num_interior_faces,
-//                                            const Vector<PartitionPatchExt> &partition_patches,
-//                                            const Vector<PatchExt> &patches,
+//                                            const Vector<PartitionPatchBoundary> &partition_patches,
+//                                            const Vector<PatchBoundary> &patches,
 //                                            Faces &faces,
 //                                            Elements &face_elements);
 

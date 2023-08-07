@@ -13,17 +13,17 @@ namespace geometry
 
         Cells cells;
         Faces faces;
-        Vector<PatchPart> patches_part;
-        Vector<PatchExt> patches_ext;
+        Vector<PatchInterface> patches_interf;
+        Vector<PatchBoundary> patches_bound;
 
     public:
-        // FV_Grid(Cells &&cells, Faces &&faces, Vector<PatchExt> &&patches, Vector<Patches> &&partition_patches);
+        // FV_Grid(Cells &&cells, Faces &&faces, Vector<PatchBoundary> &&patches, Vector<Patches> &&partition_patches);
         //  FV_Grid(Config &config, PrimalGrid &primal_grid);
 
         const Cells &get_cells() const { return cells; }
         const Faces &get_faces() const { return faces; }
-        const Vector<PatchExt> &get_patches_ext() const { return patches_ext; }
-        const Vector<PatchPart> &get_patches_part() const { return patches_part; }
+        const Vector<PatchBoundary> &get_patches_boundary() const { return patches_bound; }
+        const Vector<PatchInterface> &get_patches_interface() const { return patches_interf; }
 
         template <class Archive>
         void serialize(Archive &ar, const unsigned int version)

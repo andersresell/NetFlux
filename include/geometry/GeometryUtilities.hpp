@@ -1,5 +1,6 @@
 #pragma once
 #include "../Utilities.hpp"
+#include "../Config.hpp"
 
 namespace geometry
 {
@@ -274,7 +275,7 @@ namespace geometry
     //     }
     // };
 
-    /*Holds name and triangles of a boundary PatchExt*/
+    /*Holds name and triangles of a boundary PatchBoundary*/
     struct ElementPatch
     {
         string patch_name;
@@ -386,14 +387,14 @@ namespace geometry
         }
     };
 
-    struct PatchExt
+    struct PatchBoundary
     {
         BoundaryType boundary_type;
         Index N_FACES;
         Index FIRST_FACE;
     };
 
-    struct PatchPart
+    struct PatchInterface
     {
         ShortIndex rank_neighbour;
         Index N_FACES;

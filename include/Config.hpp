@@ -11,7 +11,8 @@ class Config
 
     static constexpr char MESH_NAME_NO_EXTENSION[] = "mesh";
     static constexpr char OUPUT_DIR[] = "output";
-    static constexpr Array<const char *, 2> valid_mesh_extensions = {"su2", "nf"};
+    static constexpr Array<const char *, 2> valid_mesh_extension = {"su2", "nf"};
+
     bool valid_mesh_name(const string &name) const;
 
     /*Options specified when reading mesh*/
@@ -33,7 +34,7 @@ class Config
     string mesh_extension;
     string sim_dir;
 
-    map<string, BoundaryType> map_PatchExt_BC; // map from each PatchExt to the bc type applied
+    map<string, BoundaryType> map_PatchBoundary_BC; // map from each PatchBoundary to the bc type applied
 
     MainSolverType main_solver_type{0};
 
@@ -122,9 +123,9 @@ public:
     string get_mesh_filename_path() const { return sim_dir + get_mesh_name(); }
     string get_unsteady_vtk_filename() const { return get_output_dir() + "n=" + std::to_string(timestep) + ".vtk"; }
 
-    BoundaryType get_boundary_type(const string &PatchExt_name) const;
+    BoundaryType get_boundary_type(const string &PatchBoundary_name) const;
 
-    bool input_file_contains_PatchExt_name(const string &PatchExt_name) const { return map_PatchExt_BC.count(PatchExt_name) == 1; }
+    bool input_file_contains_PatchBoundary_name(const string &PatchBoundary_name) const { return map_PatchBoundary_BC.count(PatchBoundary_name) == 1; }
 
     MainSolverType get_main_solver_type() const { return main_solver_type; }
     void set_main_solver_type(MainSolverType val) { main_solver_type = val; }

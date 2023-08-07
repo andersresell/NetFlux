@@ -8,9 +8,9 @@ EXE_RELEASE = $(BUILD_DIR_RELEASE)/$(EXE)
 CXX = mpic++ #MPI compiler wrapper (automatically includes headers and libraries)
 INC_DIR = ../include
 
-CXX_FLAGS_COMMON = -Wall -Wno-unused-function -fmax-errors=1 #-I$(INC_DIR)
-CXX_FLAGS_DEBUG = $(CXX_FLAGS_COMMON) -g
-CXX_FLAGS_RELEASE = $(CXX_FLAGS_COMMON) -DNDEBUG -O3 -flto 
+CXX_FLAGS_ALL = -Wall -Wno-unused-function -std=c++20 -fmax-errors=1 #-I$(INC_DIR)
+CXX_FLAGS_DEBUG = $(CXX_FLAGS_ALL) -g
+CXX_FLAGS_RELEASE = $(CXX_FLAGS_ALL) -DNDEBUG -O3 -flto 
  
 #external libraries
 LDLIBS = -lyaml-cpp -lmetis

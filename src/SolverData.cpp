@@ -16,11 +16,12 @@ SolverData::SolverData(const Config &config, ShortIndex n_eqs)
         primvars_gradient = make_unique<GradField>(N_CELLS_DOMAIN, n_eqs);
         primvars_limiter = make_unique<VecField>(N_CELLS_DOMAIN, n_eqs);
         *primvars_limiter = 1.0;
-        primvars_max = make_unique<VecField>(N_CELLS_DOMAIN, n_eqs); //?correct size
-        primvars_min = make_unique<VecField>(N_CELLS_DOMAIN, n_eqs); //?correct size
+        primvars_max = make_unique<VecField>(N_CELLS_DOMAIN, n_eqs);
+        primvars_min = make_unique<VecField>(N_CELLS_DOMAIN, n_eqs);
 
-        n_vecfields_sendrecv_max = 4;  /*primvars, primvars limiter, primvars max+min*/
-        n_gradfields_sendrecv_max = 1; /*primvars grad*/
+        /*The maximum number of cell values sent at interface simultaneously is primavars + primvars grad*/
+        n_vecfields_sendrecv_max = 1;
+        n_gradfields_sendrecv_max = 1;
     }
     else
     {

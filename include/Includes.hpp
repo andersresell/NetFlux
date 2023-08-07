@@ -93,25 +93,21 @@ public:
 template <typename T, size_t N>
 class Array final : public std::array<T, N>
 {
-public:
     using std::array<T, N>::array;
+
+public:
 #ifndef NDEBUG
 
-    _GLIBCXX17_CONSTEXPR reference
-    operator[](size_type __n) noexcept
+    T &operator[](size_t i)
     {
-        assert(__n < N);
-        __glibcxx_requires_subscript(__n);
-        return _AT_Type::_S_ref(_M_elems, __n);
+        assert(i < N);
+        return this->at(i);
     }
 
-    constexpr const_reference
-    operator[](size_type __n) const noexcept
+    const T &operator[](size_t i) const
     {
-        assert(__n < N);
-#if __cplusplus >= 201402L
-        __glibcxx_requires_subscript(__n);
-#endif
+        assert(i < N);
+        return this->at(i);
     };
 
 #endif

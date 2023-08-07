@@ -213,10 +213,10 @@ namespace geometry
         --------------------------------------------------------------------*/
 
         // Index j_ghost = vol_elements_glob.size();
-        for (const auto &element_PatchExt : element_patches)
+        for (const auto &element_PatchBoundary : element_patches)
         {
 
-            const Elements &surface_elements = element_PatchExt.boundary_elements;
+            const Elements &surface_elements = element_PatchBoundary.boundary_elements;
             for (Index ij{0}; ij < surface_elements.size(); ij++)
             {
                 ElementType e_type = surface_elements.get_element_type(ij);
@@ -315,21 +315,21 @@ namespace geometry
         }
 
         /*--------------------------------------------------------------------
-        Looping over patches and copying the PatchExt elements and the PatchExt name
+        Looping over patches and copying the PatchBoundary elements and the PatchBoundary name
         from global to local.
         --------------------------------------------------------------------*/
 
-        for (const auto &element_PatchExt_glob : element_patches_glob)
+        for (const auto &element_PatchBoundary_glob : element_patches_glob)
         {
-            const Elements &boundary_elements_glob = element_PatchExt_glob.boundary_elements;
-            const string &PatchExt_name_glob = element_PatchExt_glob.PatchExt_name;
+            const Elements &boundary_elements_glob = element_PatchBoundary_glob.boundary_elements;
+            const string &PatchBoundary_name_glob = element_PatchBoundary_glob.PatchBoundary_name;
             element_patches_loc.emplace_back();
-            element_patches_loc.back().PatchExt_name = PatchExt_name_glob;
+            element_patches_loc.back().PatchBoundary_name = PatchBoundary_name_glob;
             Elements &boundary_elements_loc = element_patches_loc.back().boundary_elements;
             boundary_elements_loc.reserve(boundary_elements_glob.size(), MAX_NODES_FACE_ELEMENT);
 
             /*--------------------------------------------------------------------
-            Looping over all elements of a PatchExt
+            Looping over all elements of a PatchBoundary
             --------------------------------------------------------------------*/
             for (Index i{0}; i < boundary_elements_glob.size(); i++)
             {
@@ -383,8 +383,8 @@ namespace geometry
         Cells cells_loc;
         Faces faces_loc;
         faces_loc.reserve(1.5 * faces_to_cells_glob.size() / NF_MPI::get_size()); // Guesstimate
-        Vector<PatchExt> patches_loc;
-        Vector<PartitionPatchExt> part_patches_loc;
+        Vector<PatchBoundary> patches_loc;
+        Vector<PartitionPatchBoundary> part_patches_loc;
 
         /*--------------------------------------------------------------------
         Adding internal faces first
@@ -425,7 +425,7 @@ namespace geometry
         Index num_ghost_part{0};
         for (Index rank_neigbour{0}; rank_neigbour < NF_MPI::get_size(); rank_neigbour++)
         {
-            Index num_PatchExt_faces = 0;
+            Index num_PatchBoundary_faces = 0;
             for (const auto &p : internal_boundary_faces_glob)
             {
 
@@ -434,7 +434,7 @@ namespace geometry
                 if ((gd.rank_a == r_loc && rank_neigbour == gd.rank_b) ||
                     (gd.rank_b == r_loc && rank_neigbour == gd.rank_a))
                 {
-                    num_PatchExt_faces++;
+                    num_PatchBoundary_faces++;
                     num_ghost_part++;
                     Index i_loc, j_loc;
                     assert(r_loc == gd.rank_a || r_loc == gd.rank_b);
@@ -461,11 +461,11 @@ namespace geometry
             communication locking further down the pipeline. I should look into this
             and change it in the future, so that only shared patches are added.
             --------------------------------------------------------------------*/
-            PartitionPatchExt part_PatchExt;
-            part_PatchExt.FIRST_FACE = faces_loc.size();
-            part_PatchExt.N_FACES = num_PatchExt_faces;
-            part_PatchExt.rank_neighbour = rank_neigbour;
-            part_patches_loc.emplace_back(part_PatchExt);
+            PartitionPatchBoundary part_PatchBoundary;
+            part_PatchBoundary.FIRST_FACE = faces_loc.size();
+            part_PatchBoundary.N_FACES = num_PatchBoundary_faces;
+            part_PatchBoundary.rank_neighbour = rank_neigbour;
+            part_patches_loc.emplace_back(part_PatchBoundary);
         }
 
         /*--------------------------------------------------------------------
@@ -474,15 +474,15 @@ namespace geometry
         --------------------------------------------------------------------*/
 
         Index j_ghost = vol_elements_loc.size();
-        for (const auto &element_PatchExt : element_patches_loc)
+        for (const auto &element_PatchBoundary : element_patches_loc)
         {
-            PatchExt p;
-            p.boundary_type = config.get_boundary_type(element_PatchExt.PatchExt_name);
+            PatchBoundary p;
+            p.boundary_type = config.get_boundary_type(element_PatchBoundary.PatchBoundary_name);
             p.FIRST_FACE = faces_loc.size();
-            p.N_FACES = element_PatchExt.boundary_elements.size();
+            p.N_FACES = element_PatchBoundary.boundary_elements.size();
             patches_loc.push_back(p);
 
-            const Elements &surface_elements_loc = element_PatchExt.boundary_elements;
+            const Elements &surface_elements_loc = element_PatchBoundary.boundary_elements;
             for (Index ij{0}; ij < surface_elements_loc.size(); ij++)
             {
                 ElementType e_type = surface_elements_loc.get_element_type(ij);
@@ -532,8 +532,8 @@ namespace geometry
     }
 
     void GridCreator::reorder_face_enitities(Index num_interior_faces,
-                                             const Vector<PartitionPatchExt> &partition_patches,
-                                             const Vector<PatchExt> &patches,
+                                             const Vector<PartitionPatchBoundary> &partition_patches,
+                                             const Vector<PatchBoundary> &patches,
                                              Faces &faces,
                                              Elements &face_elements)
     {
@@ -542,20 +542,20 @@ namespace geometry
         the ordering {(0,1), (0,3), (0,2), (1,1)} should be changed to {(0,1), (0,2), (0,3), (1,1)}
         The way the grid is constructed this is allready achieved for the owner cell i. However j might need sorting.
         The comparison operator < for Face is defined for this purpose.
-        The interior and each boundary PatchExt is sorted separately. The face elements are sorted accordingly*/
+        The interior and each boundary PatchBoundary is sorted separately. The face elements are sorted accordingly*/
 
         Elements face_elements_to_sort;
 
         faces.sort_face_entities(0, num_interior_faces, face_elements, face_elements_to_sort);
 
-        for (const PartitionPatchExt &p_PatchExt : partition_patches)
+        for (const PartitionPatchBoundary &p_PatchBoundary : partition_patches)
         {
-            faces.sort_face_entities(p_PatchExt.FIRST_FACE, p_PatchExt.FIRST_FACE + p_PatchExt.N_FACES, face_elements, face_elements_to_sort);
+            faces.sort_face_entities(p_PatchBoundary.FIRST_FACE, p_PatchBoundary.FIRST_FACE + p_PatchBoundary.N_FACES, face_elements, face_elements_to_sort);
         }
 
-        for (const PatchExt &PatchExt : patches)
+        for (const PatchBoundary &PatchBoundary : patches)
         {
-            faces.sort_face_entities(PatchExt.FIRST_FACE, PatchExt.FIRST_FACE + PatchExt.N_FACES, face_elements, face_elements_to_sort);
+            faces.sort_face_entities(PatchBoundary.FIRST_FACE, PatchBoundary.FIRST_FACE + PatchBoundary.N_FACES, face_elements, face_elements_to_sort);
         }
         face_elements = face_elements_to_sort;
     }

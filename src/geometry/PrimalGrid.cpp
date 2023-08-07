@@ -49,8 +49,8 @@ namespace geometry
 
         assert(nodes.capacity() == nodes.size());
         vol_elements.shrink_to_fit();
-        for (auto &element_PatchExt : element_patches)
-            element_PatchExt.boundary_elements.shrink_to_fit();
+        for (auto &element_PatchBoundary : element_patches)
+            element_PatchBoundary.boundary_elements.shrink_to_fit();
         assert(element_patches.capacity() == element_patches.size());
 
         if (config.check_grid_validity())
@@ -125,22 +125,22 @@ namespace geometry
         // }
 
         // // Reading boundary patches
-        // string PatchExt_name;
+        // string PatchBoundary_name;
         // Index N_surface_elements;
-        // while (ist >> PatchExt_name >> N_surface_elements)
+        // while (ist >> PatchBoundary_name >> N_surface_elements)
         // {
         //     TriConnect tri;
-        //     TriPatchExtConnect p;
-        //     p.PatchExt_name = PatchExt_name;
-        //     if (!config.input_file_contains_PatchExt_name(p.PatchExt_name))
-        //         throw std::runtime_error("PatchExt with name '" + p.PatchExt_name + "' is not named in input file\n");
+        //     TriPatchBoundaryConnect p;
+        //     p.PatchBoundary_name = PatchBoundary_name;
+        //     if (!config.input_file_contains_PatchBoundary_name(p.PatchBoundary_name))
+        //         throw std::runtime_error("PatchBoundary with name '" + p.PatchBoundary_name + "' is not named in input file\n");
         //     p.triangles.resize(N_surface_elements);
         //     for (Index i{0}; i < N_surface_elements; i++)
         //     {
         //         ist >> tri.a() >> tri.b() >> tri.c();
         //         p.triangles.at(i) = tri;
         //     }
-        //     tri_PatchExt_connect_list.emplace_back(p);
+        //     tri_PatchBoundary_connect_list.emplace_back(p);
         // }
     }
 
@@ -216,12 +216,12 @@ namespace geometry
         for (Index i{0}; i < N_patches; i++)
         {
             Elements &boundary_elements = element_patches[i].boundary_elements;
-            string &PatchExt_name = element_patches[i].PatchExt_name;
+            string &boundary_name = element_patches[i].patch_name;
 
-            ist >> tmp_string >> PatchExt_name;
+            ist >> tmp_string >> boundary_name;
             check_string_correctness(tmp_string, "MARKER_TAG=");
-            if (!config.input_file_contains_PatchExt_name(PatchExt_name))
-                throw std::runtime_error("PatchExt with name '" + PatchExt_name + "' is not named in input file\n");
+            if (!config.input_file_contains_PatchBoundary_name(boundary_name))
+                throw std::runtime_error("PatchBoundary with name '" + boundary_name + "' is not named in input file\n");
 
             Index N_MARKER_ELEMENTS;
             ist >> tmp_string >> N_MARKER_ELEMENTS;
@@ -246,8 +246,8 @@ namespace geometry
         }
         /*Converting connectivities to vtk format*/
         vol_elements.salome_to_vtk_connectivity();
-        for (auto &PatchExt : element_patches)
-            PatchExt.boundary_elements.salome_to_vtk_connectivity();
+        for (auto &PatchBoundary : element_patches)
+            PatchBoundary.boundary_elements.salome_to_vtk_connectivity();
     }
     void PrimalGrid::print_grid() const
 
@@ -262,10 +262,10 @@ namespace geometry
         {
             cout << vol_elements.to_string(i);
         }
-        cout << "\n\nPatchExt ELEMENTS:\n";
+        cout << "\n\nPatchBoundary ELEMENTS:\n";
         for (const auto &ep : element_patches)
         {
-            cout << "BC type: " << ep.PatchExt_name << endl;
+            cout << "BC type: " << ep.patch_name << endl;
             for (Index i{0}; i < ep.boundary_elements.size(); i++)
             {
                 cout << i << ": " << ep.boundary_elements.to_string(i) << endl;

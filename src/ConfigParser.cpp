@@ -104,24 +104,24 @@ void ConfigParser::read_patches(Config &config)
         if (!patches_node.IsSequence())
             throw std::runtime_error("\"patches\" setting in configuration file is formatted crrectly (not a valid sequence)");
 
-        for (const auto &PatchExt_it : patches_node)
+        for (const auto &PatchBoundary_it : patches_node)
         {
 
-            if (!PatchExt_it.IsMap())
+            if (!PatchBoundary_it.IsMap())
                 throw std::runtime_error("Entry in \"patches\" setting in configuration file is not a key-value pair");
 
-            const auto &PatchExt_kv = *PatchExt_it.begin();
+            const auto &PatchBoundary_kv = *PatchBoundary_it.begin();
 
-            string PatchExt_name = PatchExt_kv.first.as<string>();
+            string PatchBoundary_name = PatchBoundary_kv.first.as<string>();
 
-            if (config.map_PatchExt_BC.count(PatchExt_name) > 0)
-                throw std::runtime_error("Duplicate PatchExt name \"" + PatchExt_name + "\" specified in config file");
+            if (config.map_PatchBoundary_BC.count(PatchBoundary_name) > 0)
+                throw std::runtime_error("Duplicate PatchBoundary name \"" + PatchBoundary_name + "\" specified in config file");
 
-            string boundary_type_key = PatchExt_kv.second.as<string>();
+            string boundary_type_key = PatchBoundary_kv.second.as<string>();
 
-            BoundaryType bc_type = lookup_enum_option_map(boundary_type_from_string, boundary_type_key, PatchExt_name, "patches");
+            BoundaryType bc_type = lookup_enum_option_map(boundary_type_from_string, boundary_type_key, PatchBoundary_name, "patches");
 
-            config.map_PatchExt_BC.emplace(PatchExt_name, bc_type);
+            config.map_PatchBoundary_BC.emplace(PatchBoundary_name, bc_type);
         }
     }
     else

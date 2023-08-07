@@ -45,8 +45,8 @@ bool Config::valid_mesh_name(const string &name) const
     return false;
 }
 
-BoundaryType Config::get_boundary_type(const string &PatchExt_name) const
+BoundaryType Config::get_boundary_type(const string &PatchBoundary_name) const
 {
-    assert(map_PatchExt_BC.count(PatchExt_name) == 1); // This should have been caught when reading mesh file
-    return map_PatchExt_BC.at(PatchExt_name);
+    assert(map_PatchBoundary_BC.count(PatchBoundary_name) == 1); // This should have been caught when reading mesh file
+    return map_PatchBoundary_BC.at(PatchBoundary_name);
 }

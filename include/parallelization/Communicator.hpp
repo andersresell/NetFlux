@@ -8,7 +8,7 @@ to send all the fields store all the */
 template <ShortIndex N_COLS>
 using Field = DynamicContainer3D<Scalar, N_COLS>;
 
-class PartComm
+class InterfaceComm
 {
     // const map<FieldType, ShortIndex> field_type_dimension = {{FieldType::Primvars, 1},
     //                                                          {FieldType::PrimvarsGrad, N_DIM},
@@ -16,31 +16,29 @@ class PartComm
     const ShortIndex N_EQS;
     Vector<Scalar> sendbuf;
     Vector<Scalar> recvbuf;
-    const geometry::PatchPart &patch_part;
+    const geometry::PatchInterface &patch_part;
     const geometry::Faces &faces;
     Index sendptr, recvptr;
-    const Index size_vecfield, size_gradfield;
-    const ShortIndex n_vecfields_max, n_gradfields_max;
-    bool comm_complete_{false};
+    // //const Index size_vecfield, size_gradfield;
+    // const ShortIndex n_vecfields_max, n_gradfields_max;
 
 public:
-    PartComm(const ShortIndex n_vecfields_max,
-             const ShortIndex n_gradfields_max,
-             const ShortIndex N_EQS,
-             const geometry::PatchPart &patch_part,
-             const geometry::Faces &faces);
+    InterfaceComm(ShortIndex n_vecfields_max,
+                  ShortIndex n_gradfields_max,
+                  const ShortIndex N_EQS,
+                  const geometry::PatchInterface &patch_part,
+                  const geometry::Faces &faces);
 
-    void send_and_receive_fields();
-    bool comm_complete() const { return comm_complete_; }
+    void send_receive_fields(MPI_Request &send_req, MPI_Request &recv_req);
 
     Index n_ghost() const { return patch_part.N_FACES; }
     ShortIndex rank_neigbour() const { return patch_part.rank_neighbour; }
 
     void clear()
     {
+        assert(sendptr == recvptr); /*These should be equal with correct use*/
         sendptr = 0;
         recvptr = 0;
-        comm_complete_ = false;
     }
 
     template <ShortIndex N_COLS>
@@ -70,4 +68,42 @@ public:
         }
         assert(recvptr < recvbuf.size());
     }
+};
+
+/*Handles sending and receiving of fields to ghost cells at the interfaces
+between local domains/partitions.*/
+class PartitionComm
+{
+    Vector<unique_ptr<InterfaceComm>> interf_comms;
+
+    const ShortIndex n_vecfields_max, n_gradfields_max;
+
+public:
+    PartitionComm(const ShortIndex n_vecfields_max,
+                  const ShortIndex n_gradfields_max,
+                  const ShortIndex N_EQS,
+                  const geometry::FV_Grid &FV_grid);
+
+    void communicate_ghost_fields();
+    void clear();
+
+    Index get_n_vecfields_max() const { return n_vecfields_max; }
+    Index get_n_gradfields_max() const { return n_gradfields_max; }
+
+    template <ShortIndex N_COLS>
+    void pack_field(const Field<N_COLS> &sendfield)
+    {
+        for (auto &interf_comm : interf_comms)
+            interf_comm->pack_field(sendfield);
+    }
+
+    template <ShortIndex N_COLS>
+    void unpack_field(Field<N_COLS> &recvfield)
+    {
+        for (auto &interf_comm : interf_comms)
+            interf_comm->unpack_field(recvfield);
+    }
+
+private:
+    ShortIndex num_patches() const { return interf_comms.size(); }
 };

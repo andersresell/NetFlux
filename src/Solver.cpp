@@ -10,10 +10,10 @@ Solver::Solver(const Config &config, const PrimalGrid &primal_grid, const FV_Gri
 
 void Solver::create_BC_container(const Config &config)
 {
-    for (const auto &PatchExt : FV_grid.get_patches())
+    for (const auto &PatchBoundary : FV_grid.get_patches())
     {
         unique_ptr<BoundaryCondition> BC;
-        switch (PatchExt.boundary_type)
+        switch (PatchBoundary.boundary_type)
         {
         case BoundaryType::NoSlipWall:
             BC = make_unique<BC_NoSlipWall>();
@@ -65,14 +65,23 @@ void Solver::evaluate_flux_balance(const Config &config, const VecField &cons_va
 
     validity_checker->write_debug_info(solver_data->get_primvars(), "Primvars");
 
-    if (config.get_spatial_order() == SpatialOrder::Second)
+    if (config.get_spatial_order() == SpatialOrder::First)
     {
+        communicate_primvars();
+    }
+    else
+    {
+        assert(config.get_spatial_order() == SpatialOrder::Second);
+
+        communicate_primvars_and_gradient();
+
         evaluate_gradient(config);
 
         if (config.get_limiter() != Limiter::NONE)
+        {
             evaluate_limiter(config);
+        }
     }
-
     evaluate_inviscid_fluxes(config);
 
     evaluate_viscous_fluxes(config);
@@ -132,6 +141,39 @@ void Solver::TVD_RK3(const Config &config)
         U(i, n_eq) = 1.0 / 3.0 * U_old(i, n_eq) + 2.0 / 3.0 * U(i, n_eq) + 2.0 / 3.0 * dt / cells.get_cell_volume(i) * R(i, n_eq);
 }
 
+void Solver::communicate_primvars()
+{
+    part_comm->clear();
+    part_comm->pack_field(solver_data->get_primvars());
+    part_comm->communicate_ghost_fields();
+    part_comm->unpack_field(solver_data->get_primvars());
+}
+void Solver::communicate_primvars_and_gradient()
+{
+    part_comm->clear();
+    part_comm->pack_field(solver_data->get_primvars());
+    part_comm->pack_field(solver_data->get_primvars_gradient());
+    part_comm->communicate_ghost_fields();
+    part_comm->unpack_field(solver_data->get_primvars());
+    part_comm->unpack_field(solver_data->get_primvars_gradient());
+}
+void Solver::communicate_max_and_min()
+{
+    part_comm->clear();
+    part_comm->pack_field(solver_data->get_primvars_max());
+    part_comm->pack_field(solver_data->get_primvars_min());
+    part_comm->communicate_ghost_fields();
+    part_comm->unpack_field(solver_data->get_primvars_max());
+    part_comm->unpack_field(solver_data->get_primvars_min());
+}
+void Solver::communicate_limiter()
+{
+    part_comm->clear();
+    part_comm->pack_field(solver_data->get_primvars_limiter());
+    part_comm->communicate_ghost_fields();
+    part_comm->unpack_field(solver_data->get_primvars_limiter());
+}
+
 EulerSolver::EulerSolver(const Config &config, const geometry::PrimalGrid &primal_grid, const geometry::FV_Grid &FV_grid)
     : Solver(config, primal_grid, FV_grid)
 {
@@ -140,16 +182,10 @@ EulerSolver::EulerSolver(const Config &config, const geometry::PrimalGrid &prima
 
     calc_Delta_S(config);
 
-    /*Creating partition communicators*/
-    for (const geometry::PatchPart &pp : FV_grid.get_patches_part())
-    {
-        part_comms.emplace_back(
-            solver_data->get_n_vecfields_sendrecv_max(),
-            solver_data->get_n_gradfields_sendrecv_max,
-            solver_data->get_N_EQS(),
-            pp,
-            FV_grid.get_faces());
-    }
+    part_comm = make_unique<PartitionComm>(solver_data->get_n_vecfields_sendrecv_max(),
+                                           solver_data->get_n_gradfields_sendrecv_max,
+                                           solver_data->get_N_EQS(),
+                                           FV_grid);
 }
 
 void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
@@ -203,15 +239,15 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
     }
 
     /*Then boundaries. Here ghost cells has to be assigned based on the boundary conditions.
-    This is handled PatchExt-wise*/
+    This is handled PatchBoundary-wise*/
 
-    for (Index i_PatchExt{0}; i_PatchExt < patches.size(); i_PatchExt++)
+    for (Index i_PatchBoundary{0}; i_PatchBoundary < patches.size(); i_PatchBoundary++)
     {
-        const auto &PatchExt = patches[i_PatchExt];
-        auto &boundary_condition = BC_container[i_PatchExt];
-        // BoundaryCondition::BC_function BC_func = BoundaryCondition::get_BC_function(PatchExt.boundary_type);
+        const auto &PatchBoundary = patches[i_PatchBoundary];
+        auto &boundary_condition = BC_container[i_PatchBoundary];
+        // BoundaryCondition::BC_function BC_func = BoundaryCondition::get_BC_function(PatchBoundary.boundary_type);
 
-        for (Index ij{PatchExt.FIRST_FACE}; ij < PatchExt.FIRST_FACE + PatchExt.N_FACES; ij++)
+        for (Index ij{PatchBoundary.FIRST_FACE}; ij < PatchBoundary.FIRST_FACE + PatchBoundary.N_FACES; ij++)
         {
 
             Index i_domain = faces.get_cell_i(ij);
@@ -227,7 +263,7 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
 
             numerical_flux_func(U_L, U_R, S_ij, Flux_inv);
 
-            assert(validity_checker->valid_boundary_flux(Flux_inv.data(), PatchExt.boundary_type));
+            assert(validity_checker->valid_boundary_flux(Flux_inv.data(), PatchBoundary.boundary_type));
 
             flux_balance.get_variable<EulerVec>(i_domain) -= Flux_inv;
         }
@@ -310,13 +346,13 @@ void EulerSolver::set_constant_ghost_values(const Config &config)
     VecField &primvars = solver_data->get_primvars();
     Index i_domain, j_ghost;
 
-    // for (const auto &PatchExt : patches)
-    for (Index i_PatchExt{0}; i_PatchExt < patches.size(); i_PatchExt++)
+    // for (const auto &PatchBoundary : patches)
+    for (Index i_PatchBoundary{0}; i_PatchBoundary < patches.size(); i_PatchBoundary++)
     {
-        const auto &PatchExt = patches[i_PatchExt];
-        auto &boundary_condition = BC_container[i_PatchExt];
+        const auto &PatchBoundary = patches[i_PatchBoundary];
+        auto &boundary_condition = BC_container[i_PatchBoundary];
 
-        for (Index ij{PatchExt.FIRST_FACE}; ij < PatchExt.FIRST_FACE + PatchExt.N_FACES; ij++)
+        for (Index ij{PatchBoundary.FIRST_FACE}; ij < PatchBoundary.FIRST_FACE + PatchBoundary.N_FACES; ij++)
         {
             i_domain = faces.get_cell_i(ij);
             j_ghost = faces.get_cell_j(ij);
@@ -362,11 +398,13 @@ void EulerSolver::evaluate_limiter(const Config &config)
     switch (config.get_limiter())
     {
     case Limiter::Barth:
+        communicate_max_and_min();
         reconstruction::calc_max_and_min_values<N_EQS_EULER>(config,
                                                              FV_grid,
                                                              primvars,
                                                              primvars_max,
                                                              primvars_min);
+
         reconstruction::calc_barth_limiter<N_EQS_EULER>(config,
                                                         FV_grid,
                                                         primvars,
@@ -378,4 +416,5 @@ void EulerSolver::evaluate_limiter(const Config &config)
     default:
         FAIL_MSG("Selected limiter not implemented\n");
     }
+    communicate_limiter();
 }
