@@ -2,7 +2,29 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "C/C++: g++ build and debug active file",
+            "name": "C/C++: mpic++ build and debug active file parallel",
+            "type": "cppdbg",
+            "request": "attach",
+            "processId": "${command:pickProcess}",
+            "program": "${fileDirname}/${fileBasenameNoExtension}",
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "C/C++: mpic++ build active file parallel",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "C/C++: g++ build and debug active file parallel",
             "type": "cppdbg",
             "request": "launch",
             "program": "${fileDirname}/${fileBasenameNoExtension}",
@@ -24,46 +46,16 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "C/C++: g++ build active file",
+            "preLaunchTask": "C/C++: mpic++ build active file parallel",
             "miDebuggerPath": "/usr/bin/gdb"
         },
         {
-            "name": "mpirun_NetFluxBrickSmall",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "/usr/bin/mpirun",
-            "args": [
-                "-np",
-                "2",
-                "${workspaceFolder}/build_debug/NetFlux",
-                "${workspaceFolder}/testing/netflux_tests/small_brick_domain"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/src/",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
-                }
-            ],
-            "preLaunchTask": "build debug NetFlux"
-        },
-        {
-            "name": "serial_NetFluxBrickSmall",
+            "name": "serial_two-cubes",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build_debug/NetFlux",
             "args": [
-                "${workspaceFolder}/testing/netflux_tests/small_brick_domain"
+                "${workspaceFolder}/testing/netflux_tests/two-cubes"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/src/",
