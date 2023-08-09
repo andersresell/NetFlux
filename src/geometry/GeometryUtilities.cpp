@@ -480,8 +480,10 @@ namespace geometry
     /*Sorting all the Vectors from indices begin to end based on the cell_indices*/
     void Faces::sort_face_entities(Index begin, Index end, const Elements &face_elements_old, Elements &face_elements_to_sort)
     {
-        assert(begin < end && end <= cell_indices.size());
+        assert(begin <= end && end <= cell_indices.size());
         assert(face_elements_to_sort.size() == begin);
+        if (begin == end)
+            return;
 
         vector<Index> indices(end - begin);
         for (Index i{begin}; i < end; i++)

@@ -45,7 +45,7 @@ public:
     template <typename T>
     static void Send(const T *sendbuf, Index count, ShortIndex dest_rank, ShortIndex tag = 0)
     {
-        MPI_Send(sendbuf, sizeof(T) * count, get_MPI_Datatype<T>(), dest_rank, tag, MPI_COMM_WORLD);
+        MPI_Send(sendbuf, count, get_MPI_Datatype<T>(), dest_rank, tag, MPI_COMM_WORLD);
     }
     template <typename T>
     static void Recv(T *recvbuf, Index count, ShortIndex source_rank, ShortIndex tag = 0)

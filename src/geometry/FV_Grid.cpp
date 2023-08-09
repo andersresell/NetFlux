@@ -176,7 +176,10 @@ namespace geometry
         assert(config.get_N_FACES_TOT() == face_elements.size());
         assert(config.get_N_CELLS_TOT() == cells.size());
 
-        Index N_INTERIOR_CELLS = config.get_N_CELLS_INT();
+        /*NEED TO UPDATE THIS TO ALSO CALCULATE CENTROID OF PARTITION GHOST CELL.
+        WILL POSSIBLY NEED TO EDIT THE CODE UPSTREAM SO THAT THE GHOST ELEMENT IS COPIED,
+        SINCE THIS INFO IS NEEDED TO CALCULATE THE CENTROID.*/
+        // Index N_INTERIOR_CELLS = config.get_N_CELLS_INT();
 
         /*Calculate properties for the cells*/
         for (Index i{0}; i < N_INTERIOR_CELLS; i++)

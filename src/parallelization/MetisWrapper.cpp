@@ -94,6 +94,9 @@ namespace NF_METIS
             for (Index rank : element_partition)
                 e_part_short.emplace_back(rank);
 
+            assert(e_part_short.size() == 2 && n_part == 2);
+            e_part_short[0] = 0;
+            e_part_short[1] = 1;
             return e_part_short;
         }
         else

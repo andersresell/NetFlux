@@ -31,12 +31,18 @@ namespace geometry
         {
             ar &cells;
             ar &faces;
+            ar &patches_interf;
+            ar &patches_bound;
         }
 
     private:
         /*Creates computational grid from native mesh*/
         // void create_face_structure(Config &config, PrimalGrid &primal_grid);
-
+        void initialize_geometry_properties()
+        {
+            // cells.resize(cells.size());
+            faces.resize_geometry_properties();
+        }
         /*Calculates various geometrical properties to cells and faces based on the primal grid*/
         void calc_geometry_properties(const Config &config, const PrimalGrid &primal_grid);
 

@@ -140,7 +140,7 @@ namespace geometry
             e_ptr.emplace_back(e_ptr.back() + n_nodes);
             for (ShortIndex k{0}; k < n_nodes; k++)
             {
-                assert(node_glob_to_loc.count(element[k] == 1));
+                assert(node_glob_to_loc.count(element[k]) == 1);
                 e_ind.emplace_back(node_glob_to_loc.at(element[k]));
             }
             e_types.emplace_back(e_type);
@@ -190,7 +190,12 @@ namespace geometry
         void salome_to_vtk_connectivity();
 
         template <class Archive>
-        void serialize(Archive &ar, const unsigned int version) {}
+        void serialize(Archive &ar, const unsigned int version)
+        {
+            ar &e_ptr;
+            ar &e_ind;
+            ar &e_types;
+        }
     };
 
     class FaceElement
@@ -280,6 +285,13 @@ namespace geometry
     {
         string patch_name;
         Elements boundary_elements;
+
+        template <class Archive>
+        void serialize(Archive &ar, const unsigned int version)
+        {
+            ar &patch_name;
+            ar &boundary_elements;
+        }
     };
 
     /*--------------------------------------------------------------------
@@ -335,7 +347,11 @@ namespace geometry
                 return j < other.j;
             }
             template <class Archive>
-            void serialize(Archive &ar, const unsigned int version) {}
+            void serialize(Archive &ar, const unsigned int version)
+            {
+                ar &i;
+                ar &j;
+            }
         };
 
     private:
@@ -357,7 +373,13 @@ namespace geometry
         const Vec3 &get_centroid_to_face_j(Index face_index) const { return centroid_to_face_j[face_index]; }
         string to_string(Index ij) const;
         template <class Archive>
-        void serialize(Archive &ar, const unsigned int version) {}
+        void serialize(Archive &ar, const unsigned int version)
+        {
+            ar &cell_indices;
+            ar &face_normals;
+            ar &centroid_to_face_i;
+            ar &centroid_to_face_j;
+        }
 
     private:
         void reserve(Index size);
@@ -385,11 +407,11 @@ namespace geometry
         string to_string(Index i) const;
 
         template <class Archive>
-        void serialize(Archive &ar, const unsigned int version) {}
-        // {
-        //     ar &volumes;
-        //     ar &centroids;
-        // }
+        void serialize(Archive &ar, const unsigned int version)
+        {
+            ar &volumes;
+            ar &centroids;
+        }
     };
 
     struct PatchBoundary
@@ -397,6 +419,14 @@ namespace geometry
         BoundaryType boundary_type;
         Index N_FACES;
         Index FIRST_FACE;
+
+        template <class Archive>
+        void serialize(Archive &ar, const unsigned int version)
+        {
+            ar &boundary_type;
+            ar &N_FACES;
+            ar &FIRST_FACE;
+        }
     };
 
     struct PatchInterface
@@ -404,6 +434,14 @@ namespace geometry
         ShortIndex rank_neighbour;
         Index N_FACES;
         Index FIRST_FACE;
+
+        template <class Archive>
+        void serialize(Archive &ar, const unsigned int version)
+        {
+            ar &rank_neighbour;
+            ar &N_FACES;
+            ar &FIRST_FACE;
+        }
     };
 
 }

@@ -55,7 +55,10 @@ namespace geometry
         template <class Archive>
         void serialize(Archive &ar, const unsigned int version)
         {
+            ar &nodes;
             ar &vol_elements;
+            ar &face_elements;
+            ar &element_patches;
             ar &face_elements;
         }
     };

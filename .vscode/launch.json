@@ -2,11 +2,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "C/C++: mpic++ build and debug active file parallel",
+            "name": "Attach to process debug",
             "type": "cppdbg",
             "request": "attach",
             "processId": "${command:pickProcess}",
-            "program": "${fileDirname}/${fileBasenameNoExtension}",
+            "program": "/home/anders/dev/NetFlux/build_debug/NetFlux",
             "MIMode": "gdb",
             "setupCommands": [
                 {
@@ -20,7 +20,6 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "C/C++: mpic++ build active file parallel",
             "miDebuggerPath": "/usr/bin/gdb"
         },
         {

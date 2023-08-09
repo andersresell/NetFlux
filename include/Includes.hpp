@@ -19,6 +19,7 @@
 
 using std::array;
 using std::cerr;
+using std::cin;
 using std::cout;
 using std::endl;
 using std::istringstream;
@@ -139,3 +140,10 @@ inline bool num_is_valid_and_pos(T val)
         return true;
     return false;
 }
+
+#define MPI_DBG_WAIT   \
+    {                  \
+        int i = 0;     \
+        while (0 == i) \
+            sleep(5);  \
+    }

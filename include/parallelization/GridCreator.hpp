@@ -162,6 +162,8 @@ namespace geometry
         //Step 9: Assign geometry properties to each local grid
         */
 
+        inline static ShortIndex num_part{1};
+
     private:
         /*Step 3*/
         static void reorder_global_grid(PrimalGrid &primal_grid,
@@ -214,6 +216,9 @@ namespace geometry
 
     class Utils
     {
+        const vector<ShortIndex> &part;
+        ShortIndex num_part;
+
         vector<Index> eIDglob2loc_;
         bool eIDglob2loc_set{false};
         vector<map<Index, Index>> fIDglob2loc_;
@@ -226,10 +231,9 @@ namespace geometry
         bool nIDloc2glob_set{false};
         vector<pair<Index, Index>> part2e_range_;
         bool part2e_range_set{false};
-        const vector<ShortIndex> &part;
 
     public:
-        Utils(const vector<ShortIndex> &part) : part{part} {}
+        Utils(const vector<ShortIndex> &part) : part{part}, num_part{GridCreator::num_part} {}
         Index eIDglob2loc(Index eIDglob) const
         {
             assert(eIDglob2loc_set);
@@ -239,48 +243,48 @@ namespace geometry
         Index eIDloc2glob(ShortIndex r, Index eIDloc) const
         {
             assert(part2e_range_set);
-            assert(part2e_range_.size() == NF_MPI::get_size());
+            assert(part2e_range_.size() == num_part);
             return eIDloc + part2e_range_[r].first;
         };
         Index fIDglob2loc(ShortIndex r, Index fIDglob) const
         {
             assert(fIDglob2loc_set);
-            assert(fIDglob2loc_.size() == NF_MPI::get_size());
+            assert(fIDglob2loc_.size() == num_part);
             assert(fIDglob2loc_[r].count(fIDglob) == 1);
             return fIDglob2loc_[r].at(fIDglob);
         };
         Index fIDloc2glob(ShortIndex r, Index fIDloc) const
         {
             assert(fIDloc2glob_set);
-            assert(fIDloc2glob_.size() == NF_MPI::get_size());
+            assert(fIDloc2glob_.size() == num_part);
             assert(fIDloc2glob_[r].count(fIDloc) == 1);
             return fIDloc2glob_[r].at(fIDloc);
         };
         Index nIDglob2loc(ShortIndex r, Index nIDglob) const
         {
             assert(nIDglob2loc_set);
-            assert(nIDglob2loc_.size() == NF_MPI::get_size());
+            assert(nIDglob2loc_.size() == num_part);
             assert(nIDglob2loc_[r].count(nIDglob) == 1);
             return nIDglob2loc_[r].at(nIDglob);
         }
         Index nIDloc2glob(ShortIndex r, Index nIDloc) const
         {
             assert(nIDloc2glob_set);
-            assert(nIDloc2glob_.size() == NF_MPI::get_size());
+            assert(nIDloc2glob_.size() == num_part);
             assert(nIDloc2glob_[r].count(nIDloc) == 1);
             return nIDloc2glob_[r].at(nIDloc);
         }
         Index part2e_range_begin(ShortIndex r) const
         {
             assert(part2e_range_set && nIDloc2glob_set);
-            assert(nIDloc2glob_.size() == NF_MPI::get_size());
+            assert(nIDloc2glob_.size() == num_part);
             return part2e_range_[r].first;
         }
 
         Index part2e_range_end(ShortIndex r) const
         {
             assert(part2e_range_set && nIDloc2glob_set);
-            assert(nIDloc2glob_.size() == NF_MPI::get_size());
+            assert(nIDloc2glob_.size() == num_part);
             return part2e_range_[r].second;
         }
         ShortIndex e2r(Index eID) const { return part[eID]; }
