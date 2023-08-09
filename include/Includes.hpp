@@ -71,26 +71,26 @@ constexpr ShortIndex N_DIM{3}; // spatial dimensions
 #define DEBUG_LOG_FILE "./debug_log.txt"
 
 /*Adding range checking to the [] operator for std::vector in debug mode (NDEBUG not defined)*/
-// template <typename T>
-// class Vector final : public std::vector<T>
-// {
-// public:
-//     using std::vector<T>::vector;
-// #ifndef NDEBUG
+template <typename T>
+class Vector final : public std::vector<T>
+{
+public:
+    using std::vector<T>::vector;
+#ifndef NDEBUG
 
-//     T &operator[](size_t i)
-//     {
-//         assert(i < this->size());
-//         return *(this->_M_impl._M_start + i);
-//     }
+    T &operator[](size_t i)
+    {
+        assert(i < this->size());
+        return *(this->_M_impl._M_start + i);
+    }
 
-//     const T &operator[](size_t i) const
-//     {
-//         assert(i < this->size());
-//         return *(this->_M_impl._M_start + i);
-//     }
-// #endif
-// };
+    const T &operator[](size_t i) const
+    {
+        assert(i < this->size());
+        return *(this->_M_impl._M_start + i);
+    }
+#endif
+};
 
 template <typename T, size_t N>
 inline bool arrays_equal(const array<T, N> &a, const array<T, N> &b)

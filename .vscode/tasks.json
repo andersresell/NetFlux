@@ -22,9 +22,6 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
-                "-D_GLIBCXX_CONCEPT_CHECKS",
-                "-D_GLIBCXX_DEBUG",
-                "-D_GLIBCXX_DEBUG_PEDANTIC",
                 "${file}",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}"

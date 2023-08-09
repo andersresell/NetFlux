@@ -41,9 +41,9 @@ void ConfigParser::parse_yaml_file_options(Config &config)
 
     set_mesh_name(config);
 
-    config.main_solver_type = read_required_enum_option<MainSolverType>("solver", main_solver_from_string);
-
     config.time_scheme = read_required_enum_option<TimeScheme>("time_scheme", time_scheme_from_string);
+
+    config.main_solver_type = read_required_enum_option<MainSolverType>("solver", main_solver_from_string);
 
     config.inv_flux_scheme = read_required_enum_option<InviscidFluxScheme>("inviscid_flux_scheme", inviscid_flux_scheme_from_string);
 
