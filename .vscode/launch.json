@@ -50,7 +50,7 @@
             "miDebuggerPath": "/usr/bin/gdb"
         },
         {
-            "name": "serial_two-cubes",
+            "name": "two-cubes serial",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build_debug/NetFlux",
@@ -77,7 +77,7 @@
             "preLaunchTask": "build debug NetFlux"
         },
         {
-            "name": "serial_two-cubes parallel",
+            "name": "two-cubes parallel",
             "type": "cppdbg",
             "request": "launch",
             "program": "/usr/bin/mpirun",
@@ -107,14 +107,11 @@
             "preLaunchTask": "build debug NetFlux"
         },
         {
-            "name": "mpirun_NetFlux_10x10x100_ll1",
+            "name": "mpirun_NetFlux_10x10x100_ll1 serial",
             "type": "cppdbg",
             "request": "launch",
-            "program": "/usr/bin/mpirun",
+            "program": "${workspaceFolder}/build_debug/NetFlux",
             "args": [
-                "-np",
-                "1",
-                "${workspaceFolder}/build_debug/NetFlux",
                 "${workspaceFolder}/testing/netflux_tests/brick_10x10x100_ll1"
             ],
             "stopAtEntry": false,

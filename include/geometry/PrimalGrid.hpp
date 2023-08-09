@@ -18,8 +18,8 @@ namespace geometry
         vector<Vec3> nodes;
         Elements vol_elements;
         vector<ElementPatch> element_patches;
-        Elements face_elements;        /*Storing elements of all faces*/
-        const Index eID_glob_first{0}; /*global element index of first element*/
+        Elements face_elements; /*Storing elements of all faces*/
+        // const Index eID_glob_first{0}; /*global element index of first element*/
 
         void read_mesh(const Config &config);
         void read_netflux_mesh(const Config &config);
@@ -27,9 +27,11 @@ namespace geometry
 
     public:
         /*Reads mesh file*/
+        PrimalGrid() = default;
+
         PrimalGrid(const Config &config);
         /*Is constructed from existing mesh properties*/
-        PrimalGrid(vector<Vec3> &&nodes, Elements &&vol_elements, vector<ElementPatch> &&element_patches, Index eID_glob_first);
+        PrimalGrid(vector<Vec3> &&nodes, Elements &&vol_elements, vector<ElementPatch> &&element_patches);
 
         const vector<Vec3> &get_nodes() const { return nodes; }
         vector<Vec3> &get_nodes() { return nodes; }
@@ -43,7 +45,7 @@ namespace geometry
         const vector<ElementPatch> &get_element_patches() const { return element_patches; }
         vector<ElementPatch> &get_element_patches() { return element_patches; }
 
-        Index get_eID_global_first() const { return eID_glob_first; }
+        // Index get_eID_global_first() const { return eID_glob_first; }
 
         void print_grid() const;
         void partial_validity_check();

@@ -222,7 +222,7 @@ namespace geometry
         Index N_GHOST{0};
         for (const auto &p : patches_bound)
             N_GHOST += p.N_FACES;
-        assert(N_GHOST > 0);
+        assert(patches_bound.size() == 0 || N_GHOST > 0);
         return N_GHOST;
     }
     Index FV_Grid::find_num_ghost_part() const
@@ -230,7 +230,7 @@ namespace geometry
         Index N_GHOST{0};
         for (const auto &p : patches_interf)
             N_GHOST += p.N_FACES;
-        assert(N_GHOST > 0);
+        assert(patches_interf.size() == 0 || N_GHOST > 0);
         return N_GHOST;
     }
 

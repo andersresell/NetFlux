@@ -17,6 +17,7 @@ namespace geometry
         vector<PatchBoundary> patches_bound;
 
     public:
+        FV_Grid() = default;
         // FV_Grid(Cells &&cells, Faces &&faces, vector<PatchBoundary> &&patches, vector<Patches> &&partition_patches);
         //  FV_Grid(Config &config, PrimalGrid &primal_grid);
 

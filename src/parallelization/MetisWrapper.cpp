@@ -24,7 +24,7 @@ namespace NF_METIS
 
         idx_t n_common = 3; // Minimum 3 common node to get a face/edge for a 3D mesh (A triangle)
         idx_t objval;
-        vector<idx_t> element_partition(n_elements);
+        vector<idx_t> element_partition(n_elements, 0);
         vector<idx_t> node_partition(n_nodes); // Don't really need this one, but I get segfault if I input a nullptr instead of this
         idx_t n_part = static_cast<idx_t>(n_partitions);
 
@@ -68,6 +68,7 @@ namespace NF_METIS
         // cerr << "starting metis\n";
         // int status = METIS_PartMeshDual(&ne, &nn, eptr, eind, NULL, NULL,
         //                                 &ncommon, &nparts, NULL, options_, &objval, epart.data(), npart.data());
+
         if (n_part > 1)
         {
             int status = METIS_PartMeshDual(&n_elements,
@@ -97,7 +98,7 @@ namespace NF_METIS
         }
         else
         {
-            assert(n_part == 0);
+            assert(n_part == 1);
             return vector<ShortIndex>(element_partition.size(), 0);
         }
     }

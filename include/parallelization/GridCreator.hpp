@@ -14,7 +14,7 @@ namespace geometry
     class FaceGraph
     {
     protected:
-        map<Index, Cellpair> Cellpairs;
+        map<Index, Cellpair> cellpairs;
         vector<PatchBoundary> patches_bound;
 
     public:
@@ -22,32 +22,32 @@ namespace geometry
         void add_patch_bound(PatchBoundary p) { patches_bound.emplace_back(p); }
 
         bool face_is_in_patch_ext(Index fID, PatchBoundary p) const { return p.FIRST_FACE <= fID && fID < p.FIRST_FACE + p.N_FACES; }
-        const map<Index, Cellpair> &get_Cellpairs() const { return Cellpairs; }
-        Index size() const { return Cellpairs.size(); }
+        const map<Index, Cellpair> &get_cellpairs() const { return cellpairs; }
+        Index size() const { return cellpairs.size(); }
         Index get_i(Index fID) const
         {
-            assert(Cellpairs.count(fID) == 1);
-            return Cellpairs.at(fID).i;
+            assert(cellpairs.count(fID) == 1);
+            return cellpairs.at(fID).i;
         }
         Index get_j(Index fID) const
         {
-            assert(Cellpairs.count(fID) == 1);
-            return Cellpairs.at(fID).j;
+            assert(cellpairs.count(fID) == 1);
+            return cellpairs.at(fID).j;
         }
-        void add_face(Index i, SignedIndex j) { Cellpairs.emplace(Cellpairs.size(), Cellpair{i, j}); }
+        void add_face(Index i, SignedIndex j) { cellpairs.emplace(cellpairs.size(), Cellpair{i, j}); }
         void remove_face(Index fID)
         {
-            assert(Cellpairs.count(fID) == 1);
-            Cellpairs.erase(fID);
+            assert(cellpairs.count(fID) == 1);
+            cellpairs.erase(fID);
         }
-        bool face_is_in_graph(Index fID) const { return Cellpairs.count(fID) == 1; }
+        bool face_is_in_graph(Index fID) const { return cellpairs.count(fID) == 1; }
 
         Index find_num_ghost_ext() const
         {
             Index N_GHOST{0};
             for (const auto &p : patches_bound)
                 N_GHOST += p.N_FACES;
-            assert(N_GHOST > 0);
+            assert(patches_bound.size() == 0 || N_GHOST > 0);
             return N_GHOST;
         }
     };
@@ -65,8 +65,8 @@ namespace geometry
 
         bool is_ghost_face(Index fID) const
         {
-            assert(Cellpairs.count(fID) == 1);
-            SignedIndex j = Cellpairs.at(fID).j;
+            assert(cellpairs.count(fID) == 1);
+            SignedIndex j = cellpairs.at(fID).j;
             return j == -1;
         }
 
@@ -74,18 +74,18 @@ namespace geometry
         {
             if (is_ghost_face(fID))
                 return false;
-            assert(Cellpairs.count(fID) == 1);
-            Index i = Cellpairs.at(fID).i;
-            SignedIndex j = Cellpairs.at(fID).j;
+            assert(cellpairs.count(fID) == 1);
+            Index i = cellpairs.at(fID).i;
+            SignedIndex j = cellpairs.at(fID).j;
             return part[i] != part[j];
         }
         bool is_internal_face(Index fID) const
         {
             if (is_ghost_face(fID) || is_part_face(fID))
                 return false;
-            assert(Cellpairs.count(fID) == 1);
-            Index i = Cellpairs.at(fID).i;
-            SignedIndex j = Cellpairs.at(fID).j;
+            assert(cellpairs.count(fID) == 1);
+            Index i = cellpairs.at(fID).i;
+            SignedIndex j = cellpairs.at(fID).j;
             return part[i] == part[j];
         }
     };
@@ -115,7 +115,7 @@ namespace geometry
             Index N_GHOST{0};
             for (const auto &p : patches_interf)
                 N_GHOST += p.N_FACES;
-            assert(N_GHOST > 0);
+            assert(patches_interf.size() == 0 || N_GHOST > 0);
             return N_GHOST;
         }
     };
@@ -175,7 +175,7 @@ namespace geometry
         /*Step 6*/
         static void create_local_primal_grids(const PrimalGrid &primal_grid,
                                               const vector<FaceGraphLoc> &face_graphs_loc,
-                                              const Utils &utils,
+                                              Utils &utils,
                                               vector<unique_ptr<PrimalGrid>> &primal_grids_loc);
         /*Step 7*/
         static void create_local_FV_grids(const vector<FaceGraphLoc> &face_graphs_loc,
@@ -212,69 +212,111 @@ namespace geometry
     class Utils
     {
         vector<Index> eIDglob2loc_;
+        bool eIDglob2loc_set{false};
         vector<map<Index, Index>> fIDglob2loc_;
+        bool fIDglob2loc_set{false};
         vector<map<Index, Index>> fIDloc2glob_;
+        bool fIDloc2glob_set{false};
         vector<map<Index, Index>> nIDglob2loc_;
+        bool nIDglob2loc_set{false};
         vector<map<Index, Index>> nIDloc2glob_;
+        bool nIDloc2glob_set{false};
         vector<pair<Index, Index>> part2e_range_;
+        bool part2e_range_set{false};
         const vector<ShortIndex> &part;
 
     public:
         Utils(const vector<ShortIndex> &part) : part{part} {}
         Index eIDglob2loc(Index eIDglob) const
         {
+            assert(eIDglob2loc_set);
             assert(eIDglob2loc_.size() > 0);
             return eIDglob2loc_[eIDglob];
         };
         Index eIDloc2glob(ShortIndex r, Index eIDloc) const
         {
+            assert(part2e_range_set);
             assert(part2e_range_.size() == NF_MPI::get_size());
             return eIDloc + part2e_range_[r].first;
         };
         Index fIDglob2loc(ShortIndex r, Index fIDglob) const
         {
+            assert(fIDglob2loc_set);
             assert(fIDglob2loc_.size() == NF_MPI::get_size());
             assert(fIDglob2loc_[r].count(fIDglob) == 1);
             return fIDglob2loc_[r].at(fIDglob);
         };
         Index fIDloc2glob(ShortIndex r, Index fIDloc) const
         {
+            assert(fIDloc2glob_set);
             assert(fIDloc2glob_.size() == NF_MPI::get_size());
             assert(fIDloc2glob_[r].count(fIDloc) == 1);
             return fIDloc2glob_[r].at(fIDloc);
         };
         Index nIDglob2loc(ShortIndex r, Index nIDglob) const
         {
+            assert(nIDglob2loc_set);
             assert(nIDglob2loc_.size() == NF_MPI::get_size());
             assert(nIDglob2loc_[r].count(nIDglob) == 1);
             return nIDglob2loc_[r].at(nIDglob);
         }
         Index nIDloc2glob(ShortIndex r, Index nIDloc) const
         {
+            assert(nIDloc2glob_set);
             assert(nIDloc2glob_.size() == NF_MPI::get_size());
             assert(nIDloc2glob_[r].count(nIDloc) == 1);
             return nIDloc2glob_[r].at(nIDloc);
         }
         Index part2e_range_begin(ShortIndex r) const
         {
+            assert(part2e_range_set && nIDloc2glob_set);
             assert(nIDloc2glob_.size() == NF_MPI::get_size());
             return part2e_range_[r].first;
         }
 
         Index part2e_range_end(ShortIndex r) const
         {
+            assert(part2e_range_set && nIDloc2glob_set);
             assert(nIDloc2glob_.size() == NF_MPI::get_size());
             return part2e_range_[r].second;
         }
         ShortIndex e2r(Index eID) const { return part[eID]; }
 
-        const map<Index, Index> &get_nIDglob2loc(ShortIndex r) const { return nIDglob2loc_[r]; }
+        const map<Index, Index> &get_nIDglob2loc(ShortIndex r) const
+        {
+            assert(nIDglob2loc_set);
+            return nIDglob2loc_[r];
+        }
 
-        void set_eIDglob2loc(vector<Index> &&eIDglob2loc) { eIDglob2loc_ = move(eIDglob2loc); }
-        void set_fIDglob2loc(vector<map<Index, Index>> &&fIDglob2loc) { fIDglob2loc_ = move(fIDglob2loc); }
-        void set_fIDloc2glob(vector<map<Index, Index>> &&fIDloc2glob) { fIDloc2glob_ = move(fIDloc2glob); }
-        void set_nIDglob2loc(vector<map<Index, Index>> &&nIDglob2loc) { nIDglob2loc_ = move(nIDglob2loc); }
-        void set_nIDloc2glob(vector<map<Index, Index>> &&nIDloc2glob) { nIDloc2glob_ = move(nIDloc2glob); }
-        void set_part2e_range(vector<pair<Index, Index>> &&part2e_range) { part2e_range_ = move(part2e_range); }
+        void set_eIDglob2loc(vector<Index> &&eIDglob2loc)
+        {
+            eIDglob2loc_ = move(eIDglob2loc);
+            eIDglob2loc_set = true;
+        }
+        void set_fIDglob2loc(vector<map<Index, Index>> &&fIDglob2loc)
+        {
+            fIDglob2loc_ = move(fIDglob2loc);
+            fIDglob2loc_set = true;
+        }
+        void set_fIDloc2glob(vector<map<Index, Index>> &&fIDloc2glob)
+        {
+            fIDloc2glob_ = move(fIDloc2glob);
+            fIDloc2glob_set = true;
+        }
+        void set_nIDglob2loc(vector<map<Index, Index>> &&nIDglob2loc)
+        {
+            nIDglob2loc_ = move(nIDglob2loc);
+            nIDglob2loc_set = true;
+        }
+        void set_nIDloc2glob(vector<map<Index, Index>> &&nIDloc2glob)
+        {
+            nIDloc2glob_ = move(nIDloc2glob);
+            nIDloc2glob_set = true;
+        }
+        void set_part2e_range(vector<pair<Index, Index>> &&part2e_range)
+        {
+            part2e_range_ = move(part2e_range);
+            part2e_range_set = true;
+        }
     };
 }
