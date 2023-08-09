@@ -6,9 +6,9 @@ clear
 cd ./src
 echo building release
 make release
+cd ..
 exit_status=$?
 if [ $exit_status -eq 0 ]; then
-    cd ../build_release
     echo "Build successful. Running..."
-    ./NetFlux "../"$sim_dir
+    build_release/NetFlux $sim_dir
 fi

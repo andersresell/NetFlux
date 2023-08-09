@@ -56,6 +56,9 @@ namespace geometry
                         FV_grids_loc,
                         primal_grid,
                         FV_grid);
+
+        /*Step 9*/
+        FV_grid->calc_geometry_properties(config, *primal_grid);
     }
 
     /*Step 3*/
@@ -463,6 +466,7 @@ namespace geometry
             /*Create faces*/
             faces_r.reserve(face_graph_r.size());
 
+            Index next_ghost_index = e_vol_r.size();
             for (const auto &kv : face_graph_r.get_cellpairs())
             {
                 Index i = kv.second.i;
@@ -470,10 +474,10 @@ namespace geometry
                 assert(j >= 0 || j == -1);
                 if (j == -1)
                 {
-                    Index ghost_index = faces_r.cell_indices.size();
-                    j = ghost_index;
+                    j = next_ghost_index;
+                    next_ghost_index++;
                 }
-                faces_r.cell_indices.push_back(geometry::Faces::Cellpair{i, j});
+                faces_r.cell_indices.push_back(geometry::Faces::Cellpair{i, static_cast<Index>(j)});
             }
             /*Set external and partition patches*/
             FV_grid_r.patches_interf = face_graph_r.get_patches_interf();

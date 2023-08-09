@@ -1,11 +1,11 @@
 
 #include "../include/Output.hpp"
 
-Output::Output(const geometry::PrimalGrid &primal_grid_glob,
-               const geometry::PrimalGrid &primal_grid,
+Output::Output(const unique_ptr<geometry::PrimalGrid> &primal_grid_glob,
+               const unique_ptr<geometry::PrimalGrid> &primal_grid,
                const vector<unique_ptr<Solver>> &solvers,
                const Config &config)
-    : primal_grid_glob{primal_grid_glob}, primal_grid{primal_grid}, solvers{solvers}
+    : primal_grid_glob_{*primal_grid_glob}, primal_grid_{*primal_grid}, solvers{solvers}
 {
     if (NF_MPI::get_rank() == 0)
     {
@@ -21,14 +21,14 @@ Output::Output(const geometry::PrimalGrid &primal_grid_glob,
         assert(solvers.size() == 1); // fix if adding more solvers
         for (ShortIndex i{0}; i < solvers.size(); i++)
         {
-            Index N_CELLS = primal_grid_glob.get_vol_elements().size();
+            Index N_CELLS = primal_grid_glob_.get_vol_elements().size();
             Index N_EQS = solvers[i]->get_solver_data().get_N_EQS();
-            consvars_glob[i] = make_unique<VecField>(N_CELLS, N_EQS);
+            consvars_glob.emplace_back(N_CELLS, N_EQS);
         }
     }
     else
     {
-        assert(primal_grid_glob.get_vol_elements().size() == 0);
+        assert(primal_grid_glob.get() == nullptr);
     }
 }
 
@@ -44,14 +44,14 @@ void Output::write_vtk_ascii(const Config &config)
 
     for (ShortIndex i{0}; i < solvers.size(); i++)
     {
-        gather_cell_data(i);
+        gather_cell_data(config, i);
         // const VecField &consvars = solver->get_solver_data().get_solution();
 
         switch (solvers[i]->get_solver_type())
         {
         case SolverType::Euler:
         {
-            EulerOutput::write_vtk_ascii_cell_data(config, filename, *consvars_glob[i]);
+            EulerOutput::write_vtk_ascii_cell_data(config, filename, consvars_glob[i]);
             break;
         }
         default:
@@ -72,8 +72,8 @@ void Output::write_vtk_ascii_grid(const Config &config, const string &filename)
 
     const Index N_NODES = config.get_N_NODES_GLOB();
     const Index N_CELLS = config.get_N_CELLS_INT_GLOB();
-    const auto &nodes = primal_grid_glob.get_nodes();
-    const auto &vol_elements = primal_grid_glob.get_vol_elements();
+    const auto &nodes = primal_grid_glob_.get_nodes();
+    const auto &vol_elements = primal_grid_glob_.get_vol_elements();
     assert(N_CELLS == vol_elements.size());
 
     // const vector<Index> &n_ptr = vol_elements.get_n_ptr();
@@ -106,22 +106,27 @@ void Output::write_vtk_ascii_grid(const Config &config, const string &filename)
         ost << static_cast<ShortIndex>(vol_elements.get_element_type(i)) << "\n";
 }
 
-void Output::gather_cell_data(ShortIndex i_solver)
+void Output::gather_cell_data(const Config &config, ShortIndex i_solver)
 {
     /*Use mpi gather to copy all local cell data to a global container*/
     const VecField &U_loc = solvers[i_solver]->get_solver_data().get_solution();
-    VecField &U_glob = *consvars_glob[i_solver];
-
     const Scalar *sendbuf = U_loc.data();
-    Index sendcount = U_loc.size() * U_loc.rows();
-    Scalar *recvbuf = U_glob.data();
-    Index recvcount = U_glob.size() * U_glob.rows();
+    Index count = U_loc.size() * U_loc.get_N_EQS();
+    Scalar *recvbuf = nullptr;
+    if (NF_MPI::get_rank() == 0)
+    {
+        VecField &U_glob = consvars_glob[i_solver];
+        recvbuf = U_glob.data();
+        assert(U_glob.size() == config.get_N_CELLS_INT_GLOB());
+    }
 
-    NF_MPI::Gather(sendbuf, sendcount, recvbuf, recvcount, 0);
+    NF_MPI::Gather(sendbuf, recvbuf, count, 0);
 }
 
 void EulerOutput::write_vtk_ascii_cell_data(const Config &config, const string &filename, const VecField &consvars)
 {
+    if (NF_MPI::get_rank() != 0)
+        return;
     assert(consvars.get_N_EQS() == N_EQS_EULER);
 
     std::ofstream ost{filename, std::ios::app};
@@ -156,6 +161,8 @@ void EulerOutput::write_vtk_ascii_cell_data(const Config &config, const string &
 /*Writing various fields such as limiters or gradients*/
 void Output::write_vtk_ascii_debug(const Config &config, const string &filename)
 {
+    assert(false); /*Needs to be adapted for parallel implementation*/
+
     std::ofstream ost{filename, std::ios::app};
     if (!ost)
         throw std::runtime_error("Couldn't open file " + filename);

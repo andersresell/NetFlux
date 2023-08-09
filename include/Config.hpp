@@ -2,6 +2,7 @@
 #include <yaml-cpp/yaml.h>
 #include "Includes.hpp"
 #include "Utilities.hpp"
+#include "parallelization/MPI_Wrapper.hpp"
 
 class ConfigParser;
 
@@ -188,4 +189,6 @@ public:
     bool check_grid_validity() const { return check_grid_validity_; }
 
     bool write_vtk_debug() const { return write_vtk_debug_; }
+
+    void communicate_global_values();
 };

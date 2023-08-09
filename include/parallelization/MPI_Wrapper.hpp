@@ -72,9 +72,9 @@ public:
     }
 
     template <typename T>
-    static void Gather(const T *sendbuf, Index sendcount, T *recvbuf, Index recvcount, ShortIndex dest_rank)
+    static void Gather(const T *sendbuf, T *recvbuf, Index count, ShortIndex dest_rank)
     {
-        MPI_Gather(sendbuf, sendcount, get_MPI_Datatype<T>(), recvbuf, recvcount, get_MPI_Datatype<T>(), dest_rank, MPI_COMM_WORLD);
+        MPI_Gather(sendbuf, count, get_MPI_Datatype<T>(), recvbuf, count, get_MPI_Datatype<T>(), dest_rank, MPI_COMM_WORLD);
     }
 
     static void Wait(MPI_Request &req)

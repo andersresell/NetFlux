@@ -17,8 +17,8 @@ Driver::Driver(Config &config) : config{config}
     default:
         throw std::runtime_error("Error: Illegal solver type specified");
     }
-    if (NF_MPI::get_rank() == 0)
-        output = make_unique<Output>(*primal_grid_glob, *primal_grid, solvers, config);
+
+    output = make_unique<Output>(primal_grid_glob, primal_grid, solvers, config);
 }
 
 void Driver::solve()
@@ -36,6 +36,8 @@ void Driver::solve()
         assert(solvers.size() == 1);
 
         solvers.at(0)->calc_timestep(config);
+
+        config.communicate_global_values();
 
         for (auto &solver : solvers)
         {

@@ -157,7 +157,10 @@ namespace geometry
         /*Question for later: What is the requirements to the local indices of the PatchBoundary faces, given that packing is used
         (each PatchBoundary of each rank has a sendbuf and recvbuf). Conclusion is no requirements, but */
         /*Comment: I realize that I haven't accounted for the possibility that two ranks can share more than one interface.
-        I will ignore this for now*/
+        I will ignore this for now
+
+        //Step 9: Assign geometry properties to each local grid
+        */
 
     private:
         /*Step 3*/
