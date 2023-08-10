@@ -5,7 +5,8 @@ namespace geometry
     void GridCreator::create_partitioned_grids(Config &config,
                                                unique_ptr<PrimalGrid> &primal_grid_glob,
                                                unique_ptr<PrimalGrid> &primal_grid,
-                                               unique_ptr<FV_Grid> &FV_grid)
+                                               unique_ptr<FV_Grid> &FV_grid,
+                                               unique_ptr<PartitionComm> &part_comm)
     {
         num_part = NF_MPI::get_size();
         const ShortIndex rank = NF_MPI::get_rank();
@@ -61,6 +62,9 @@ namespace geometry
                         FV_grid);
 
         /*Step 9*/
+        FV_grid->initialize_geometry_properties();
+        part_comm = make_unique<PartitionComm>(FV_grid);
+        part_comm->communicate_interface_ghost_centroids(FV_grid->cells.centroids);
         FV_grid->calc_geometry_properties(config, *primal_grid);
     }
 
@@ -646,7 +650,6 @@ namespace geometry
 
         set_config_grid_data_local(config, primal_grid, FV_grid);
 
-        FV_grid->initialize_geometry_properties();
         cout << "rank " << rank << " SEND RECV GRIDS finished\n";
     }
 

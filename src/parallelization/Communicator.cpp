@@ -21,8 +21,10 @@ void InterfaceComm::send_receive_fields(MPI_Request &send_req, MPI_Request &recv
 	NF_MPI::IRecv(recvbuf.data(), count, rank_neigbour(), recv_req);
 }
 
-PartitionComm::PartitionComm(const FV_Grid &FV_grid)
+PartitionComm::PartitionComm(const Config &config, const geometry::FV_Grid &FV_grid)
+	: N_CELLS_TOT{config.get_N_CELLS_TOT()}
 {
+	assert(FV_grid.get_cells().size() == config.get_N_CELLS_TOT());
 	const Faces &faces = FV_grid.get_faces();
 	const auto &patches_interf = FV_grid.get_patches_interface();
 	for (const auto &patch_interf : patches_interf)
@@ -44,6 +46,17 @@ void PartitionComm::communicate_ghost_fields()
 		NF_MPI::Wait(send_requests[i]);
 		NF_MPI::Wait(recv_requests[i]);
 	}
+}
+
+void PartitionComm::communicate_interface_ghost_centroids(Vector<Vec3> &centroids)
+{
+	if (get_max_size_cell() < N_DIM)
+		set_max_size_cell(N_DIM);
+
+	clear();
+	pack_Vec3_field(centroids);
+	communicate_ghost_fields();
+	unpack_Vec3_field(centroids);
 }
 void PartitionComm::clear()
 {

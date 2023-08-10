@@ -2,8 +2,8 @@
 
 using namespace geometry;
 
-Solver::Solver(const Config &config, const PrimalGrid &primal_grid, const FV_Grid &FV_grid)
-    : primal_grid{primal_grid}, FV_grid{FV_grid}
+Solver::Solver(const Config &config, const PrimalGrid &primal_grid, const FV_Grid &FV_grid, PartitionComm &part_comm)
+    : primal_grid{primal_grid}, FV_grid{FV_grid}, part_comm{part_comm}
 {
     create_BC_container(config);
 }
@@ -143,49 +143,51 @@ void Solver::TVD_RK3(const Config &config)
 
 void Solver::communicate_primvars()
 {
-    part_comm->clear();
-    part_comm->pack_field(solver_data->get_primvars());
-    part_comm->communicate_ghost_fields();
-    part_comm->unpack_field(solver_data->get_primvars());
+    part_comm.clear();
+    part_comm.pack_field(solver_data->get_primvars());
+    part_comm.communicate_ghost_fields();
+    part_comm.unpack_field(solver_data->get_primvars());
 }
 void Solver::communicate_primvars_and_gradient()
 {
-    part_comm->clear();
-    part_comm->pack_field(solver_data->get_primvars());
-    part_comm->pack_field(solver_data->get_primvars_gradient());
-    part_comm->communicate_ghost_fields();
-    part_comm->unpack_field(solver_data->get_primvars());
-    part_comm->unpack_field(solver_data->get_primvars_gradient());
+    part_comm.clear();
+    part_comm.pack_field(solver_data->get_primvars());
+    part_comm.pack_field(solver_data->get_primvars_gradient());
+    part_comm.communicate_ghost_fields();
+    part_comm.unpack_field(solver_data->get_primvars());
+    part_comm.unpack_field(solver_data->get_primvars_gradient());
 }
 void Solver::communicate_max_and_min()
 {
-    part_comm->clear();
-    part_comm->pack_field(solver_data->get_primvars_max());
-    part_comm->pack_field(solver_data->get_primvars_min());
-    part_comm->communicate_ghost_fields();
-    part_comm->unpack_field(solver_data->get_primvars_max());
-    part_comm->unpack_field(solver_data->get_primvars_min());
+    part_comm.clear();
+    part_comm.pack_field(solver_data->get_primvars_max());
+    part_comm.pack_field(solver_data->get_primvars_min());
+    part_comm.communicate_ghost_fields();
+    part_comm.unpack_field(solver_data->get_primvars_max());
+    part_comm.unpack_field(solver_data->get_primvars_min());
 }
 void Solver::communicate_limiter()
 {
-    part_comm->clear();
-    part_comm->pack_field(solver_data->get_primvars_limiter());
-    part_comm->communicate_ghost_fields();
-    part_comm->unpack_field(solver_data->get_primvars_limiter());
+    part_comm.clear();
+    part_comm.pack_field(solver_data->get_primvars_limiter());
+    part_comm.communicate_ghost_fields();
+    part_comm.unpack_field(solver_data->get_primvars_limiter());
 }
 
-EulerSolver::EulerSolver(const Config &config, const geometry::PrimalGrid &primal_grid, const geometry::FV_Grid &FV_grid)
-    : Solver(config, primal_grid, FV_grid)
+EulerSolver::EulerSolver(const Config &config,
+                         const geometry::PrimalGrid &primal_grid,
+                         const geometry::FV_Grid &FV_grid,
+                         PartitionComm &part_comm)
+    : Solver(config, primal_grid, FV_grid, part_comm)
 {
     solver_data = make_unique<EulerSolverData>(config);
     validity_checker = make_unique<EulerValidityChecker>(config);
 
     calc_Delta_S(config);
 
-    part_comm = make_unique<PartitionComm>(solver_data->get_n_vecfields_sendrecv_max(),
-                                           solver_data->get_n_gradfields_sendrecv_max(),
-                                           solver_data->get_N_EQS(),
-                                           FV_grid);
+    ShortIndex max_scalars_per_cell =
+        (solver_data->get_n_vecfields_sendrecv_max() + solver_data->get_n_gradfields_sendrecv_max() * N_DIM) * solver_data->get_N_EQS();
+    part_comm.set_size(max_scalars_per_cell);
 }
 
 void EulerSolver::evaluate_inviscid_fluxes(const Config &config)

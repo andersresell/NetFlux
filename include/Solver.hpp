@@ -14,11 +14,14 @@ protected:
     const geometry::FV_Grid &FV_grid;
     unique_ptr<SolverData> solver_data;
     vector<unique_ptr<BoundaryCondition>> BC_container;
-    unique_ptr<PartitionComm> part_comm;
+    PartitionComm &part_comm;
     unique_ptr<ValidityChecker> validity_checker;
 
 public:
-    Solver(const Config &config, const geometry::PrimalGrid &primal_grid, const geometry::FV_Grid &FV_grid);
+    Solver(const Config &config,
+           const geometry::PrimalGrid &primal_grid,
+           const geometry::FV_Grid &FV_grid,
+           PartitionComm &part_comm);
 
     void step(const Config &config);
 
@@ -60,7 +63,10 @@ class EulerSolver : public Solver
 {
 
 public:
-    EulerSolver(const Config &config, const geometry::PrimalGrid &primal_grid, const geometry::FV_Grid &FV_grid);
+    EulerSolver(const Config &config,
+                const geometry::PrimalGrid &primal_grid,
+                const geometry::FV_Grid &FV_grid,
+                PartitionComm &part_comm);
 
     void calc_timestep(Config &config) override;
 

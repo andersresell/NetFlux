@@ -31,7 +31,7 @@ public:
 
     Index n_ghost() const { return patch_part.N_FACES; }
 
-    void set_size(ShortIndex max_scalars_per_cell)
+    void set_max_size_cell(ShortIndex max_scalars_per_cell)
     {
         sendbuf.resize(n_ghost() * max_scalars_per_cell);
         recvbuf.resize(n_ghost() * max_scalars_per_cell);
@@ -103,14 +103,23 @@ class PartitionComm
     vector<unique_ptr<InterfaceComm>> interf_comms;
 
     // const ShortIndex n_vecfields_max, n_gradfields_max;
+    SignedIndex max_scalars_per_cell_{-1};
+    const Index N_CELLS_TOT;
 
 public:
-    PartitionComm(const geometry::FV_Grid &FV_grid);
+    PartitionComm(const Config &config, const geometry::FV_Grid &FV_grid);
 
-    void set_size(ShortIndex max_scalars_per_cell)
+    void set_max_size_cell(ShortIndex max_scalars_per_cell)
     {
+        max_scalars_per_cell_ = max_scalars_per_cell;
         for (const auto &ic : interf_comms)
-            ic->set_size(max_scalars_per_cell);
+            ic->set_max_size_cell(max_scalars_per_cell);
+    }
+
+    ShortIndex get_max_size_cell() const
+    {
+        assert(max_scalars_per_cell_ != -1);
+        return max_scalars_per_cell_;
     }
 
     void communicate_ghost_fields();
@@ -144,6 +153,8 @@ public:
         for (auto &interf_comm : interf_comms)
             interf_comm->unpack_Vec3_field(recvfield);
     };
+
+    void communicate_interface_ghost_centroids(Vector<Vec3> &centroids);
 
 private:
     ShortIndex num_patches() const { return interf_comms.size(); }

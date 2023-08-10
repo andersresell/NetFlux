@@ -2,6 +2,7 @@
 #include "../geometry/FV_Grid.hpp"
 #include "MetisWrapper.hpp"
 #include "Serialization.hpp"
+#include "Communicator.hpp"
 
 namespace geometry
 {
@@ -126,7 +127,8 @@ namespace geometry
         static void create_partitioned_grids(Config &config,
                                              unique_ptr<PrimalGrid> &primal_grid_glob,
                                              unique_ptr<PrimalGrid> &primal_grid,
-                                             unique_ptr<FV_Grid> &FV_grid);
+                                             unique_ptr<FV_Grid> &FV_grid,
+                                             unique_ptr<PartitionComm> &part_comm);
 
         // step 1: read native mesh and create primal_grid_glob
         // step 2: run metis and create part. enables eidloc2glob

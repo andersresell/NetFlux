@@ -25,6 +25,7 @@ SolverData::SolverData(const Config &config, ShortIndex n_eqs)
     }
     else
     {
+        assert(config.get_spatial_order() == SpatialOrder::First);
         n_vecfields_sendrecv_max = 1; /*primvars*/
         n_gradfields_sendrecv_max = 0;
     }
