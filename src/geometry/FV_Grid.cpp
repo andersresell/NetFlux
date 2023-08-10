@@ -179,14 +179,18 @@ namespace geometry
         /*NEED TO UPDATE THIS TO ALSO CALCULATE CENTROID OF PARTITION GHOST CELL.
         WILL POSSIBLY NEED TO EDIT THE CODE UPSTREAM SO THAT THE GHOST ELEMENT IS COPIED,
         SINCE THIS INFO IS NEEDED TO CALCULATE THE CENTROID.*/
-        // Index N_INTERIOR_CELLS = config.get_N_CELLS_INT();
+        Index N_CELLS_INT = config.get_N_CELLS_INT();
+        Index first_face_interf = patches_interf[0].FIRST_FACE;
+        Index first_face_bound = patches_interf[0].FIRST_FACE;
 
-        /*Calculate properties for the cells*/
-        for (Index i{0}; i < N_INTERIOR_CELLS; i++)
+        /*Calculate properties for the interior cells*/
+        for (Index i{0}; i < N_CELLS_INT; i++)
             volume_element_calc_geometry_properties(vol_elements.get_element_type(i),
                                                     vol_elements.get_element_nodes(i),
                                                     nodes, cells.volumes[i],
                                                     cells.centroids[i]);
+
+        // HANDLE SENDRECV OF INTERFACE GHOST CENTROIDS
 
         Index max_j{0}; // For consistency checking
 
@@ -196,15 +200,22 @@ namespace geometry
             Index i = faces.get_cell_i(ij);
             Index j = faces.get_cell_j(ij);
             max_j = std::max(max_j, j);
-            assert(i < N_INTERIOR_CELLS); // i should never belong to a ghost cell (normal pointing from domain (i), to ghost (j))
-            if (j >= N_INTERIOR_CELLS)
+            assert(i < N_CELLS_INT); // i should never belong to a ghost cell (normal pointing from domain (i), to ghost (j))
+            if (ij >= first_face_interf && ij < first_face_bound)
             {
+                assert(j >= N_CELLS_INT && j < config.get_N_CELLS_DOMAIN());
                 cells.volumes[j] = 0.0;
-                calc_ghost_centroid(face_elements.get_element_type(ij),
-                                    face_elements.get_element_nodes(ij),
-                                    nodes,
-                                    cells.centroids[i],
-                                    cells.centroids[j]);
+                /*centroids have allready been sent and received between partitions*/
+            }
+            else if (ij >= first_face_bound)
+            {
+                assert(j >= config.get_N_CELLS_DOMAIN() && j < config.get_N_CELLS_TOT());
+                cells.volumes[j] = 0.0;
+                calc_ghost_centroid_bound(face_elements.get_element_type(ij),
+                                          face_elements.get_element_nodes(ij),
+                                          nodes,
+                                          cells.centroids[i],
+                                          cells.centroids[j]);
             }
             calc_face_properties(face_elements.get_element_type(ij),
                                  face_elements.get_element_nodes(ij),
@@ -216,8 +227,6 @@ namespace geometry
                                  faces.centroid_to_face_j[ij]);
         }
         assert(max_j == config.get_N_CELLS_TOT() - 1);
-        /*Remember to never make an assertion like this: max_i == config.get_N_CELLS_INT() - 1.
-         the max value of i may be lower than N_INTERIOR CELLS-1*/
     }
 
     Index FV_Grid::find_num_ghost_ext() const
@@ -248,7 +257,7 @@ namespace geometry
     {
         face_element_calc_face_normal(e_type, element, nodes, S_ij);
         Scalar normal_dot_product = S_ij.dot(cell_center_j - cell_center_i);
-        assert(normal_dot_product != 0); // Just banning this for now, altough it is possibly possible with a high skewness, but valid mesh
+        assert(normal_dot_product != 0); // Just banning this for now, altough it might be possibly possible with a high skewness, but valid mesh
         if (normal_dot_product < 0)
             S_ij *= -1; // Flipping normal if it's not pointing from i to j
         Vec3 face_centroid;
@@ -257,11 +266,11 @@ namespace geometry
         centroid_to_face_j = face_centroid - cell_center_j;
     }
 
-    void FV_Grid::calc_ghost_centroid(ElementType boundary_e_type,
-                                      const Index *boundary_element,
-                                      const vector<Vec3> &nodes,
-                                      const Vec3 &centroid_i,
-                                      Vec3 &centroid_ghost)
+    void FV_Grid::calc_ghost_centroid_bound(ElementType boundary_e_type,
+                                            const Index *boundary_element,
+                                            const vector<Vec3> &nodes,
+                                            const Vec3 &centroid_i,
+                                            Vec3 &centroid_ghost)
     {
         assert(!is_volume_element(boundary_e_type));
         Vec3 centroid_face;

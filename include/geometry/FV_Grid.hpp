@@ -60,11 +60,11 @@ namespace geometry
                                   Vec3 &centroid_to_face_i,
                                   Vec3 &centroid_to_face_j);
 
-        void calc_ghost_centroid(ElementType boundary_e_type,
-                                 const Index *boundary_element,
-                                 const vector<Vec3> &nodes,
-                                 const Vec3 &centroid_i,
-                                 Vec3 &centroid_ghost);
+        void calc_ghost_centroid_bound(ElementType boundary_e_type,
+                                       const Index *boundary_element,
+                                       const vector<Vec3> &nodes,
+                                       const Vec3 &centroid_i,
+                                       Vec3 &centroid_ghost);
         void print_grid(const Config &config, const Elements &face_elements) const;
     };
 
