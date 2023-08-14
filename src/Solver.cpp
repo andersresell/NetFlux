@@ -187,7 +187,7 @@ EulerSolver::EulerSolver(const Config &config,
 
     ShortIndex max_scalars_per_cell =
         (solver_data->get_n_vecfields_sendrecv_max() + solver_data->get_n_gradfields_sendrecv_max() * N_DIM) * solver_data->get_N_EQS();
-    part_comm.set_size(max_scalars_per_cell);
+    part_comm.set_max_size_cell(max_scalars_per_cell);
 }
 
 void EulerSolver::evaluate_inviscid_fluxes(const Config &config)

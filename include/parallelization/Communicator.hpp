@@ -73,7 +73,7 @@ public:
         assert(recvptr < recvbuf.size());
     }
 
-    void pack_Vec3_field(const Vector<Vec3> &sendfield)
+    void pack_Vec3_field(const vector<Vec3> &sendfield)
     {
         for (Index ij{patch_part.FIRST_FACE}; ij < patch_part.FIRST_FACE + patch_part.N_FACES; ij++)
         {
@@ -84,7 +84,7 @@ public:
         assert(sendptr < sendbuf.size());
     };
 
-    void unpack_Vec3_field(Vector<Vec3> &recvfield)
+    void unpack_Vec3_field(vector<Vec3> &recvfield)
     {
         for (Index ij{patch_part.FIRST_FACE}; ij < patch_part.FIRST_FACE + patch_part.N_FACES; ij++)
         {
@@ -142,19 +142,19 @@ public:
             interf_comm->unpack_field(recvfield);
     }
 
-    void pack_Vec3_field(const Vector<Vec3> &sendfield)
+    void pack_Vec3_field(const vector<Vec3> &sendfield)
     {
         for (auto &interf_comm : interf_comms)
             interf_comm->pack_Vec3_field(sendfield);
     };
 
-    void unpack_Vec3_field(Vector<Vec3> &recvfield)
+    void unpack_Vec3_field(vector<Vec3> &recvfield)
     {
         for (auto &interf_comm : interf_comms)
             interf_comm->unpack_Vec3_field(recvfield);
     };
 
-    void communicate_interface_ghost_centroids(Vector<Vec3> &centroids);
+    void communicate_interface_ghost_centroids(vector<Vec3> &centroids);
 
 private:
     ShortIndex num_patches() const { return interf_comms.size(); }

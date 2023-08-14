@@ -28,9 +28,9 @@ namespace NF_METIS
         vector<idx_t> node_partition(n_nodes); // Don't really need this one, but I get segfault if I input a nullptr instead of this
         idx_t n_part = static_cast<idx_t>(n_partitions);
 
-        // Vector<idx_t> e_ptr_cp(e_ptr.size());
+        // vector<idx_t> e_ptr_cp(e_ptr.size());
         // std::copy(e_ptr.begin(), e_ptr.end(), e_ptr_cp.begin());
-        // Vector<idx_t> e_ind_cp(e_ind.size());
+        // vector<idx_t> e_ind_cp(e_ind.size());
         // std::copy(e_ind.begin(), e_ind.end(), e_ind_cp.begin());
 
         // int status = METIS_PartMeshDual(&n_elements,

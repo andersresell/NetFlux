@@ -48,7 +48,7 @@ void PartitionComm::communicate_ghost_fields()
 	}
 }
 
-void PartitionComm::communicate_interface_ghost_centroids(Vector<Vec3> &centroids)
+void PartitionComm::communicate_interface_ghost_centroids(vector<Vec3> &centroids)
 {
 	if (get_max_size_cell() < N_DIM)
 		set_max_size_cell(N_DIM);

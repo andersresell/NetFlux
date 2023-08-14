@@ -63,7 +63,7 @@ namespace geometry
 
         /*Step 9*/
         FV_grid->initialize_geometry_properties();
-        part_comm = make_unique<PartitionComm>(FV_grid);
+        part_comm = make_unique<PartitionComm>(config, *FV_grid);
         part_comm->communicate_interface_ghost_centroids(FV_grid->cells.centroids);
         FV_grid->calc_geometry_properties(config, *primal_grid);
     }
@@ -222,7 +222,7 @@ namespace geometry
         vector<map<Index, Index>> fIDglob2loc(num_part);
         vector<map<Index, Index>> fIDloc2glob(num_part);
 
-        Vector<Index> faces_remove;
+        vector<Index> faces_remove;
         faces_remove.reserve(face_graph_glob.size());
         /*--------------------------------------------------------------------
         Add internal faces

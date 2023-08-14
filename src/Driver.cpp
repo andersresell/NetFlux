@@ -7,12 +7,12 @@ Driver::Driver(Config &config) : config{config}
          << "////////  ->| NetFlux |->  ////////\n"
          << "///////////////////////////////////\n\n";
 
-    geometry::GridCreator::create_partitioned_grids(config, primal_grid_glob, primal_grid, FV_grid);
+    geometry::GridCreator::create_partitioned_grids(config, primal_grid_glob, primal_grid, FV_grid, part_comm);
 
     switch (config.get_main_solver_type())
     {
     case MainSolverType::Euler:
-        solvers.push_back(make_unique<EulerSolver>(config, *primal_grid, *FV_grid));
+        solvers.push_back(make_unique<EulerSolver>(config, *primal_grid, *FV_grid, *part_comm));
         break;
     default:
         throw std::runtime_error("Error: Illegal solver type specified");
