@@ -81,7 +81,7 @@ public:
             for (ShortIndex idim{0}; idim < N_DIM; idim++)
                 sendbuf[sendptr++] = sendfield[i_domain][idim];
         }
-        assert(sendptr < sendbuf.size());
+        assert(sendptr <= sendbuf.size());
     };
 
     void unpack_Vec3_field(vector<Vec3> &recvfield)
@@ -92,7 +92,7 @@ public:
             for (ShortIndex idim{0}; idim < N_DIM; idim++)
                 recvfield[j_ghost][idim] = recvbuf[recvptr++];
         }
-        assert(recvptr < recvbuf.size());
+        assert(recvptr <= recvbuf.size());
     };
 };
 
@@ -100,11 +100,11 @@ public:
 between local domains/partitions.*/
 class PartitionComm
 {
-    vector<unique_ptr<InterfaceComm>> interf_comms;
+    // const Index N_CELLS_TOT;
 
+    vector<unique_ptr<InterfaceComm>> interf_comms;
     // const ShortIndex n_vecfields_max, n_gradfields_max;
-    SignedIndex max_scalars_per_cell_{-1};
-    const Index N_CELLS_TOT;
+    ShortIndex max_scalars_per_cell_;
 
 public:
     PartitionComm(const Config &config, const geometry::FV_Grid &FV_grid);
@@ -118,7 +118,6 @@ public:
 
     ShortIndex get_max_size_cell() const
     {
-        assert(max_scalars_per_cell_ != -1);
         return max_scalars_per_cell_;
     }
 

@@ -141,9 +141,10 @@ inline bool num_is_valid_and_pos(T val)
     return false;
 }
 
-#define MPI_DBG_WAIT   \
-    {                  \
-        int i = 0;     \
-        while (0 == i) \
-            sleep(5);  \
+#define MPI_DBG_WAIT              \
+    {                             \
+        cout << "MPI_BDG_WAIT\n"; \
+        int i = 0;                \
+        while (0 == i)            \
+            sleep(5);             \
     }

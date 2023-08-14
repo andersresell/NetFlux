@@ -493,21 +493,21 @@ namespace geometry
                   { return cell_indices[a] < cell_indices[b]; });
 
         /*Copying all content of faces in the range [begin, end) */
-        assert(face_normals.size() == cell_indices.size());
-        assert(centroid_to_face_i.size() == cell_indices.size());
-        assert(centroid_to_face_j.size() == cell_indices.size());
+        // assert(face_normals.size() == cell_indices.size());
+        // assert(centroid_to_face_i.size() == cell_indices.size());
+        // assert(centroid_to_face_j.size() == cell_indices.size());
 
         const vector<Cellpair> cell_indices_copy(cell_indices.begin() + begin, cell_indices.begin() + end);
-        const vector<Vec3> face_normals_copy(face_normals.begin() + begin, face_normals.begin() + end);
-        const vector<Vec3> centroid_to_face_i_copy(centroid_to_face_i.begin() + begin, centroid_to_face_i.begin() + end);
-        const vector<Vec3> centroid_to_face_j_copy(centroid_to_face_j.begin() + begin, centroid_to_face_j.begin() + end);
+        // const vector<Vec3> face_normals_copy(face_normals.begin() + begin, face_normals.begin() + end);
+        // const vector<Vec3> centroid_to_face_i_copy(centroid_to_face_i.begin() + begin, centroid_to_face_i.begin() + end);
+        // const vector<Vec3> centroid_to_face_j_copy(centroid_to_face_j.begin() + begin, centroid_to_face_j.begin() + end);
 
         for (Index i{begin}; i < end; i++)
         {
             cell_indices[i] = cell_indices_copy[indices[i - begin] - begin];
-            face_normals[i] = face_normals_copy[indices[i - begin] - begin];
-            centroid_to_face_i[i] = centroid_to_face_i_copy[indices[i - begin] - begin];
-            centroid_to_face_j[i] = centroid_to_face_j_copy[indices[i - begin] - begin];
+            // face_normals[i] = face_normals_copy[indices[i - begin] - begin];
+            // centroid_to_face_i[i] = centroid_to_face_i_copy[indices[i - begin] - begin];
+            // centroid_to_face_j[i] = centroid_to_face_j_copy[indices[i - begin] - begin];
             face_elements_to_sort.add_element(face_elements_old.get_element_type(indices[i - begin]),
                                               face_elements_old.get_element_nodes(indices[i - begin]));
         }

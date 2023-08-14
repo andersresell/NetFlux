@@ -184,7 +184,6 @@ EulerSolver::EulerSolver(const Config &config,
     validity_checker = make_unique<EulerValidityChecker>(config);
 
     calc_Delta_S(config);
-
     ShortIndex max_scalars_per_cell =
         (solver_data->get_n_vecfields_sendrecv_max() + solver_data->get_n_gradfields_sendrecv_max() * N_DIM) * solver_data->get_N_EQS();
     part_comm.set_max_size_cell(max_scalars_per_cell);

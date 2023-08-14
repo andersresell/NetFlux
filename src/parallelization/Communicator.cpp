@@ -4,7 +4,7 @@ using namespace geometry;
 
 InterfaceComm::InterfaceComm(const geometry::PatchInterface &patch_part,
 							 const geometry::Faces &faces)
-	: patch_part{patch_part}, faces{faces} {}
+	: patch_part{patch_part}, faces{faces}, sendptr{0}, recvptr{0} {}
 //
 // 	Index size_vecfield = n_ghost() * N_EQS;
 // 	Index size_gradfield = n_ghost() * N_EQS * N_DIM;
@@ -22,7 +22,8 @@ void InterfaceComm::send_receive_fields(MPI_Request &send_req, MPI_Request &recv
 }
 
 PartitionComm::PartitionComm(const Config &config, const geometry::FV_Grid &FV_grid)
-	: N_CELLS_TOT{config.get_N_CELLS_TOT()}
+	//: N_CELLS_TOT{config.get_N_CELLS_TOT()},
+	: max_scalars_per_cell_{0}
 {
 	assert(FV_grid.get_cells().size() == config.get_N_CELLS_TOT());
 	const Faces &faces = FV_grid.get_faces();
@@ -33,7 +34,7 @@ PartitionComm::PartitionComm(const Config &config, const geometry::FV_Grid &FV_g
 
 void PartitionComm::communicate_ghost_fields()
 {
-
+	assert(max_scalars_per_cell_ > 0);
 	vector<MPI_Request> send_requests(num_patches());
 	vector<MPI_Request> recv_requests(num_patches());
 
@@ -52,7 +53,6 @@ void PartitionComm::communicate_interface_ghost_centroids(vector<Vec3> &centroid
 {
 	if (get_max_size_cell() < N_DIM)
 		set_max_size_cell(N_DIM);
-
 	clear();
 	pack_Vec3_field(centroids);
 	communicate_ghost_fields();
