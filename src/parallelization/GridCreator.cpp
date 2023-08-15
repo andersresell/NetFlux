@@ -557,7 +557,10 @@ namespace geometry
                                       unique_ptr<FV_Grid> &FV_grid)
     {
 
+        cout << "got here\n";
         MPI_DBG_WAIT;
+
+        cout << "and here\n";
 
         ShortIndex rank = NF_MPI::get_rank();
         ShortIndex size = NF_MPI::get_size();

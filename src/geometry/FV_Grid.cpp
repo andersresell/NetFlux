@@ -191,12 +191,14 @@ namespace geometry
         bool patches_bound_exist = false;
         if (!patches_bound.empty())
         {
-            first_face_bound = patches_interf[0].FIRST_FACE;
+            first_face_bound = patches_bound[0].FIRST_FACE;
             patches_bound_exist = true;
         }
 
-        assert(first_face_bound > first_face_interf);
-
+#ifndef NDEBUG
+        if (patches_interf_exist && patches_bound_exist)
+            assert(first_face_bound > first_face_interf);
+#endif
         /*Calculate properties for the interior cells*/
         for (Index i{0}; i < N_CELLS_INT; i++)
             volume_element_calc_geometry_properties(vol_elements.get_element_type(i),
@@ -215,9 +217,8 @@ namespace geometry
             Index j = faces.get_cell_j(ij);
             max_j = std::max(max_j, j);
             assert(i < N_CELLS_INT); // i should never belong to a ghost cell (normal pointing from domain (i), to ghost (j))
-            if (patches_interf_exist && ij >= first_face_interf && ij < first_face_bound)
+            if (patches_interf_exist && (ij >= first_face_interf) && (ij < first_face_bound))
             {
-                assert(j >= N_CELLS_INT && j < config.get_N_CELLS_DOMAIN());
                 cells.volumes[j] = 0.0;
                 /*centroids have allready been sent and received between partitions*/
             }

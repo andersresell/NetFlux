@@ -16,6 +16,7 @@
 #include <cfloat>
 #include <type_traits>
 #include <filesystem>
+#include <mpi.h>
 
 using std::array;
 using std::cerr;
@@ -140,11 +141,3 @@ inline bool num_is_valid_and_pos(T val)
         return true;
     return false;
 }
-
-#define MPI_DBG_WAIT              \
-    {                             \
-        cout << "MPI_BDG_WAIT\n"; \
-        int i = 0;                \
-        while (0 == i)            \
-            sleep(5);             \
-    }
