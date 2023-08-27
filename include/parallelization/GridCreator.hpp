@@ -242,6 +242,13 @@ namespace geometry
             assert(eIDglob2loc_.size() > 0);
             return eIDglob2loc_[eIDglob];
         };
+
+        Index n_elements_part(ShortIndex r) const
+        {
+            assert(part2e_range_set);
+            return part2e_range_[r].second - part2e_range_[r].first;
+        }
+
         Index eIDloc2glob(ShortIndex r, Index eIDloc) const
         {
             assert(part2e_range_set);

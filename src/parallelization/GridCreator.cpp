@@ -232,10 +232,12 @@ namespace geometry
             Index fID = kv.first;
             if (face_graph_glob.is_internal_face(fID))
             {
-                Index i = face_graph_glob.get_i(fID);
-                Index j = face_graph_glob.get_j(fID);
-                Index r = utils.e2r(i);
-                face_graphs_loc[r].add_face(i, j);
+                Index i_glob = face_graph_glob.get_i(fID);
+                Index j_glob = face_graph_glob.get_j(fID);
+                Index r = utils.e2r(i_glob);
+                Index i_loc = utils.eIDglob2loc(i_glob);
+                Index j_loc = utils.eIDglob2loc(j_glob);
+                face_graphs_loc[r].add_face(i_loc, j_loc);
                 Index fIDloc = face_graphs_loc[r].size() - 1;
                 assert(fIDglob2loc[r].count(fID) == 0);
                 assert(fIDloc2glob[r].count(fIDloc) == 0);
@@ -250,10 +252,15 @@ namespace geometry
         /*--------------------------------------------------------------------
         Add partition faces
         --------------------------------------------------------------------*/
+        vector<Index> next_ghost_index(num_part);
+        for (ShortIndex r{0}; r < num_part; r++)
+            next_ghost_index[r] = utils.n_elements_part(r);
+        // MAJOR PARTS OF THE LOCIC NEEDS TO BE REDONE. THE PARTITION GHOST INDICES NEED
+        // UNIQUE GHOST CELL INDICES AND NOT JUST THE LOCAL CELL INDEX OF CELL I IN THE NEIGBOUR DOMAIN
+
         for (ShortIndex r_shared{0}; r_shared < num_part; r_shared++) /*Outer loop makes sure that faces of each neigbour are grouped together*/
         {
             vector<bool> r_shares_r_shared(num_part, false);
-            assert(r_shares_r_shared.back() == false); // just checking that this is actually a vector of false
             vector<PatchInterface> patches_int_r(num_part);
 
             faces_remove.clear();
@@ -273,9 +280,15 @@ namespace geometry
                     {
                         Index i_loc = utils.eIDglob2loc(i_glob);
                         Index j_loc = utils.eIDglob2loc(j_glob);
-                        /*Global face should point from rank i to rank j*/
-                        face_graphs_loc[r_i].add_face(i_loc, j_loc);
-                        face_graphs_loc[r_j].add_face(j_loc, i_loc);
+
+                        face_graphs_loc[r_i].add_face(i_loc, next_ghost_index[r_i]);
+                        next_ghost_index[r_i]++;
+                        face_graphs_loc[r_j].add_face(j_loc, next_ghost_index[r_j]);
+                        next_ghost_index[r_j]++;
+
+                        // /*Global face should point from rank i to rank j*/
+                        // face_graphs_loc[r_i].add_face(i_loc, j_loc);
+                        // face_graphs_loc[r_j].add_face(j_loc, i_loc);
 
                         Index fIDloc_i = face_graphs_loc[r_i].size() - 1;
                         Index fIDloc_j = face_graphs_loc[r_j].size() - 1;
