@@ -164,7 +164,7 @@ namespace geometry
     //     cout << "Computational grid has been created.\n";
     // }
 
-    void FV_Grid::calc_geometry_properties(const Config &config, const PrimalGrid &primal_grid)
+    void FV_Grid::calc_geometry_properties(const Config &config, const PrimalGrid &primal_grid, PartitionComm &part_comm)
     {
         cout << "Assigning geometrical properties to cells and faces.\n";
 
@@ -206,8 +206,6 @@ namespace geometry
                                                     nodes, cells.volumes[i],
                                                     cells.centroids[i]);
 
-        // HANDLE SENDRECV OF INTERFACE GHOST CENTROIDS
-
         Index max_j{0}; // For consistency checking
 
         /*Loop over all faces to assign face normals cell-centroid-to-face-centroid vectors and ghost centroid */
@@ -215,12 +213,12 @@ namespace geometry
         {
             Index i = faces.get_cell_i(ij);
             Index j = faces.get_cell_j(ij);
+            assert(i != j);
             max_j = std::max(max_j, j);
             assert(i < N_CELLS_INT); // i should never belong to a ghost cell (normal pointing from domain (i), to ghost (j))
             if (patches_interf_exist && (ij >= first_face_interf) && (ij < first_face_bound))
             {
                 cells.volumes[j] = 0.0;
-                /*centroids have allready been sent and received between partitions*/
             }
             else if (patches_bound_exist && ij >= first_face_bound)
             {
@@ -232,6 +230,15 @@ namespace geometry
                                           cells.centroids[i],
                                           cells.centroids[j]);
             }
+        }
+        assert(max_j == config.get_N_CELLS_TOT() - 1);
+
+        part_comm.communicate_interface_ghost_centroids(cells.centroids);
+
+        for (Index ij{0}; ij < config.get_N_FACES_TOT(); ij++)
+        {
+            Index i = faces.get_cell_i(ij);
+            Index j = faces.get_cell_j(ij);
             calc_face_properties(face_elements.get_element_type(ij),
                                  face_elements.get_element_nodes(ij),
                                  nodes,
@@ -241,7 +248,6 @@ namespace geometry
                                  faces.centroid_to_face_i[ij],
                                  faces.centroid_to_face_j[ij]);
         }
-        assert(max_j == config.get_N_CELLS_TOT() - 1);
     }
 
     Index FV_Grid::find_num_ghost_ext() const

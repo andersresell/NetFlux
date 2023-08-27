@@ -1,5 +1,6 @@
 #pragma once
 #include "PrimalGrid.hpp"
+#include "../parallelization/Communicator.hpp"
 
 namespace geometry
 {
@@ -38,13 +39,13 @@ namespace geometry
     private:
         /*Creates computational grid from native mesh*/
         // void create_face_structure(Config &config, PrimalGrid &primal_grid);
-        void initialize_geometry_properties()
+        void resize_geometry_properties()
         {
             // cells.resize(cells.size());
             faces.resize_geometry_properties();
         }
         /*Calculates various geometrical properties to cells and faces based on the primal grid*/
-        void calc_geometry_properties(const Config &config, const PrimalGrid &primal_grid);
+        void calc_geometry_properties(const Config &config, const PrimalGrid &primal_grid, PartitionComm &part_comm);
 
         /*------Helper functions for creating face structure-------*/
 

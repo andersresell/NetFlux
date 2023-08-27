@@ -21,13 +21,13 @@ void InterfaceComm::send_receive_fields(MPI_Request &send_req, MPI_Request &recv
 	NF_MPI::IRecv(recvbuf.data(), count, rank_neigbour(), recv_req);
 }
 
-PartitionComm::PartitionComm(const Config &config, const geometry::FV_Grid &FV_grid)
+PartitionComm::PartitionComm(const Config &config,
+							 const geometry::Faces &faces,
+							 const vector<geometry::PatchInterface> &patches_interf)
 	//: N_CELLS_TOT{config.get_N_CELLS_TOT()},
 	: max_scalars_per_cell_{0}
 {
-	assert(FV_grid.get_cells().size() == config.get_N_CELLS_TOT());
-	const Faces &faces = FV_grid.get_faces();
-	const auto &patches_interf = FV_grid.get_patches_interface();
+	assert(config.get_N_FACES_TOT() == faces.size());
 	for (const auto &patch_interf : patches_interf)
 		interf_comms.emplace_back(make_unique<InterfaceComm>(patch_interf, faces));
 }

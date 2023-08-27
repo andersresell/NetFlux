@@ -1,6 +1,6 @@
 #pragma once
 #include "MPI_Wrapper.hpp"
-#include "../geometry/FV_Grid.hpp"
+#include "../geometry/GeometryUtilities.hpp"
 #include "../containers/DynamicContainer.hpp"
 
 /*Used to send or receive data across a patch. Contains enough storage
@@ -107,7 +107,9 @@ class PartitionComm
     ShortIndex max_scalars_per_cell_;
 
 public:
-    PartitionComm(const Config &config, const geometry::FV_Grid &FV_grid);
+    PartitionComm(const Config &config,
+                  const geometry::Faces &faces,
+                  const vector<geometry::PatchInterface> &patches_interf);
 
     void set_max_size_cell(ShortIndex max_scalars_per_cell)
     {

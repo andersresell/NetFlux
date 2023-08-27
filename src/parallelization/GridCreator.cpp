@@ -9,6 +9,9 @@ namespace geometry
                                                unique_ptr<PartitionComm> &part_comm)
     {
         num_part = NF_MPI::get_size();
+        // num_part = 2; // dbg
+        // assert(NF_MPI::get_size() == 1);
+
         const ShortIndex rank = NF_MPI::get_rank();
 
         primal_grid = make_unique<PrimalGrid>();
@@ -62,10 +65,11 @@ namespace geometry
                         FV_grid);
 
         /*Step 9*/
-        FV_grid->initialize_geometry_properties();
-        part_comm = make_unique<PartitionComm>(config, *FV_grid);
-        part_comm->communicate_interface_ghost_centroids(FV_grid->cells.centroids);
-        FV_grid->calc_geometry_properties(config, *primal_grid);
+        FV_grid->resize_geometry_properties();
+        part_comm = make_unique<PartitionComm>(config, FV_grid->faces, FV_grid->patches_interf);
+        FV_grid->calc_geometry_properties(config, *primal_grid, *part_comm);
+
+        cout << "Grid created\n";
     }
 
     /*Step 3*/
@@ -109,6 +113,7 @@ namespace geometry
         assert(vol_elements_new.size() == vol_elements_old.size());
         assert(eIDglob2loc.size() == vol_elements_old.size());
         utils.set_eIDglob2loc(move(eIDglob2loc));
+        utils.set_part2e_range(move(part2e_range));
         vol_elements_new.shrink_to_fit();
         vol_elements_old = vol_elements_new;
     }
@@ -255,8 +260,6 @@ namespace geometry
         vector<Index> next_ghost_index(num_part);
         for (ShortIndex r{0}; r < num_part; r++)
             next_ghost_index[r] = utils.n_elements_part(r);
-        // MAJOR PARTS OF THE LOCIC NEEDS TO BE REDONE. THE PARTITION GHOST INDICES NEED
-        // UNIQUE GHOST CELL INDICES AND NOT JUST THE LOCAL CELL INDEX OF CELL I IN THE NEIGBOUR DOMAIN
 
         for (ShortIndex r_shared{0}; r_shared < num_part; r_shared++) /*Outer loop makes sure that faces of each neigbour are grouped together*/
         {
@@ -490,7 +493,7 @@ namespace geometry
             /*Create faces*/
             faces_r.reserve(face_graph_r.size());
 
-            Index next_ghost_index = e_vol_r.size();
+            Index next_ghost_index = e_vol_r.size() + face_graphs_loc[r].find_num_ghost_part();
             for (const auto &kv : face_graph_r.get_cellpairs())
             {
                 Index i = kv.second.i;
@@ -571,7 +574,11 @@ namespace geometry
     {
 
         cout << "got here\n";
-        MPI_DBG_WAIT;
+
+        if (NF_MPI::get_rank() == 0)
+        {
+            MPI_DBG_WAIT;
+        }
 
         cout << "and here\n";
 
