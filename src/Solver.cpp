@@ -58,6 +58,7 @@ void Solver::evaluate_flux_balance(const Config &config, const VecField &cons_va
     solver_data->get_flux_balance().set_zero();
 
     solver_data->set_primvars(cons_vars, config);
+    communicate_primvars();
 
     assert(validity_checker->valid_primvars_interior(solver_data->get_primvars()));
     set_constant_ghost_values(config);
@@ -65,16 +66,8 @@ void Solver::evaluate_flux_balance(const Config &config, const VecField &cons_va
 
     validity_checker->write_debug_info(solver_data->get_primvars(), "Primvars");
 
-    if (config.get_spatial_order() == SpatialOrder::First)
+    if (config.get_spatial_order() == SpatialOrder::Second)
     {
-        communicate_primvars();
-    }
-    else
-    {
-        assert(config.get_spatial_order() == SpatialOrder::Second);
-
-        communicate_primvars_and_gradient();
-
         evaluate_gradient(config);
 
         if (config.get_limiter() != Limiter::NONE)
@@ -143,35 +136,46 @@ void Solver::TVD_RK3(const Config &config)
 
 void Solver::communicate_primvars()
 {
-    part_comm.clear();
+    assert(part_comm.is_clear());
     part_comm.pack_field(solver_data->get_primvars());
     part_comm.communicate_ghost_fields();
     part_comm.unpack_field(solver_data->get_primvars());
-}
-void Solver::communicate_primvars_and_gradient()
-{
     part_comm.clear();
-    part_comm.pack_field(solver_data->get_primvars());
+}
+void Solver::communicate_gradient()
+{
+    assert(part_comm.is_clear());
     part_comm.pack_field(solver_data->get_primvars_gradient());
     part_comm.communicate_ghost_fields();
-    part_comm.unpack_field(solver_data->get_primvars());
     part_comm.unpack_field(solver_data->get_primvars_gradient());
+    part_comm.clear();
 }
+// void Solver::communicate_primvars_and_gradient()
+// {
+//     part_comm.clear();
+//     part_comm.pack_field(solver_data->get_primvars());
+//     part_comm.pack_field(solver_data->get_primvars_gradient());
+//     part_comm.communicate_ghost_fields();
+//     part_comm.unpack_field(solver_data->get_primvars());
+//     part_comm.unpack_field(solver_data->get_primvars_gradient());
+// }
 void Solver::communicate_max_and_min()
 {
-    part_comm.clear();
+    assert(part_comm.is_clear());
     part_comm.pack_field(solver_data->get_primvars_max());
     part_comm.pack_field(solver_data->get_primvars_min());
     part_comm.communicate_ghost_fields();
     part_comm.unpack_field(solver_data->get_primvars_max());
     part_comm.unpack_field(solver_data->get_primvars_min());
+    part_comm.clear();
 }
 void Solver::communicate_limiter()
 {
-    part_comm.clear();
+    assert(part_comm.is_clear());
     part_comm.pack_field(solver_data->get_primvars_limiter());
     part_comm.communicate_ghost_fields();
     part_comm.unpack_field(solver_data->get_primvars_limiter());
+    part_comm.clear();
 }
 
 EulerSolver::EulerSolver(const Config &config,
@@ -197,7 +201,7 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
     // const GradField& primvars_grad = solver_data->get_primvars_gradient();
     // const VecField& primvars_limiter = solver_data->get_primvars_limiter();
 
-    Index N_INTERIOR_FACES = config.get_N_FACES_INT();
+    Index N_FACES_DOMAIN = config.get_N_FACES_DOMAIN();
     SpatialOrder spatial_order = config.get_spatial_order();
 
     Index i, j;
@@ -216,7 +220,7 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
     NumericalFlux::InvFluxFunction numerical_flux_func = NumericalFlux::get_inviscid_flux_function(config.get_inv_flux_scheme());
 
     /*First interior cells*/
-    for (Index ij{0}; ij < N_INTERIOR_FACES; ij++)
+    for (Index ij{0}; ij < N_FACES_DOMAIN; ij++)
     {
         i = faces.get_cell_i(ij);
         j = faces.get_cell_j(ij);
@@ -269,7 +273,6 @@ void EulerSolver::evaluate_inviscid_fluxes(const Config &config)
             flux_balance.get_variable<EulerVec>(i_domain) -= Flux_inv;
         }
     }
-    /*Finally interprocessor communication*/
 }
 
 void EulerSolver::calc_timestep(Config &config)
@@ -326,8 +329,9 @@ void EulerSolver::calc_Delta_S(const Config &config)
     std::fill(Delta_S.begin(), Delta_S.end(), Vec3::Zero());
     Index i, j;
     Vec3 tmp;
+    Index N_CELLS_INT = config.get_N_CELLS_INT();
 
-    for (Index ij{0}; ij < config.get_N_FACES_INT(); ij++)
+    for (Index ij{0}; ij < config.get_N_FACES_TOT(); ij++)
     {
         i = faces.get_cell_i(ij);
         j = faces.get_cell_j(ij);
@@ -336,7 +340,8 @@ void EulerSolver::calc_Delta_S(const Config &config)
         tmp = 0.5 * S_ij.cwiseAbs();
 
         Delta_S[i] += tmp;
-        Delta_S[j] += tmp;
+        if (j < N_CELLS_INT)
+            Delta_S[j] += tmp;
     }
 }
 
@@ -385,6 +390,7 @@ void EulerSolver::evaluate_gradient(const Config &config)
     default:
         assert(false); // no others are yet implemented
     }
+    communicate_gradient();
 }
 
 void EulerSolver::evaluate_limiter(const Config &config)

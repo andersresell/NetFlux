@@ -51,15 +51,24 @@ void PartitionComm::communicate_ghost_fields()
 
 void PartitionComm::communicate_interface_ghost_centroids(vector<Vec3> &centroids)
 {
+	assert(is_clear());
 	if (get_max_size_cell() < N_DIM)
 		set_max_size_cell(N_DIM);
-	clear();
 	pack_Vec3_field(centroids);
 	communicate_ghost_fields();
 	unpack_Vec3_field(centroids);
+	clear();
 }
 void PartitionComm::clear()
 {
 	for (auto &interf_comm : interf_comms)
 		interf_comm->clear();
+}
+
+bool PartitionComm::is_clear()
+{
+	for (auto &interf_comm : interf_comms)
+		if (!interf_comm->is_clear())
+			return false;
+	return true;
 }

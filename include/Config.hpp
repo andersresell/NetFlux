@@ -92,7 +92,8 @@ public:
     Index get_N_CELLS_TOT() const { return N_CELLS_INT + N_FACES_EXT + N_FACES_PART; }
     Index get_N_CELLS_GHOST_PART() const { return N_FACES_PART; }
     Index get_N_CELLS_DOMAIN() const { return N_CELLS_INT + N_FACES_PART; }
-    Index get_N_FACES_INT() const { return N_FACES_INT; }
+    // Index get_N_FACES_INT() const { return N_FACES_INT; }
+    Index get_N_FACES_DOMAIN() const { return N_FACES_INT + N_FACES_PART; }
     Index get_N_FACES_TOT() const { return N_FACES_INT + N_FACES_PART + N_FACES_EXT; }
     Index get_N_FACES_PART() const { return N_FACES_PART; }
     Index get_N_FACES_EXT() const { return N_FACES_EXT; }

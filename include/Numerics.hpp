@@ -91,7 +91,7 @@ namespace gradient
     {
 
         assert(grad_field.cols() == N_DIM && grad_field.rows() == N_EQS && vec_field.rows() == N_EQS);
-        assert(grad_field.size() == config.get_N_CELLS_INT() && vec_field.size() == config.get_N_CELLS_TOT());
+        assert(grad_field.size() == config.get_N_CELLS_DOMAIN() && vec_field.size() == config.get_N_CELLS_TOT());
 
         using FieldVec = Eigen::Vector<Scalar, N_EQS>;
         using FieldGrad = Eigen::Matrix<Scalar, N_EQS, N_DIM>;
@@ -158,11 +158,11 @@ namespace reconstruction
         assert(N_EQS == sol_field.get_N_EQS() && N_EQS == sol_grad.get_N_EQS() && N_EQS == max_field.get_N_EQS() &&
                N_EQS == min_field.get_N_EQS() && N_EQS == limiter.get_N_EQS());
 
-        const Index N_INTERIOR_CELLS = config.get_N_CELLS_INT();
+        const Index N_CELLS_INTERIOR = config.get_N_CELLS_INT();
         const Index N_TOTAL_FACES = config.get_N_FACES_TOT();
 
-        assert(sol_field.size() == config.get_N_CELLS_TOT() && sol_grad.size() == N_INTERIOR_CELLS && max_field.size() == N_INTERIOR_CELLS &&
-               min_field.size() == N_INTERIOR_CELLS && limiter.size() == N_INTERIOR_CELLS);
+        assert(sol_field.size() == config.get_N_CELLS_TOT() && sol_grad.size() == config.get_N_CELLS_DOMAIN() && max_field.size() == config.get_N_CELLS_DOMAIN() &&
+               min_field.size() == config.get_N_CELLS_DOMAIN() && limiter.size() == config.get_N_CELLS_DOMAIN());
 
         using FieldVec = Eigen::Vector<Scalar, N_EQS>;
         using FieldGrad = Eigen::Matrix<Scalar, N_EQS, N_DIM>;
@@ -207,7 +207,7 @@ namespace reconstruction
                 assert(limiter(i, k) >= 0.0 && limiter(i, k) <= 1.0);
             }
 
-            if (j < N_INTERIOR_CELLS)
+            if (j < N_CELLS_INTERIOR)
             {
                 const FieldGradMap &gradient_j = sol_grad.get_variable<FieldGrad>(j);
                 Delta_2 = gradient_j * r_jm;
@@ -238,13 +238,13 @@ namespace reconstruction
 #ifndef NDEBUG
         /*Checking that the values lay between 0 and 1*/
         constexpr Scalar TOL = 1e-8;
-        Index i, j;
-        for_all(limiter, i, j)
+        for (Index i{0}; i < N_CELLS_INTERIOR; i++)
         {
-            // cout << "L " << limiter(i, j) << endl;
-
-            assert(num_is_valid(limiter(i, j)));
-            assert(limiter(i, j) > -TOL && limiter(i, j) < 1.0 + TOL);
+            for (Index j = 0; j < limiter.rows(); j++)
+            {
+                assert(num_is_valid(limiter(i, j)));
+                assert(limiter(i, j) > -TOL && limiter(i, j) < 1.0 + TOL);
+            }
         }
 #endif
     }
@@ -261,7 +261,9 @@ namespace reconstruction
         const Index N_TOTAL_FACES = config.get_N_FACES_TOT();
         const Index N_INTERIOR_CELLS = config.get_N_CELLS_INT();
         assert(N_EQS == sol_field.get_N_EQS() && N_EQS == max_field.get_N_EQS() && N_EQS == min_field.get_N_EQS());
-        assert(sol_field.size() == config.get_N_CELLS_TOT() && max_field.size() == N_INTERIOR_CELLS && min_field.size() == N_INTERIOR_CELLS);
+        assert(sol_field.size() == config.get_N_CELLS_TOT());
+        assert(max_field.size() == config.get_N_CELLS_DOMAIN());
+        assert(min_field.size() == config.get_N_CELLS_DOMAIN());
 
         /*Setting the max and min fields to either a very large or a very small value*/
         max_field = -DBL_MAX;

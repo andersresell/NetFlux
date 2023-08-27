@@ -54,7 +54,7 @@ private:
 
 protected:
     void communicate_primvars();
-    void communicate_primvars_and_gradient();
+    void communicate_gradient();
     void communicate_max_and_min();
     void communicate_limiter();
 };

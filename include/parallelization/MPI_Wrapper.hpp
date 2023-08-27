@@ -83,18 +83,6 @@ public:
     }
 };
 
-#define MPI_DBG_WAIT_RANK(rank)                            \
-    do                                                     \
-    {                                                      \
-        if (NF_MPI::get_rank() == rank)                    \
-        {                                                  \
-            cout << "MPI_BDG_WAIT, rank " << rank << "\n"; \
-            int i = 0;                                     \
-            while (0 == i)                                 \
-                sleep(5);                                  \
-        }                                                  \
-    } while (0)
-
 #define MPI_DBG_WAIT              \
     {                             \
         cout << "MPI_BDG_WAIT\n"; \

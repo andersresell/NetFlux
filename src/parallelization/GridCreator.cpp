@@ -573,14 +573,10 @@ namespace geometry
                                       unique_ptr<FV_Grid> &FV_grid)
     {
 
-        cout << "got here\n";
-
-        if (NF_MPI::get_rank() == 0)
-        {
-            MPI_DBG_WAIT;
-        }
-
-        cout << "and here\n";
+        // if (NF_MPI::get_rank() == 0)
+        // {
+        //     MPI_DBG_WAIT;
+        // }
 
         ShortIndex rank = NF_MPI::get_rank();
         ShortIndex size = NF_MPI::get_size();
@@ -672,8 +668,6 @@ namespace geometry
         NF_MPI::Barrier();
 
         set_config_grid_data_local(config, primal_grid, FV_grid);
-
-        cout << "rank " << rank << " SEND RECV GRIDS finished\n";
     }
 
     void GridCreator::set_config_grid_data_local(Config &config,

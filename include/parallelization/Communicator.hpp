@@ -45,6 +45,8 @@ public:
         recvptr = 0;
     }
 
+    bool is_clear() { return sendptr == 0 && recvptr == 0; }
+
     template <ShortIndex N_COLS>
     void pack_field(const Field<N_COLS> &sendfield)
     {
@@ -125,6 +127,7 @@ public:
 
     void communicate_ghost_fields();
     void clear();
+    bool is_clear();
 
     // Index get_n_vecfields_max() const { return n_vecfields_max; }
     // Index get_n_gradfields_max() const { return n_gradfields_max; }
