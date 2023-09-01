@@ -201,11 +201,11 @@ namespace geometry
         Helper functions
         --------------------------------------------------------------------*/
         /*Reorders faces in a more optimal fashion*/
-        static void reorder_face_enitities(Index num_interior_faces,
-                                           const vector<PatchInterface> &patches_int,
-                                           const vector<PatchBoundary> &patches_ext,
-                                           Faces &faces,
-                                           Elements &face_elements);
+        static void reorder_face_entities(Index num_interior_faces,
+                                          const vector<PatchInterface> &patches_int,
+                                          const vector<PatchBoundary> &patches_ext,
+                                          Faces &faces,
+                                          Elements &face_elements);
 
         static void set_global_config_data(Config &config,
                                            unique_ptr<PrimalGrid> &primal_grid_glob,
