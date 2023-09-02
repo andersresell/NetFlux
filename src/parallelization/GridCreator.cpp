@@ -515,7 +515,7 @@ namespace geometry
             Elements &e_faces_r = primal_grid_r.get_face_elements();
             Index num_interior_faces = faces_r.size() - num_ghost;
             reorder_face_entities(num_interior_faces,
-                                  // FV_grid_r.get_patches_interface(),
+                                  FV_grid_r.get_patches_interface(),
                                   FV_grid_r.get_patches_boundary(),
                                   faces_r,
                                   e_faces_r);
@@ -575,7 +575,7 @@ namespace geometry
     }
 
     void GridCreator::reorder_face_entities(Index num_interior_faces,
-                                            // const vector<PatchInterface> &patches_int,
+                                            const vector<PatchInterface> &patches_int,
                                             const vector<PatchBoundary> &patches_ext,
                                             Faces &faces,
                                             Elements &face_elements)
@@ -594,11 +594,17 @@ namespace geometry
         /*DONT SORT INTERFACE PATCHES! THIS SCREWS UP THE COMMUNICATION ORDERING. COULD
         ALTERNATIVELY SORT BOTH INTERFACES THE SAME WAY BASED ON min(i_ra, i_rb), BUT
         WON'T DO THIS BEFORE I SEE THAT ALL WORKS*/
+        for (const PatchInterface &p : patches_int)
+        {
+            // faces.sort_face_entities(p.FIRST_FACE, p.FIRST_FACE + p.N_FACES, face_elements, face_elements_to_sort);
 
-        // for (const PatchInterface &p : patches_int)
-        // {
-        //     faces.sort_face_entities(p.FIRST_FACE, p.FIRST_FACE + p.N_FACES, face_elements, face_elements_to_sort);
-        // }
+            /*Still have to add the face elements (no sorting) to do everything consistently*/
+            for (Index i{p.FIRST_FACE}; i < p.FIRST_FACE + p.N_FACES; i++)
+            {
+                face_elements_to_sort.add_element(face_elements.get_element_type(i),
+                                                  face_elements.get_element_nodes(i));
+            }
+        }
 
         for (const PatchBoundary &p : patches_ext)
         {
