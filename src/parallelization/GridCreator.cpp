@@ -257,8 +257,7 @@ namespace geometry
         /*--------------------------------------------------------------------
         Add partition faces
         --------------------------------------------------------------------*/
-        // THIS STEP HAS LIKELY BECOME UNECESSARY SINCE GHOST INDICES OF PARTITIONS
-        // ARE ASSIGNED AFTER SORTING OF FACES
+
         vector<Index> next_ghost_index(num_part);
         for (ShortIndex r{0}; r < num_part; r++)
             next_ghost_index[r] = utils.n_elements_part(r);
@@ -516,7 +515,7 @@ namespace geometry
             Elements &e_faces_r = primal_grid_r.get_face_elements();
             Index num_interior_faces = faces_r.size() - num_ghost;
             reorder_face_entities(num_interior_faces,
-                                  FV_grid_r.get_patches_interface(),
+                                  // FV_grid_r.get_patches_interface(),
                                   FV_grid_r.get_patches_boundary(),
                                   faces_r,
                                   e_faces_r);
@@ -549,32 +548,34 @@ namespace geometry
         //         Index FIRST_FACE = p.FIRST_FACE;
         //         Index FIRST_FACE_other = p_other.FIRST_FACE;
 
-        //         vector<Index> j_r(N_FACES);
-        //         for (Index ij{0}; ij < N_FACES; ij++)
+        //         for (Index ij{FIRST_FACE_other}; ij < N_FACES; ij++)
         //         {
-        //             j_r[ij] = faces.get_cell_j(ij + FIRST_FACE);
-        //             assert(j_r[ij] >= faces.get_cell_j(FIRST_FACE) && j_r[ij] <= faces.get_cell_j(FIRST_FACE + N_FACES - 1));
         //         }
 
-        //         vector<Index> i_other(N_FACES);
-        //         for (Index ij{0}; ij < N_FACES; ij++)
-        //         {
-        //             i_other[ij] = faces_other.get_cell_i(ij + FIRST_FACE_other);
-        //             assert(i_other[ij] >= faces_other.get_cell_i(FIRST_FACE_other) &&
-        //                    j_r[ij] <= faces_other.get_cell_i(FIRST_FACE_other + N_FACES - 1));
-        //         }
-
-        //         std::sort(j_r.begin(), j_r.end(), [&i_other](Index a, Index b)
-        //                   { return i_other[a] < i_other[b]; });
-
-        //         for (Index ij{0}; ij < N_FACES; ij++)
-        //             faces.cell_indices[ij + FIRST_FACE].j = j_r[ij];
-        //     }
+        // vector<Index> j_r(N_FACES);
+        // for (Index ij{0}; ij < N_FACES; ij++)
+        // {
+        //     j_r[ij] = faces.get_cell_j(ij + FIRST_FACE);
+        //     assert(j_r[ij] >= faces.get_cell_j(FIRST_FACE) && j_r[ij] <= faces.get_cell_j(FIRST_FACE + N_FACES - 1));
         // }
+
+        // vector<Index> i_other(N_FACES);
+        // for (Index ij{0}; ij < N_FACES; ij++)
+        // {
+        //     i_other[ij] = faces_other.get_cell_i(ij + FIRST_FACE_other);
+        //     assert(i_other[ij] >= faces_other.get_cell_i(FIRST_FACE_other) &&
+        //            j_r[ij] <= faces_other.get_cell_i(FIRST_FACE_other + N_FACES - 1));
+        // }
+
+        // std::sort(j_r.begin(), j_r.end(), [&i_other](Index a, Index b)
+        //           { return i_other[a] < i_other[b]; });
+
+        // for (Index ij{0}; ij < N_FACES; ij++)
+        //     faces.cell_indices[ij + FIRST_FACE].j = j_r[ij];
     }
 
     void GridCreator::reorder_face_entities(Index num_interior_faces,
-                                            const vector<PatchInterface> &patches_int,
+                                            // const vector<PatchInterface> &patches_int,
                                             const vector<PatchBoundary> &patches_ext,
                                             Faces &faces,
                                             Elements &face_elements)
@@ -590,10 +591,14 @@ namespace geometry
 
         faces.sort_face_entities(0, num_interior_faces, face_elements, face_elements_to_sort);
 
-        for (const PatchInterface &p : patches_int)
-        {
-            faces.sort_face_entities(p.FIRST_FACE, p.FIRST_FACE + p.N_FACES, face_elements, face_elements_to_sort);
-        }
+        /*DONT SORT INTERFACE PATCHES! THIS SCREWS UP THE COMMUNICATION ORDERING. COULD
+        ALTERNATIVELY SORT BOTH INTERFACES THE SAME WAY BASED ON min(i_ra, i_rb), BUT
+        WON'T DO THIS BEFORE I SEE THAT ALL WORKS*/
+
+        // for (const PatchInterface &p : patches_int)
+        // {
+        //     faces.sort_face_entities(p.FIRST_FACE, p.FIRST_FACE + p.N_FACES, face_elements, face_elements_to_sort);
+        // }
 
         for (const PatchBoundary &p : patches_ext)
         {
@@ -617,7 +622,7 @@ namespace geometry
     }
 
     /*Uses MPI to copy all the local PrimalGrids and FV_Grids from rank 0 to the other ranks, it
-   also sets various data in config objects*/
+    also sets various data in config objects*/
     void GridCreator::send_recv_grids(Config &config,
                                       vector<unique_ptr<PrimalGrid>> &primal_grids_loc,
                                       vector<unique_ptr<FV_Grid>> &FV_grids_loc,
@@ -733,5 +738,4 @@ namespace geometry
         Index n_interior_faces = FV_grid->get_faces().size() - n_partition_faces - n_exterior_faces;
         config.set_grid_metrics_local(n_nodes, n_interior_cells, n_interior_faces, n_partition_faces, n_exterior_faces);
     }
-
 }

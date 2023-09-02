@@ -202,7 +202,7 @@ namespace geometry
         --------------------------------------------------------------------*/
         /*Reorders faces in a more optimal fashion*/
         static void reorder_face_entities(Index num_interior_faces,
-                                          const vector<PatchInterface> &patches_int,
+                                          // const vector<PatchInterface> &patches_int,
                                           const vector<PatchBoundary> &patches_ext,
                                           Faces &faces,
                                           Elements &face_elements);
